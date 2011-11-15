@@ -27,17 +27,39 @@
     (ic/save chart baos)
     (content-type "image/png" (ByteArrayInputStream. (.toByteArray baos)))))
 
-
-(defpage draw-daily-chart "/series-of/:id/:name/:times/chart.png" {:keys [id name times]}
+(defn- parse-times [times]
   (let [[_ start-time end-time] (re-find #"(\d{8})-(\d{8})" times)]
+    [start-time end-time]))
+
+(defpage draw-daily-chart "/series-of/:id/single/*/:times/chart.png" {:keys [id * times]}
+  (let [[start-time end-time] (parse-times times)]
     (if (and start-time end-time) 
-      (let [name (de-escape-dots name)
+      (let [name *
             df (SimpleDateFormat. "yyyyMMdd")
             s (.getTime (.parse df start-time))
             e (.getTime (.parse df end-time))
             values (db/all-values-in-time-range name (Timestamp. s) (Timestamp. e))
             chart (doto (ch/time-series-plot (map :time values) (map :value values)
                                        :title (str "Chart fuer" name " am " (.format df s))
+                                       :x-label "Zeit"
+                                       :y-label "Wert")
+                    (.. getPlot (setRenderer 0 (create-renderer))))] 
+        (return-image chart))
+      {:status 500
+       :body "Wrong dates!"})))
+
+(defpage draw-efficiency-chart "/series-of/:id/efficiency/:wr-id/:times/chart.png" {:keys [id wr-id times]}
+  (let [[start-time end-time] (parse-times times)]
+    (if (and start-time end-time) 
+      (let [df (SimpleDateFormat. "yyyyMMdd")
+            s (.getTime (.parse df start-time))
+            e (.getTime (.parse df end-time))
+            
+            pdc (sort-by :time (db/string-values-in-time-range (format "%s.wr.%s.pdc.string.%%" id wr-id) (Timestamp. s) (Timestamp. e)))
+            pac (sort-by :time (db/all-values-in-time-range (format "%s.wr.%s.pac" id wr-id) (Timestamp. s) (Timestamp. e)))
+            efficiency (map (fn [a d] (if (< 0 a) (/ d a) 0)) (map :value pac) (map :value pdc))
+            chart (doto (ch/time-series-plot (map :time pac) efficiency
+                                       :title (str "Chart fuer " name " ab " (.format df s))
                                        :x-label "Zeit"
                                        :y-label "Wert")
                     (.. getPlot (setRenderer 0 (create-renderer))))] 

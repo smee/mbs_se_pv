@@ -2,7 +2,7 @@
   (:require [mbs-se-pv.views [common :as common]
              [charts :as ch]]
             [mbs-se-pv.models.db :as db])
-  (:use noir.core
+  (:use [noir.core :exclude (url-for url-for*)]
         hiccup.core
         hiccup.page-helpers
         [org.clojars.smee.util :only (per-thread-singleton)]
@@ -34,14 +34,14 @@
 (defpartial chart-link [id name start-time]
   (let [t (start-of-day start-time)] 
     (format 
-      "/series-of/%s/%s/%s-%s/chart.png"  
+      "/series-of/%s/single/%s/%s-%s/chart.png"  
       id
-      (escape-dots name)
+      name
       (.format (dateformatrev) t) (.format (dateformatrev) (+ t (* 24 60 60 1000))))))
 
 
-(defpage stats "/series-of/:id/:name" {:keys [id name]}
-  (let [name (de-escape-dots name)
+(defpage stats "/series-of/:id/single/*/charts" {:keys [id *]}
+  (let [name *
         min-time (db/min-time-of name)
         max-time (db/max-time-of name)] 
     (common/layout
@@ -54,13 +54,14 @@
         (map #(link-to (chart-link id name %) (.format (dateformat) %)) 
              (dates-seq min-time max-time))))))
 
-
 (defpage "/series-of/:id" {arg :id}
   (let [q (str arg "%")
         c (db/count-all-series-of q)] 
     (common/layout
       [:p (format "%s has %d time series." arg c)
        (unordered-list 
-         (for [n (db/all-series-names-of q)]
-           (link-to (url-for stats {:id arg, :name (escape-dots n)}) n)))])))
+         (for [n (sort (db/all-series-names-of q)) :let [title (.replace n \. \space)]]
+           (link-to (format "/series-of/%s/single/%s/charts" arg n) title)))])))
 
+(defpage wildcard "/foo/*/bar" {args :* :as p}
+  [:p args])
