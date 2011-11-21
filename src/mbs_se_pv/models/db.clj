@@ -18,8 +18,10 @@
        *db* 
        (sql/with-query-results ~res (reduce conj [~query] params#) ~@body))))
 
-(defn- fix-time [r]
-  (assoc r :time (.getTime (:time r))))
+(defn- fix-time
+  ([r] (fix-time r :time))
+  ([r & keys]
+  (reduce #(assoc % %2 (.getTime (get r %2))) r keys)))
 
 (defquery count-all-values "Count all values" 
   "select count(*) as num from ts2"
@@ -61,15 +63,10 @@
   res
   (doall (map fix-time res)))
 
-(defquery min-time-of "Select time of the oldest data point of a time series."
-  "select min(time) as time from ts2 where belongs=(select belongs from tsnames where name=?)"
+(defquery min-max-time-of "Select time of the oldest data point of a time series."
+  "select min(time) as min, max(time) as max from ts2 where belongs=(select belongs from tsnames where name=?)"
   res
-  (.getTime (:time (first res))))
-
-(defquery max-time-of "Select time of the newest data point of a time series."
-  "select max(time) as time from ts2 where belongs=(select belongs from tsnames where name=?)"
-  res
-  (.getTime (:time (first res))))
+  (fix-time (first res) :min :max))
 
 (defquery summed-values-in-time-range "Select times and added values of all time series that match a given parameter and are between two times."
   #_"select time,value,tsnames.name 
@@ -78,11 +75,13 @@
       and ts2.belongs in 
           (select belongs from tsnames where name like ?)
       and time >? and time <?;"
-  "select time,value from ts2 where belongs in (select belongs from tsnames where name like ?)  and time>? and time<? order by time"
+  "select time, sum(value) as value 
+     from ts2 where belongs in (select belongs from tsnames where name like ?)  
+      and time>? and time<? 
+ group by time 
+ order by time"
   res
-  (let [res (map fix-time res)
-        g (group-by :time res)]
-    (doall (for [[t vs] g] {:time t :value (apply + (map :value vs))}))))
+  (doall (doall (map (comp #(assoc % :value (.doubleValue (:value %))) fix-time) res))))
 
 (comment
   
