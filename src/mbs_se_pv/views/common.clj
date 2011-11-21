@@ -28,7 +28,10 @@
    [:style {:type "text/css" :rel "stylesheet"}
     "body { 
          padding-top: 60px; 
-       }"]
+       }
+     .loading {
+          background: url(/img/ajax-loader.gif) no-repeat center center;
+      }"]
    [:link {:rel "shortcut icon" :href (url "/img/favicon.ico")}]])
 
 (defpartial eumonis-topbar []

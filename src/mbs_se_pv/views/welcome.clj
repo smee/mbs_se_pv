@@ -62,6 +62,7 @@
        [:li {:id (str (Math/random))} [:a {:href (first vs)} k]]
        [:li {:id (str (Math/random)) :class "folder"} k (make-tree vs)]))])
 
+
 (defpage "/series-of/:id" {arg :id}
   (let [q (str arg ".%")
         c (db/count-all-series-of q)
