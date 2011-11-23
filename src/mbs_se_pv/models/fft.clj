@@ -7,16 +7,24 @@
     [chart.jfreechart :as cfj])
   (:use [org.clojars.smee.time :only (millis-to-string)]))
 
+(def ^:const ONE-DAY (* 24 60 60 1000))
+
 (defn make-cyclic 
-  "Convert samples into a continuous wave assuming it represents only the first half of a sinusoidal wave."
+  "Convert samples into a continuous wave assuming it represents only the first half of a sinusoidal wave.
+ There are multiple ways to do it. Literature says to pad the data with zeros till the length is a power of two.
+TODO: For photovoltatic data we have a natural cycle of 24 hours, so we should actually add zeros for missing values."
   [data]
+  ;; make cyclic by concating mirror data (lower half of sinus wave) and cycle the result
   (cycle (concat data (map - data)))
+  ;; make cyclic by just concatenating the date infinitely
   ;(cycle data)
     ;; pad with zeroes, gives interesting results, not sure about meaning, though
   ;(concat data (repeat 0))
   )
 
 (defn fft 
+  "Calculate the fast fourier transformation of the input data. Uses 'make-cyclic' on the date before running
+the calculation. N is the length of the data to use as input, should be a power of two."
   ([data] (fft data (bit-shift-left 1 10))) ;; 2^10
   ([data n]
     (let [fft (edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D. n)
@@ -49,6 +57,9 @@
     (doto (java.util.Calendar/getInstance) (.setTimeInMillis millis))
     java.util.Calendar/DAY_OF_YEAR))
 
+(defn- get-days-since [start now]
+  (int (/ (- now start) ONE-DAY)))
+
 (defn- set-frequency-axis [chart sample-len fft-len max-value]
   (let [sample-freq (/ 1 sample-len)
         freq-bin-width (/ sample-freq fft-len)
@@ -59,24 +70,25 @@
         ;(println fft-len "bins à" (double freq-bin-width) "Hz")
         (.. chart getPlot (setRangeAxis axis))))
 
+
 (defn waterfall [name start-millis end-millis]
-  {:pre [(>= 365 (int (/ (- end-millis start-millis) (* 24 60 60 1000))))]}
+ ; {:pre [(>= 365 (int (/ (- end-millis start-millis) ONE-DAY)))]}
     ;; waterfall display of ffts per day
   (let [ ;; load data per day
         s (java.sql.Timestamp. start-millis) 
-        e (java.sql.Timestamp. end-millis)          
+        e (java.sql.Timestamp. end-millis)     
+        total-days (int (/ (- end-millis start-millis) ONE-DAY))
+        
         db-values (db/all-values-in-time-range name s e)
-        days-count (int (/ (- end-millis start-millis) (* 24 60 60 1000)))
-        avail-days (group-by (comp get-day-of-year :time) db-values)
-        missing-days (into {} (for [day (range days-count) :when (not (avail-days day))]
+        avail-days (group-by (comp (partial get-days-since start-millis) :time) db-values)
+        missing-days (into {} (for [day (range total-days) :when (not (avail-days day))]
                             [day [{:time 0 :value 0}]]))
         data-per-day (->> missing-days
                        (merge avail-days)
                        (into (sorted-map))
                        vals
                        (map (partial map :value)))       
-        
-        n (bit-shift-left 1 11)
+        n (bit-shift-left 1 10)
         ffts (vec (map #(vec (fft % n)) data-per-day))
         f (fn [x y] (get-in ffts [(int x) (int y)]))
         x-max (count data-per-day)
@@ -85,16 +97,19 @@
         
         sample-length (- (:time (second db-values)) (:time (first db-values)))
         ]
-    (doto (ch/heat-map f 0 x-max 0 y-max 
+    (doto (cfj/heat-map f 0 x-max 0 y-max 
                        :color? true
                        :title (format "FFT (n=%d) von %s" n name)
                        :x-label "Tag des Jahres"
                        :y-label "Periodenlänge"
+                       :x-step (count data-per-day)
+                       :y-step y-max
                        )
       (.. getPlot getRenderer (setBlockWidth 5.0))
       (.. getPlot getRenderer (setBlockHeight 5.0))
       (set-frequency-axis sample-length n y-max)
-      ic/view)))
+      ic/view)
+    f))
 
 (comment
   (def data 
@@ -107,10 +122,9 @@
   (ic/view (range (count data)) data)
   (plot-pseudo-wave data (bit-shift-left 1 12))
   (let [n (bit-shift-left 1 12)] (ic/view (ch/xy-plot (range n) (fft (make-cyclic data) n))))
-  (let [n (bit-shift-left 1 12)] (ic/view (ch/xy-plot (range n) (fft (map #(+ (Math/sin %) #_(Math/sin (* 5 %))) (range 0 (* 3 Math/PI) (/ Math/PI 100))) n))))
-  
-  (waterfall "abel.wr.1.pac" 
-             (->> "20110101" (.parse (util/dateformatrev)) .getTime)
+    
+  (waterfall "ostfriesenstrom.wr.0.pac" 
+             (->> "20100101" (.parse (util/dateformatrev)) .getTime)
              (->> "20111231" (.parse (util/dateformatrev)) .getTime))
 
   

@@ -16,11 +16,10 @@
   [:head 
    [:title "MBS_SE_PV"]
    (include-css "/css/bootstrap.css")
-   (include-css "/css/datepicker.css")
    (include-js "http://ajax.googleapis.com/ajax/libs/jquery/1.7.0/jquery.min.js")
    (include-js "https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js")
-   (include-js "/js/datepicker.js")
    (include-css "/css/datepicker.css")
+   (include-js "/js/datepicker.js")
    (include-js "/js/jquery.cookie.js")
    (include-js "/js/jquery.dynatree.min.js")
    (include-css "/css/dynatree/ui.dynatree.css")
