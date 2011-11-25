@@ -3,15 +3,6 @@
         hiccup.core
         hiccup.page-helpers))
 
-(defpartial minimal [& content]
-            (html5
-              [:head
-               [:title "mbs-se-pv"]
-               (include-css "/css/reset.css")]
-              [:body
-               [:div#wrapper
-                content]]))
-
 (defpartial eumonis-header []
   [:head 
    [:title "MBS_SE_PV"]
