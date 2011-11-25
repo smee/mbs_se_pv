@@ -17,12 +17,13 @@
                "/js/bootstrap-modal.js")
    
    [:style {:type "text/css" :rel "stylesheet"}
-    "body { 
+    (format
+      "body { 
          padding-top: 60px; 
        }
      .loading {
-          background: url(/img/ajax-loader.gif) no-repeat center center;
-      }"]
+          background: url(%s) no-repeat center center;
+      }" (url "/img/ajax-loader.gif"))]
    [:link {:rel "shortcut icon" :href (url "/img/favicon.ico")}]])
 
 (defpartial eumonis-topbar []
