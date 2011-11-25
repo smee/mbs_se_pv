@@ -6,15 +6,16 @@
 (defpartial eumonis-header []
   [:head 
    [:title "MBS_SE_PV"]
-   (include-css "/css/bootstrap.css")
-   (include-js "http://ajax.googleapis.com/ajax/libs/jquery/1.7.0/jquery.min.js")
-   (include-js "https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js")
-   (include-css "/css/datepicker.css")
-   (include-js "/js/datepicker.js")
-   (include-js "/js/jquery.cookie.js")
-   (include-js "/js/jquery.dynatree.min.js")
-   (include-css "/css/dynatree/ui.dynatree.css")
-   (include-js "/js/bootstrap-modal.js")
+   (include-css "/css/bootstrap.css"
+                "/css/datepicker.css"
+                "/css/dynatree/ui.dynatree.css")
+   (include-js "http://ajax.googleapis.com/ajax/libs/jquery/1.7.0/jquery.min.js"
+               "https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"
+               "/js/datepicker.js"
+               "/js/jquery.cookie.js"
+               "/js/jquery.dynatree.min.js"
+               "/js/bootstrap-modal.js")
+   
    [:style {:type "text/css" :rel "stylesheet"}
     "body { 
          padding-top: 60px; 
