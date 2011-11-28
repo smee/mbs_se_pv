@@ -31,7 +31,15 @@
       (binding [mbs-se-pv.models.db/*db* db-settings]
         (handler req)))))
 
-(def handler (wrap-db-url
-               (server/gen-handler {:mode :prod
-                                    :ns 'mbs-se-pv
-                                    :base-url "/eumonis-mbs-se-pv"})))
+(defn- wrap-encryption-key [handler]
+  (let [key  (get (System/getenv) "MBS-KEY" "A")]
+    (fn [req]
+      (binding [mbs-se-pv.views.util/*crypt-key* key]
+        (handler req)))))
+
+(def handler (-> {:mode :prod
+                  :ns 'mbs-se-pv
+                  :base-url "/eumonis-mbs-se-pv"}
+               server/gen-handler
+               wrap-db-url
+               wrap-encryption-key))

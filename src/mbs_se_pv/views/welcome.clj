@@ -33,7 +33,7 @@
 ;;;;;;;;;;;;;; show all days of a single time series ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defpage stats "/series-of/:id/single/*/charts" {:keys [id *]}
   (let [name *
-        {:keys [min max]} (db/min-max-time-of name)] 
+        {:keys [min max]} (db/min-max-time-of (decrypt-name *))] 
     (html
       [:p (format "%s has %d values spanning %s till %s." 
                   name 
@@ -64,9 +64,10 @@
 
 
 (defpage "/series-of/:id" {arg :id}
-  (let [q (str arg ".%")
+  (let [arg (decrypt arg)
+        q (str arg ".%")
         c (db/count-all-series-of q)
-        names (db/all-series-names-of q)]
+        names (map encrypt-name (db/all-series-names-of q))]
     
     (common/layout
       [:div.row
@@ -112,7 +113,7 @@
 (defpage start-page "/eumonis" {:keys [page length] :or {page "1" length "20"}}
   (let [page (Math/max 1 (s2i page 1))
         len (->> (s2i length 20) (Math/max 1) (Math/min 50))
-        links (map #(link-to (str "/series-of/" %) %) (db/all-names-limit (* page len) len))] 
+        links (map #(link-to (str "/series-of/" %) %) (map encrypt (db/all-names-limit (* page len) len)))] 
     (common/layout 
       (names-pagination page len)
       [:table#names.zebra-striped
