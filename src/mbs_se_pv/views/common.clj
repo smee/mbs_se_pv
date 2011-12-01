@@ -55,9 +55,10 @@
     [:body
      (eumonis-topbar)
      [:div.container
-      [:div.hero-unit {:style "padding: 40px;"}
-       [:h1 {:style "font-size: 50px;"} "Visualisierung von PV-Betriebsdaten"]
-       [:p "EUMONIS-Lab"]]
+      [:div.page-header ;{:style "padding: 40px;"}
+       (link-to "/" 
+                [:h1 "EUMONIS-Lab " 
+                 [:small "Visualisierung von PV-Betriebsdaten"]])]
       content
       (eumonis-footer)]]))
 
