@@ -30,28 +30,26 @@
 
 
 
-;;;;;;;;;;;;;; show all days of a single time series ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defpage stats "/series-of/:id/single/*/charts" {:keys [id *]}
+;;;;;;;;;;;;;; show date selector for all days of a single time series ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defpage stats "/series-of/:id/single/*/date-selector" {:keys [id *]}
   (let [name *
-        {:keys [min max]} (db/min-max-time-of (decrypt-name *))] 
+        {:keys [min max]} (db/min-max-time-of (decrypt-name *))
+        onclick-handler "$('#chart-image').removeClass('hide').attr('src', this.options[this.selectedIndex].value);"] 
     (html
-      [:p (format "%s has %d values spanning %s till %s." 
-                  name 
-                  (db/count-all-values-of name) 
-                  (.format (dateformat) min) 
-                  (.format (dateformat) max))]
-      (ordered-list 
+      [:p "Bitte w&auml;hlen Sie ein Datum:"]
+      (drop-down 
+        {:onchange onclick-handler}
+        "dates" 
         (for [date (dates-seq min max) 
               :let [end (+ date ONE-DAY)
                     times (format "%s-%s" (.format (dateformatrev) date) (.format (dateformatrev) end))
-                    link (resolve-uri (url-for ch/chart-modal {:id id :* name :times times}))
-                    script (format "$('#chart-popup').load('%s', function() { $('#chart-popup').modal('show'); })" link)]]
-          [:a {:href "#" :onclick script} (.format (dateformat) date)])))))
+                    link (resolve-uri (url-for ch/draw-daily-chart {:id id :* name :times times}))]]
+          [(.format (dateformat) date) link])))))
 
 ;;;;;;;;;;;;;; show all available time series info per pv installation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn- restore-wr-hierarchy [name series]
-  (let [links (map #(url "/series-of/" name "/single/" % "/charts") series)
+  (let [links (map #(url "/series-of/" name "/single/" % "/date-selector") series)
         parts (map #(concat (remove #{"wr" "string"} (string/split % #"\.")) [%2]) series links)]
     (restore-hierarchy parts)))
 
@@ -77,24 +75,25 @@
           (clojure.walk/postwalk #(if (map? %) (into (sorted-map) %) %))
          make-tree
          (vector :div#series-tree))]
-       [:div#replace-me.span4]
-       [:div#chart-popup.span8.modal.hide.fade {:style "display:none;"}]]
+       [:div#details.span12
+        [:div.row
+         [:div#replace-me.span4]]
+        [:div.row 
+         [:div#chart.span8
+          [:div [:h3 "Chart"]]
+          [:div#current-chart
+           [:img#chart-image.hide.loading {:src ""
+                                           }]]]]]]
       (javascript-tag 
         "$('#series-tree').dynatree({
            onActivate: function(node){ 
                           if( node.data.href )
-                             //window.location=node.data.href;
-                            $('#replace-me').fadeOut(200);
-                            $('#replace-me').load(node.data.href, function(){$('#replace-me').fadeIn(200);});
+                            $('#details').fadeOut(100);
+                            $('#chart-image').toggleClass('hide',true);
+                            $('#replace-me').load(node.data.href, function(){$('#details').fadeIn(200);});
                           },
           persist: true,
-          minExpandLevel: 2
-                      });
-        $('#chart-popup').modal({
-                         keyboard: true,
-                         backdrop: true,
-                         show: false
-                        });"))))
+          minExpandLevel: 2});"))))
 
 ;;;;;;;;;;; show all available pv installation names ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

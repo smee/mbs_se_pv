@@ -51,23 +51,6 @@
     {:status 500
      :body "Wrong dates!"}))
 
-(defpage chart-modal "/series-of/:id/single/*/:times/chart.htm" {:keys [id * times] :as m}
-  (let [name *
-        [start end] (parse-times times)
-        prev-day-times (format "%s-%s" (.format (dateformatrev) (- start ONE-DAY)) (.format (dateformatrev) start)) 
-        next-day-times (format "%s-%s" (.format (dateformatrev) end) (.format (dateformatrev) (+ end ONE-DAY))) 
-        prev-day-link (format "$('#chart-popup').load('%s')" (resolve-uri (url-for chart-modal {:id id, :* name, :times prev-day-times} )))
-        next-day-link (format "$('#chart-popup').load('%s')" (resolve-uri (url-for chart-modal {:id id, :* name, :times next-day-times} )))] 
-    (html
-      [:div.modal-header [:a.close {:href "#"} "x"] #_[:h3 "Chart"]]
-      [:div#current-chart.modal-body 
-       [:img.loading {:src (resolve-uri (url-for draw-daily-chart m))
-                      :width "500"
-                      :height "400"}]
-       #_(javascript-tag)]
-      [:div.modal-footer
-       [:a.btn.info {:onclick next-day-link} "n&auml;chster Tag →"]
-       [:a.btn.info {:onclick prev-day-link} "← vorheriger Tag"]])))
 
 (defpage draw-efficiency-chart "/series-of/:id/efficiency/:wr-id/:times/chart.png" {:keys [id wr-id times width height]}
   (if-let [[s e] (parse-times times)] 
