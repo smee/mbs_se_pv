@@ -76,7 +76,7 @@
 ;;;;;;;;;;;;;; show all available time series info per pv installation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn- restore-wr-hierarchy [name series]
-  (let [links (map #(url-for stats {:id name :* %}) series)
+  (let [links (map #(resolve-uri (url-for stats {:id name :* %})) series)
         parts (map #(concat (remove #{"wr" "string"} (string/split % #"\.")) [%2]) series links)]
     (restore-hierarchy parts)))
 
