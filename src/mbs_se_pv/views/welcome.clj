@@ -34,17 +34,48 @@
 (defpage stats "/series-of/:id/single/*/date-selector" {:keys [id *]}
   (let [name *
         {:keys [min max]} (db/min-max-time-of (decrypt-name *))
-        onclick-handler "$('#chart-image').removeClass('hide').attr('src', this.options[this.selectedIndex].value);"] 
+        date (.format (dateformat) max)
+        link-template (resolve-uri (format "/series-of/%s/single/%s" id name))
+        onclick-handler "$('#chart-image').removeClass('hide').attr('src', this.options[this.selectedIndex].value);"
+        ] 
     (html
-      [:p "Bitte w&auml;hlen Sie ein Datum:"]
-      (drop-down 
-        {:onchange onclick-handler}
-        "dates" 
-        (for [date (dates-seq min max) 
-              :let [end (+ date ONE-DAY)
-                    times (format "%s-%s" (.format (dateformatrev) date) (.format (dateformatrev) end))
-                    link (resolve-uri (url-for ch/draw-daily-chart {:id id :* name :times times}))]]
-          [(.format (dateformat) date) link])))))
+      [:strong "Bitte w&auml;hlen Sie ein Datum:"]
+      [:p#date-picker]
+      (javascript-tag
+        (format
+          "$('#replace-me').fadeIn(100);
+           $('#date-picker').DatePicker({
+                  format: 'd.m.Y',
+                  date: ['%s', '%s'],
+                  current: '%s',
+                  calendars: 3,
+                  flat: true,
+                  mode: 'range',
+                  onBeforeShow: function(){
+                            var dates = $('#date-picker').DatePickerGetDate(false);
+                            console.log(dates);
+                  },
+                  onChange: function(formated, dates){
+                            var m1=dates[0].getMonth()+1;
+                            var m2=dates[1].getMonth()+1;
+                            var d1=dates[0].getDate();
+                            var d2=dates[1].getDate();
+                            var startDate=''+dates[0].getFullYear()+(m1<10?'0'+m1:m1)+(d1<10?'0'+d1:d1);
+                            var endDate  =''+dates[1].getFullYear()+(m2<10?'0'+m2:m2)+(d2<10?'0'+d2:d2);
+                            var link='%s'+'/'+startDate+'-'+endDate+'/chart.png';
+                            $('#chart-image').removeClass('hide').attr('src',link);
+                          },
+                  onRender: function(date){
+                            return {
+                                   disabled: date.valueOf()<%d || date.valueOf()>%d,
+                                   className: false
+                                  }}});"
+          date
+          date
+          date
+          link-template
+          min
+          max)))))
 
 ;;;;;;;;;;;;;; show all available time series info per pv installation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -57,8 +88,8 @@
   [:ul 
    (for [[k vs] nested]
      (if (sequential? vs)
-       [:li {:id (str (Math/random))} [:a {:href (first vs)} k]]
-       [:li {:id (str (Math/random)) :class "folder"} k (make-tree vs)]))])
+       [:li [:a {:href (first vs)} k]]
+       [:li {:class "folder"} k (make-tree vs)]))])
 
 
 (defpage "/series-of/:id" {arg :id}
@@ -88,9 +119,9 @@
         "$('#series-tree').dynatree({
            onActivate: function(node){ 
                           if( node.data.href )
-                            $('#details').fadeOut(100);
+                            $('#replace-me').fadeOut(100);
                             $('#chart-image').toggleClass('hide',true);
-                            $('#replace-me').load(node.data.href, function(){$('#details').fadeIn(200);});
+                            $('#replace-me').load(node.data.href);
                           },
           persist: true,
           minExpandLevel: 2});"))))

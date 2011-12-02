@@ -85,6 +85,8 @@ div.datepicker {
 }
 div.datepicker table {
 	border-collapse:collapse;
+	border: none;
+	vertical-align: center;
 }
 div.datepicker a {
 	color: #eee;
@@ -96,11 +98,14 @@ div.datepicker table td {
 	text-align: right;
 	padding: 0;
 	margin: 0;
+	border: none;
 }
 div.datepicker th {
 	text-align: center;
 	color: #999;
 	font-weight: normal;
+	border: none;
+	padding: 0;
 }
 div.datepicker tbody th {
 	text-align: left;
