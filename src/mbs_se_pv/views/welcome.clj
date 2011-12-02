@@ -27,7 +27,6 @@
         {:keys [min max]} (if efficiency-chart?
                             (db/min-max-time-of (str id ".wr." wr-id ".pac"))
                             (db/min-max-time-of series-name))
-        _ (println min max)
         date (.format (dateformat) max)
         link-template (if efficiency-chart?
                         (resolve-uri (format "/series-of/%s/efficiency/%s" id wr-id))
