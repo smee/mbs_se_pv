@@ -55,13 +55,13 @@
 (defpage draw-efficiency-chart "/series-of/:id/efficiency/:wr-id/:times/chart.png" {:keys [id wr-id times width height]}
   (if-let [[s e] (parse-times times)] 
     (let [pdc (db/summed-values-in-time-range (format "%s.wr.%s.pdc.string.%%" id wr-id) (Timestamp. s) (Timestamp. (+ e ONE-DAY)))
-          pac (db/all-values-in-time-range (format "%s.wr.%s.pac" id wr-id) (Timestamp. s) (Timestamp. e))
+          pac (db/all-values-in-time-range (format "%s.wr.%s.pac" id wr-id) (Timestamp. s) (Timestamp. (+ e ONE-DAY)))
           efficiency (map (fn [a d] (if (< 0 d) (/ a d) 0)) (map :value pac) (map :value pdc))
-          chart (doto (ch/time-series-plot (map :time pac) efficiency
-                                           :title (str "Chart fuer " name " ab " (.format (dateformat) s))
+          chart (doto (ch/time-series-plot (map :time pac) (map (partial * 100) efficiency)
+                                           :title (str "Wirkungsgrad für " id wr-id " im Zeitraum " (.format (dateformat) s) " bis " (.format (dateformat) e))
                                            :x-label "Zeit"
-                                           :y-label "Wert")
+                                           :y-label "Wirkungsgrad in %")
                   (.. getPlot (setRenderer 0 (create-renderer))))] 
-      (return-image chart :height (s2i height 500) :width (s2i width 400)))
+      (return-image chart :height (s2i height 500) :width (s2i width 600)))
     {:status 500
      :body "Wrong dates!"}))
