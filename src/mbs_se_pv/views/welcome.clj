@@ -21,12 +21,13 @@
 ;;;;;;;;;;;;;; show date selector for all days of a single time series ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defpage stats "/series-of/:id/single/*/date-selector" {:keys [id *]}
   (let [name *
-        series-name (decrypt-name name)
-        wr-id (extract-wr-id series-name)
-        efficiency-chart? (.endsWith series-name ".efficiency")
+        real-id (decrypt id)
+        real-name (decrypt-name name)
+        wr-id (extract-wr-id real-name)
+        efficiency-chart? (.endsWith real-name ".efficiency")
         {:keys [min max]} (if efficiency-chart?
-                            (db/min-max-time-of (str id ".wr." wr-id ".pac"))
-                            (db/min-max-time-of series-name))
+                            (db/min-max-time-of (str real-id ".wr." wr-id ".pac"))
+                            (db/min-max-time-of real-name))
         date (.format (dateformat) max)
         link-template (if efficiency-chart?
                         (resolve-uri (format "/series-of/%s/efficiency/%s" id wr-id))
@@ -88,15 +89,13 @@
 
 
 (defpage "/series-of/:id" {arg :id}
-  (let [arg (decrypt arg)
-        q (str arg ".%")
+  (let [real-id (decrypt arg)
+        q (str real-id ".%")
         c (db/count-all-series-of q)
         names (db/all-series-names-of q)
-        efficiency-names (distinct (map #(str arg ".wr." (extract-wr-id %) ".efficiency") names))
-        names (map encrypt-name (concat names efficiency-names))
-        ]
+        efficiency-names (distinct (map #(str real-id ".wr." (extract-wr-id %) ".efficiency") names))
+        names (map encrypt-name (concat names efficiency-names))]
         
-    
     (common/layout
       [:div.row
        [:span.span4 
@@ -112,8 +111,7 @@
          [:div#chart.span8
           [:div [:h3 "Chart"]]
           [:div#current-chart
-           [:img#chart-image.hide.loading {:src ""
-                                           }]]]]]]
+           [:img#chart-image.hide.loading {:src ""}]]]]]]
       (javascript-tag 
         "$('#series-tree').dynatree({
            onActivate: function(node){ 

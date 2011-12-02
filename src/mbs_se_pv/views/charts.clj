@@ -54,8 +54,9 @@
 
 (defpage draw-efficiency-chart "/series-of/:id/efficiency/:wr-id/:times/chart.png" {:keys [id wr-id times width height]}
   (if-let [[s e] (parse-times times)] 
-    (let [pdc (db/summed-values-in-time-range (format "%s.wr.%s.pdc.string.%%" id wr-id) (Timestamp. s) (Timestamp. (+ e ONE-DAY)))
-          pac (db/all-values-in-time-range (format "%s.wr.%s.pac" id wr-id) (Timestamp. s) (Timestamp. (+ e ONE-DAY)))
+    (let [real-id (decrypt id)
+          pdc (db/summed-values-in-time-range (format "%s.wr.%s.pdc.string.%%" real-id wr-id) (Timestamp. s) (Timestamp. (+ e ONE-DAY)))
+          pac (db/all-values-in-time-range (format "%s.wr.%s.pac" real-id wr-id) (Timestamp. s) (Timestamp. (+ e ONE-DAY)))
           efficiency (map (fn [a d] (if (< 0 d) (/ a d) 0)) (map :value pac) (map :value pdc))
           chart (doto (ch/time-series-plot (map :time pac) (map (partial * 100) efficiency)
                                            :title (str "Wirkungsgrad für " id wr-id " im Zeitraum " (.format (dateformat) s) " bis " (.format (dateformat) e))
