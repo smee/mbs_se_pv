@@ -16,26 +16,22 @@
         mbs-se-pv.views.util)
   (:import java.util.Calendar))
 
-(defn dates-seq 
-  "Create lazy sequence of all dates in the given interval."
-  [start-date end-date] 
-  {:pre [(< start-date end-date)]}
-  (let [cal (doto (Calendar/getInstance)
-              (.setTimeInMillis start-date);
-              (.add Calendar/DAY_OF_MONTH 1))
-        date (.getTimeInMillis cal)]
-    (when (< date end-date) 
-      (lazy-seq
-        (cons date (dates-seq date end-date))))))
-
 
 
 ;;;;;;;;;;;;;; show date selector for all days of a single time series ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defpage stats "/series-of/:id/single/*/date-selector" {:keys [id *]}
   (let [name *
-        {:keys [min max]} (db/min-max-time-of (decrypt-name *))
+        series-name (decrypt-name name)
+        wr-id (extract-wr-id series-name)
+        efficiency-chart? (.endsWith series-name ".efficiency")
+        {:keys [min max]} (if efficiency-chart?
+                            (db/min-max-time-of (str id ".wr." wr-id ".pac"))
+                            (db/min-max-time-of series-name))
+        _ (println min max)
         date (.format (dateformat) max)
-        link-template (resolve-uri (format "/series-of/%s/single/%s" id name))
+        link-template (if efficiency-chart?
+                        (resolve-uri (format "/series-of/%s/efficiency/%s" id wr-id))
+                        (resolve-uri (format "/series-of/%s/single/%s" id name)))
         onclick-handler "$('#chart-image').removeClass('hide').attr('src', this.options[this.selectedIndex].value);"
         ] 
     (html
@@ -80,7 +76,7 @@
 ;;;;;;;;;;;;;; show all available time series info per pv installation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn- restore-wr-hierarchy [name series]
-  (let [links (map #(url "/series-of/" name "/single/" % "/date-selector") series)
+  (let [links (map #(url-for stats {:id name :* %}) series)
         parts (map #(concat (remove #{"wr" "string"} (string/split % #"\.")) [%2]) series links)]
     (restore-hierarchy parts)))
 
@@ -96,7 +92,11 @@
   (let [arg (decrypt arg)
         q (str arg ".%")
         c (db/count-all-series-of q)
-        names (map encrypt-name (db/all-series-names-of q))]
+        names (db/all-series-names-of q)
+        efficiency-names (distinct (map #(str arg ".wr." (extract-wr-id %) ".efficiency") names))
+        names (map encrypt-name (concat names efficiency-names))
+        ]
+        
     
     (common/layout
       [:div.row
