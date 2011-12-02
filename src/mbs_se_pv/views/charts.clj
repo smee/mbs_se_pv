@@ -47,7 +47,7 @@
                                            :x-label "Zeit"
                                            :y-label "Wert")
                   (.. getPlot (setRenderer 0 (create-renderer))))]
-      (return-image chart :height (s2i height 500) :width (s2i width 400)))
+      (return-image chart :height (s2i height 500) :width (s2i width 600)))
     {:status 500
      :body "Wrong dates!"}))
 
