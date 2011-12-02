@@ -21,7 +21,10 @@
 (defn- fix-time
   ([r] (fix-time r :time))
   ([r & keys]
-  (reduce #(assoc % %2 (.getTime (get r %2))) r keys)))
+  (reduce #(if-let [ts (get % %2)] 
+             (assoc % %2 (.getTime ts))
+             (assoc % %2 0)) 
+          r keys)))
 
 (defquery count-all-values "Count all values" 
   "select count(*) as num from ts2"
