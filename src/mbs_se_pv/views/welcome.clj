@@ -94,7 +94,8 @@
         c (db/count-all-series-of q)
         names (db/all-series-names-of q)
         efficiency-names (distinct (map #(str real-id ".wr." (extract-wr-id %) ".efficiency") names))
-        names (map encrypt-name (concat names efficiency-names))]
+        names (map encrypt-name (concat names efficiency-names))
+        metadata (db/get-metadata real-id)]
         
     (common/layout
       [:div.row
@@ -105,6 +106,8 @@
          make-tree
          (vector :div#series-tree))]
        [:div#details.span12
+        [:div.row
+         (print-str metadata)]
         [:div.row
          [:div#replace-me.span4]]
         [:div.row 

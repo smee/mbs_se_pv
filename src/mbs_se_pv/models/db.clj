@@ -1,5 +1,7 @@
 (ns mbs-se-pv.models.db
-  (:require [clojure.java.jdbc :as sql]))
+  (:require 
+    [clojure.java.jdbc :as sql]
+    [clojure.data.json :as json]))
 
 (def ^:dynamic *db* 
   {:classname   "com.mysql.jdbc.Driver"
@@ -85,6 +87,12 @@
  order by time"
   res
   (doall (doall (map (comp #(assoc % :value (.doubleValue (:value %))) fix-time) res))))
+
+(defquery get-metadata "get map of metadata for one pv installation"
+  "select json from metadatajson where name=?"
+  res
+  (when (first res) 
+    (json/read-json (:json (first res)))))
 
 (comment
   
