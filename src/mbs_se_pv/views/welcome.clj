@@ -21,13 +21,11 @@
 ;;;;;;;;;;;;;; show date selector for all days of a single time series ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defpage stats "/series-of/:id/single/*/date-selector" {:keys [id *]}
   (let [name *
-        real-id (decrypt id)
-        real-name (decrypt-name name)
-        wr-id (extract-wr-id real-name)
-        efficiency-chart? (.endsWith real-name ".efficiency")
+        wr-id (extract-wr-id name)
+        efficiency-chart? (.endsWith name ".efficiency")
         {:keys [min max]} (if efficiency-chart?
-                            (db/min-max-time-of (str real-id ".wr." wr-id ".pac"))
-                            (db/min-max-time-of real-name))
+                            (db/min-max-time-of (str id ".wr." wr-id ".pac"))
+                            (db/min-max-time-of name))
         date (.format (dateformat) max)
         link-template (if efficiency-chart?
                         (resolve-uri (format "/series-of/%s/efficiency/%s" id wr-id))
@@ -89,13 +87,12 @@
 
 
 (defpage "/series-of/:id" {arg :id}
-  (let [real-id (decrypt arg)
-        q (str real-id ".%")
+  (let [q (str arg ".%")
         c (db/count-all-series-of q)
         names (db/all-series-names-of q)
-        efficiency-names (distinct (map #(str real-id ".wr." (extract-wr-id %) ".efficiency") names))
-        names (map encrypt-name (concat names efficiency-names))
-        metadata (db/get-metadata real-id)]
+        efficiency-names (distinct (map #(str arg ".wr." (extract-wr-id %) ".efficiency") names))
+        names (concat names efficiency-names)
+        metadata (db/get-metadata arg)]
         
     (common/layout
       [:div.row
@@ -143,7 +140,7 @@
 (defpage start-page "/eumonis" {:keys [page length] :or {page "1" length "20"}}
   (let [page (Math/max 1 (s2i page 1))
         len (->> (s2i length 20) (Math/max 1) (Math/min 50))
-        links (map #(link-to (str "/series-of/" %) %) (map encrypt (db/all-names-limit (* page len) len)))] 
+        links (map #(link-to (str "/series-of/" %) %) (db/all-names-limit (* page len) len))] 
     (common/layout 
       (names-pagination page len)
       [:table#names.zebra-striped

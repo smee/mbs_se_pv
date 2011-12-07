@@ -1,4 +1,6 @@
 (ns mbs-se-pv.models.db
+  (:use 
+    [mbs-se-pv.views.util :only (encrypt-name decrypt-name)])
   (:require 
     [clojure.java.jdbc :as sql]
     [clojure.data.json :as json]))
@@ -14,11 +16,28 @@
   (sql/with-connection *db*
        (sql/with-query-results res (apply vector query params) (doall (for [r res] r)))))
 
-(defmacro defquery [name doc-string query res & body]
-  `(defn ~name ~doc-string[& params#] 
-     (sql/with-connection 
-       *db* 
-       (sql/with-query-results ~res (reduce conj [~query] params#) ~@body))))
+(defmacro defquery 
+  "Create an sql query that accepts a variable number of paramters and a body that handles the 
+sequence of results by manipulating the var 'res'. Handles name obfuscation transparently."
+  [name doc-string query & body]
+  `(defn ~name ~doc-string[& params#]
+     ;; decrypt the first parameter, assuming it's a name
+     (let [params# (when-let [[p# & ps#] params#] 
+                     (if (string? p#) 
+                       (cons (decrypt-name p#) ps#)
+                       params#))] 
+       ;; run the query
+       (sql/with-connection 
+         *db* 
+         (sql/with-query-results 
+           ~'res (reduce conj [~query] params#) 
+           ;; encrypt all names found via accessing key :name in all result maps
+           (let [~'res (map #(if (= :not-found (get % :name :not-found))
+                               %
+                               (assoc % :name (encrypt-name (:name %))))
+                            ~'res)]
+             ;; let user handle the results
+             ~@body))))))
 
 (defn- fix-time
   ([r] (fix-time r :time))
@@ -30,47 +49,38 @@
 
 (defquery count-all-values "Count all values" 
   "select count(*) as num from ts2"
-  res
   (:num (first res)))
 
 (defquery all-names-limit "Select all pv names (first part of the time series' names)."
   "select distinct SUBSTRING_INDEX(name,'.',1) as name from tsnames limit ?,?"
-  res
   (doall (map :name res)))
 
 (defquery count-all-series "Count all available time series."
   "select count(*) as num from tsnames;"
-  res
   (:num (first res)))
 
 (defquery count-all-series-of "Count all time series where the name is like the given parameter"
   "select count(name) as num from tsnames where name like ?"
-  res
   (:num (first res)))
 
 (defquery all-series-names-of "Select all time series names that are like the given parameter"
   "select * from tsnames where name like ?  order by name"
-  res
   (doall (map :name res)))
 
 (defquery count-all-values-of "Count all time series data points where the name is like the given parameter"
   "select count(*) as num from ts2 where belongs=(select belongs from tsnames where name=?)"
-  res
   (:num (first res)))
 
 (defquery all-values-of "Select all time series data points of a given name."
   "select time, value from ts2 where belongs=(select belongs from tsnames where name=?)  order by time"
-  res
   (doall (map fix-time res)))
 
 (defquery all-values-in-time-range "Select all time series data points of a given name that are between two times."
   "select time, value from ts2 where belongs=(select belongs from tsnames where name=?) and time >? and time <?  order by time"
-  res
   (doall (map fix-time res)))
 
 (defquery min-max-time-of "Select time of the oldest data point of a time series."
   "select min(time) as min, max(time) as max from ts2 where belongs=(select belongs from tsnames where name=?)"
-  res
   (fix-time (first res) :min :max))
 
 (defquery summed-values-in-time-range "Select times and added values of all time series that match a given parameter and are between two times."
@@ -85,12 +95,10 @@
       and time>? and time<? 
  group by time 
  order by time"
-  res
   (doall (doall (map (comp #(assoc % :value (.doubleValue (:value %))) fix-time) res))))
 
 (defquery get-metadata "get map of metadata for one pv installation"
   "select json from metadatajson where name=?"
-  res
   (when (first res) 
     (json/read-json (:json (first res)))))
 
@@ -108,3 +116,4 @@
     )
   
   )
+

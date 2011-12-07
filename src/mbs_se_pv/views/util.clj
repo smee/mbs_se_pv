@@ -58,11 +58,13 @@
 
 (defn encrypt-name [^String s]
   (let [idx (.indexOf s ".")
+        idx (if (= -1 idx) (count s) idx)
         name (subs s 0 idx)
         rest (subs s idx)]
     (str (encrypt name) rest)))
 (defn decrypt-name [^String s]
   (let [idx (.indexOf s ".")
+        idx (if (= -1 idx) (count s) idx)
         name (subs s 0 idx)
         rest (subs s idx)]
     (str (decrypt name) rest)))
