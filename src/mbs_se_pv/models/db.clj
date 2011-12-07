@@ -24,12 +24,12 @@
       (cons (decrypt-name p) ps)
       params)))
 
-(defn- handle-res
+(defn- handle-results
   "encrypt all names found via accessing key :name in all result maps"
   [res]
-  (map #(if (= :not-found (get % :name :not-found))
-          %
-          (assoc % :name (encrypt-name (:name %))))
+  (map #(if-let [n (:name %)]
+          (assoc % :name (encrypt-name n))
+          %)
        res))
 
 (defmacro defquery 
@@ -43,7 +43,7 @@ sequence of results by manipulating the var 'res'. Handles name obfuscation tran
          *db* 
          (sql/with-query-results 
            ~'res (reduce conj [~query] params#) 
-           (let [~'res (handle-res ~'res)]
+           (let [~'res (handle-results ~'res)]
              ;; let user handle the results
              ~@body))))))
 
