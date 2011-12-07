@@ -16,26 +16,34 @@
   (sql/with-connection *db*
        (sql/with-query-results res (apply vector query params) (doall (for [r res] r)))))
 
+(defn- handle-params 
+  "decrypt the first parameter, assuming it's a name"
+  [params]
+  (when-let [[p & ps] params] 
+    (if (string? p) 
+      (cons (decrypt-name p) ps)
+      params)))
+
+(defn- handle-res
+  "encrypt all names found via accessing key :name in all result maps"
+  [res]
+  (map #(if (= :not-found (get % :name :not-found))
+          %
+          (assoc % :name (encrypt-name (:name %))))
+       res))
+
 (defmacro defquery 
   "Create an sql query that accepts a variable number of paramters and a body that handles the 
 sequence of results by manipulating the var 'res'. Handles name obfuscation transparently."
   [name doc-string query & body]
   `(defn ~name ~doc-string[& params#]
-     ;; decrypt the first parameter, assuming it's a name
-     (let [params# (when-let [[p# & ps#] params#] 
-                     (if (string? p#) 
-                       (cons (decrypt-name p#) ps#)
-                       params#))] 
+     (let [params# (handle-params params#)] 
        ;; run the query
        (sql/with-connection 
          *db* 
          (sql/with-query-results 
            ~'res (reduce conj [~query] params#) 
-           ;; encrypt all names found via accessing key :name in all result maps
-           (let [~'res (map #(if (= :not-found (get % :name :not-found))
-                               %
-                               (assoc % :name (encrypt-name (:name %))))
-                            ~'res)]
+           (let [~'res (handle-res ~'res)]
              ;; let user handle the results
              ~@body))))))
 
