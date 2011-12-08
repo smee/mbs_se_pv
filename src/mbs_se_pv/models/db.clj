@@ -1,6 +1,6 @@
 (ns mbs-se-pv.models.db
   (:use 
-    [mbs-se-pv.views.util :only (encrypt-name decrypt-name)])
+    [mbs-se-pv.views.util :only (encrypt-name encrypt decrypt-name)])
   (:require 
     [clojure.java.jdbc :as sql]
     [clojure.data.json :as json]))
@@ -92,12 +92,6 @@ sequence of results by manipulating the var 'res'. Handles name obfuscation tran
   (fix-time (first res) :min :max))
 
 (defquery summed-values-in-time-range "Select times and added values of all time series that match a given parameter and are between two times."
-  #_"select time,value,tsnames.name 
-     from ts2, tsnames 
-    where ts2.belongs=tsnames.belongs 
-      and ts2.belongs in 
-          (select belongs from tsnames where name like ?)
-      and time >? and time <?;"
   "select time, sum(value) as value 
      from ts2 where belongs in (select belongs from tsnames where name like ?)  
       and time>? and time<? 
@@ -108,7 +102,9 @@ sequence of results by manipulating the var 'res'. Handles name obfuscation tran
 (defquery get-metadata "get map of metadata for one pv installation"
   "select json from metadatajson where name=?"
   (when (first res) 
-    (json/read-json (:json (first res)))))
+    (let[m (-> res first :json json/read-json)
+         private-names [:BannerZeile1 :BannerZeile2 :BannerZeile3 :HPBetreiber :HPEmail :HPStandort :HPTitel]]
+      (reduce #(update-in % [%2] encrypt) m private-names))))
 
 (comment
   
