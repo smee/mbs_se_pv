@@ -2,11 +2,9 @@
   (:require 
     [noir.server :as server]
     ;; view namespaces need to be required explicitely for tomcat
-    [mbs-se-pv.views common welcome charts timeseries]
+    [mbs-se-pv.views common charts timeseries welcome]
     [mbs-se-pv.middleware :as m])
   (:gen-class))
-
-(server/load-views "src/mbs_se_pv/views/")
 
 (server/add-middleware m/wrap-db-url)
 (server/add-middleware m/wrap-encryption-key)
