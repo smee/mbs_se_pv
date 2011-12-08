@@ -2,7 +2,7 @@
   (:require 
     [noir.server :as server]
     ;; view namespaces need to be required explicitely for tomcat
-    [mbs-se-pv.views common welcome charts]
+    [mbs-se-pv.views common welcome charts timeseries]
     [mbs-se-pv.middleware :as m])
   (:gen-class))
 
@@ -21,8 +21,6 @@
 
 
 ;;;;;;;;;;;;;;; production settings ;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
 
 
 (def handler (server/gen-handler {:mode :prod

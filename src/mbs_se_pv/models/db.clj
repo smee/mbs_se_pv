@@ -49,8 +49,9 @@ sequence of results by manipulating the var 'res'. Handles name obfuscation tran
              ~@body))))))
 
 (defmacro defquery-cached [name doc-string query & body]
-  `(defquery name doc-string query ~@body)
-  `(alter-var-root #'~name cache/cached* ~name (cache/mutable-lru-cache-strategy 10000)))
+  `(do
+     (defquery ~name ~doc-string ~query ~@body)
+     (alter-var-root #'~name cache/cached* ~name (cache/mutable-lru-cache-strategy 10000))))
 
 (defn- fix-time
   ([r] (fix-time r :time))

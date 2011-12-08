@@ -21,6 +21,9 @@
       "body { 
          padding-top: 60px; 
        }
+      #current-chart {
+         min-height: 500px;
+      }
      .loading {
           background: url(%s) no-repeat center center;
       }" (url "/img/ajax-loader.gif"))]
@@ -52,18 +55,16 @@
                      :width "150px"}])]]])
 
 
-(defpartial layout-with-links [topbar-links & contents]
+(defpartial layout-with-links [topbar-links sidebar-contents & contents]
   (html5
     (eumonis-header)
     [:body
      (eumonis-topbar topbar-links)
-     [:div.container
-      [:div.page-header ;{:style "padding: 40px;"}
-       (link-to "/" 
-                [:h1 "EUMONIS-Lab " 
-                 [:small "Visualisierung von PV-Betriebsdaten"]])]
-      contents
-      (eumonis-footer)]]))
+     [:div.container-fluid
+      [:div.sidebar sidebar-contents]
+      [:div.content 
+       contents
+       (eumonis-footer)]]]))
 
 (defpartial layout [& contents]
   (apply layout-with-links [0 [:a {:href "#"} "Home"] [:a {:href "#contact"} "Kontakt"]] contents))

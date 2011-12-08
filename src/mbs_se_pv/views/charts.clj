@@ -1,27 +1,31 @@
 (ns mbs-se-pv.views.charts
-    (:require [mbs-se-pv.views.common :as common]
-            [mbs-se-pv.models.db :as db]
-            [incanter.core :as ic]
-            [incanter.charts :as ch])
-    (:use noir.core
-          hiccup.core
-          hiccup.page-helpers
-          [noir.response :only (content-type)]
-          mbs-se-pv.views.util
-          [org.clojars.smee.util :only (s2i)])
-    (:import [java.io ByteArrayOutputStream ByteArrayInputStream]
-             org.jfree.chart.renderer.xy.StandardXYItemRenderer
-             org.jfree.util.UnitType
-             java.text.SimpleDateFormat
-             java.sql.Timestamp))
+  (:require 
+    [mbs-se-pv.views.common :as common]
+    [mbs-se-pv.models.db :as db]
+    [incanter.core :as ic]
+    [incanter.charts :as ch])
+  (:use  
+    [clojure.string :only (split)]
+    noir.core
+    hiccup.core
+    hiccup.page-helpers
+    [noir.response :only (content-type)]
+    mbs-se-pv.views.util
+    [org.clojars.smee.util :only (s2i)])
+  (:import 
+    [java.io ByteArrayOutputStream ByteArrayInputStream]
+    org.jfree.chart.renderer.xy.StandardXYItemRenderer
+    org.jfree.util.UnitType
+    java.text.SimpleDateFormat
+    java.sql.Timestamp))
 
 (defn- create-renderer
   "do not plot a line when at least 3 values are missing (for example during the night)" 
   []
   (doto (StandardXYItemRenderer.)
-                       (.setPlotDiscontinuous true)
-                       (.setGapThresholdType UnitType/RELATIVE)
-                       (.setGapThreshold 3.0)))
+    (.setPlotDiscontinuous true)
+    (.setGapThresholdType UnitType/RELATIVE)
+    (.setGapThreshold 3.0)))
 
 (defn- return-image [chart & opts]
   (let [baos (ByteArrayOutputStream.)]
@@ -38,18 +42,28 @@
   (- millis (mod millis ONE-DAY)))
 
 
-(defpage draw-daily-chart "/series-of/:id/single/*/:times/chart.png" {:keys [id * times width height]}
-  (if-let [[s e] (parse-times times)] 
-    (let [name *
-          values (db/all-values-in-time-range name (Timestamp. s) (Timestamp. (+ e ONE-DAY)))
-          chart (doto (ch/time-series-plot (map :time values) (map :value values)
-                                           :title (str "Chart für " name " im Zeitraum " (.format (dateformat) s) " bis " (.format (dateformat) e))
-                                           :x-label "Zeit"
-                                           :y-label "Wert")
-                  (.. getPlot (setRenderer 0 (create-renderer))))]
+(defpage "/series-of/:id/*/:times/chart.png" {:keys [id * times width height]}
+  (if-let [[s e] (parse-times times)]
+    (let [names (re-seq #"[^/]+" *) ;; split at any slashes
+          values (map #(db/all-values-in-time-range % (Timestamp. s) (Timestamp. (+ e ONE-DAY))) names)
+          chart (ch/time-series-plot (map :time (first values)) (map :value (first values))
+                                     :title (str "Chart für den Zeitraum " (.format (dateformat) s) " bis " (.format (dateformat) e))
+                                     :x-label "Zeit"
+                                     :y-label "Wert"
+                                     :legend true
+                                     :series-label (first names))]
+      (doseq [[n values] (map list (rest names) (rest values))]
+        (ch/add-lines chart (map :time values) (map :value values)
+                      :series-label n))
+      ;; set renderer that leaves gaps for missing values for all series
+      ;; but reuse the series color
+      (doseq [i (range (count names)) :let [paint (.. chart getPlot getRenderer (getSeriesPaint i))]]
+        (.. chart getPlot (setRenderer i (create-renderer))))
+      
       (return-image chart :height (s2i height 500) :width (s2i width 600)))
     {:status 500
      :body "Wrong dates!"}))
+
 
 
 (defpage draw-efficiency-chart "/series-of/:id/efficiency/:wr-id/:times/chart.png" {:keys [id wr-id times width height]}
