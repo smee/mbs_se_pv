@@ -67,4 +67,4 @@
        (eumonis-footer)]]]))
 
 (defpartial layout [& contents]
-  (apply layout-with-links [0 [:a {:href "#"} "Home"] [:a {:href "#contact"} "Kontakt"]] contents))
+  (apply layout-with-links [0 [:a {:href "#"} "Home"] [:a {:href "#contact"} "Kontakt"]] nil contents))

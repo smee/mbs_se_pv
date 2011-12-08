@@ -26,6 +26,7 @@
   (let [metadata (db/get-metadata name)]
     (common/layout-with-links 
       (toolbar-links name 1)
+      nil
       [:div.row
        (metadata-table metadata)])))
 
