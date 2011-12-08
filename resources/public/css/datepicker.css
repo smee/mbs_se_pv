@@ -87,6 +87,7 @@ div.datepicker table {
 	border-collapse:collapse;
 	border: none;
 	vertical-align: center;
+	margin: 0;
 }
 div.datepicker a {
 	color: #eee;
