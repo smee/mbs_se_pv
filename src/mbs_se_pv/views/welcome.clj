@@ -1,8 +1,8 @@
 (ns mbs-se-pv.views.welcome
   (:require 
-    [clojure.zip :as z]
     [clojure.string :as string]
-    [mbs-se-pv.views [common :as common]
+    [mbs-se-pv.views 
+     [common :as common]
      [charts :as ch]]
     [mbs-se-pv.models.db :as db])
   (:use noir.core
@@ -16,7 +16,7 @@
         mbs-se-pv.views.util)
   (:import java.util.Calendar))
 
-
+(declare toolbar-links)
 
 ;;;;;;;;;;;;;; show date selector for all days of a single time series ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defpage stats "/series-of/:id/single/*/date-selector" {:keys [id *]}
@@ -85,16 +85,23 @@
        [:li [:a {:href (first vs)} k]]
        [:li {:class "folder"} k (make-tree vs)]))])
 
+(defn- metadata-table [metadata]
+  (let [wr-details (:wr metadata)
+        metadata (dissoc metadata :wr)
+        k (sort (keys metadata))]
+    [:table.condensed-table.zebra-striped 
+     (for [[k v] (into (sorted-map) metadata)]
+       [:tr [:th k] [:td v]])]))
 
-(defpage "/series-of/:id" {arg :id}
+(defpage all-series "/series-of/:id" {arg :id}
   (let [q (str arg ".%")
         c (db/count-all-series-of q)
         names (db/all-series-names-of q)
         efficiency-names (distinct (map #(str arg ".wr." (extract-wr-id %) ".efficiency") names))
-        names (concat names efficiency-names)
-        metadata (db/get-metadata arg)]
+        names (concat names efficiency-names)]
         
-    (common/layout
+    (common/layout-with-links
+      (toolbar-links arg 2)
       [:div.row
        [:span.span4 
         (->> names
@@ -103,8 +110,6 @@
          make-tree
          (vector :div#series-tree))]
        [:div#details.span12
-        [:div.row
-         (print-str metadata)]
         [:div.row
          [:div#replace-me.span4]]
         [:div.row 
@@ -120,8 +125,17 @@
                             $('#chart-image').toggleClass('hide',true);
                             $('#replace-me').load(node.data.href);
                           },
-          persist: true,
+          persist: false,
           minExpandLevel: 2});"))))
+
+;;;;;;;;;;;;;;;;;;;;;;;; show metadata as table ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defpage metadata-page "/details/:id" {name :id}
+  (let [metadata (db/get-metadata name)]
+    (common/layout-with-links 
+      (toolbar-links name 1)
+      [:div.row
+       (metadata-table metadata)])))
+
 
 ;;;;;;;;;;; show all available pv installation names ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -140,10 +154,11 @@
 (defpage start-page "/eumonis" {:keys [page length] :or {page "1" length "20"}}
   (let [page (Math/max 1 (s2i page 1))
         len (->> (s2i length 20) (Math/max 1) (Math/min 50))
-        links (map #(link-to (str "/series-of/" %) %) (db/all-names-limit (* page len) len))] 
-    (common/layout 
+        links (map #(link-to (url-for details-page {:id %}) %) (db/all-names-limit (* page len) len))] 
+    (common/layout-with-links 
+      (toolbar-links "#" 0)
       (names-pagination page len)
-      [:table#names.zebra-striped
+      [:table#names.zebra-striped.condensed-table
        [:thead [:tr [:th "Anlagenbezeichnung"]]]
        [:tbody 
         (for [link links]
@@ -152,3 +167,12 @@
 
 (defpage "/" []
   (redirect (url-for start-page)))
+
+(defn toolbar-links 
+  "Links for the toolbar, see common/eumonis-topbar or common/layout-with-links for details"
+  [id active-idx]
+  [active-idx
+   (link-to (url-for start-page) "&Uuml;bersicht")
+   (link-to (url-for metadata-page {:id id}) "Allgemeines")
+   (link-to (url-for all-series {:id id}) "Messwerte")]
+  )

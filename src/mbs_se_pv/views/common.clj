@@ -26,11 +26,11 @@
       }" (url "/img/ajax-loader.gif"))]
    [:link {:rel "shortcut icon" :href (url "/img/favicon.ico")}]])
 
-(defpartial eumonis-topbar [links active-idx]
+(defpartial eumonis-topbar [[active-idx & links]]
   [:div.topbar
    [:div.fill
     [:div.container
-     [:a.brand {:href "http://rz.eumonis.org"} "EUMONIS"]
+     [:a.brand {:href "http://rz.eumonis.org"} "EUMONIS-Lab"]
      [:ul.nav
       (map-indexed #(if (= % active-idx) 
                       [:li.active %2] 
@@ -52,11 +52,11 @@
                      :width "150px"}])]]])
 
 
-(defpartial layout-with-links [topbar-links active-idx & contents]
+(defpartial layout-with-links [topbar-links & contents]
   (html5
     (eumonis-header)
     [:body
-     (eumonis-topbar topbar-links active-idx)
+     (eumonis-topbar topbar-links)
      [:div.container
       [:div.page-header ;{:style "padding: 40px;"}
        (link-to "/" 
@@ -66,4 +66,4 @@
       (eumonis-footer)]]))
 
 (defpartial layout [& contents]
-  (apply layout-with-links [[:a {:href "#"} "Home"] [:a {:href "#contact"} "Kontakt"]] 0 contents))
+  (apply layout-with-links [0 [:a {:href "#"} "Home"] [:a {:href "#contact"} "Kontakt"]] contents))
