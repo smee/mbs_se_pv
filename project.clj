@@ -10,7 +10,6 @@
                            [org.clojure/java.jdbc "0.1.0"]
                            [mysql/mysql-connector-java "5.1.17"]
                            [org.clojars.smee/common "1.2.0-SNAPSHOT"]
-                           [import-pv-data "1.0.0-SNAPSHOT"]
                            [incanter "1.3.0-SNAPSHOT" 
                             :exclusions 
                             [swank-clojure swingrepl
