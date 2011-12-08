@@ -4,6 +4,7 @@
             :dependencies [[org.clojure/clojure "1.3.0"]
                            [org.clojure/data.json "0.1.2"]
                            [noir "1.2.2-SNAPSHOT"]
+                           [clj-cache "0.0.4"]
                            ;; explicitely require newest ring, bug in ring-0.3.x (accesses resource directories as files)
                            [ring/ring-core "1.0.0-beta2"]
                            [org.clojure/java.jdbc "0.1.0"]

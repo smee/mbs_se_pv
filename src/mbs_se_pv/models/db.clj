@@ -3,7 +3,8 @@
     [mbs-se-pv.views.util :only (encrypt-name encrypt decrypt-name)])
   (:require 
     [clojure.java.jdbc :as sql]
-    [clojure.data.json :as json]))
+    [clojure.data.json :as json]
+    [clj-cache.cache :as cache]))
 
 (def ^:dynamic *db* 
   {:classname   "com.mysql.jdbc.Driver"
@@ -46,6 +47,10 @@ sequence of results by manipulating the var 'res'. Handles name obfuscation tran
            (let [~'res (handle-results ~'res)]
              ;; let user handle the results
              ~@body))))))
+
+(defmacro defquery-cached [name doc-string query & body]
+  `(defquery name doc-string query ~@body)
+  `(alter-var-root #'~name cache/cached* ~name (cache/mutable-lru-cache-strategy 10000)))
 
 (defn- fix-time
   ([r] (fix-time r :time))
@@ -99,7 +104,7 @@ sequence of results by manipulating the var 'res'. Handles name obfuscation tran
  order by time"
   (doall (doall (map (comp #(assoc % :value (.doubleValue (:value %))) fix-time) res))))
 
-(defquery get-metadata "get map of metadata for one pv installation"
+(defquery-cached get-metadata "get map of metadata for one pv installation"
   "select json from metadatajson where name=?"
   (when (first res) 
     (let[m (-> res first :json json/read-json)
