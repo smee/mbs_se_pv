@@ -6,7 +6,7 @@
 (defpartial eumonis-header []
   [:head 
    [:title "MBS_SE_PV"]
-   (include-css "/css/bootstrap.css"
+   (include-css "http://twitter.github.com/bootstrap/1.4.0/bootstrap.min.css"
                 "/css/datepicker.css"
                 "/css/dynatree/ui.dynatree.css")
    (include-js "http://ajax.googleapis.com/ajax/libs/jquery/1.7.0/jquery.min.js"
@@ -21,19 +21,24 @@
       "body { 
          padding-top: 60px; 
        }
+      #current-chart {
+         min-height: 500px;
+      }
      .loading {
           background: url(%s) no-repeat center center;
       }" (url "/img/ajax-loader.gif"))]
    [:link {:rel "shortcut icon" :href (url "/img/favicon.ico")}]])
 
-(defpartial eumonis-topbar []
+(defpartial eumonis-topbar [[active-idx & links]]
   [:div.topbar
    [:div.fill
     [:div.container
-     [:a.brand {:href "http://rz.eumonis.org"} "EUMONIS"]
+     [:a.brand {:href "http://rz.eumonis.org"} "EUMONIS-Lab"]
      [:ul.nav
-      [:li.active [:a {:href "#"} "Home"]]
-      [:li [:a {:href "#contact"} "Kontakt"]]]]]])
+      (map-indexed #(if (= % active-idx) 
+                      [:li.active %2] 
+                      [:li %2]) 
+                   links)]]]])
 
 (defpartial eumonis-footer []
   [:footer
@@ -49,16 +54,17 @@
                      :alt "gef&#246;rdert durch das Bundesministerium f&#252;r Bildung und Forschung"
                      :width "150px"}])]]])
 
-(defpartial layout [& content]
+
+(defpartial layout-with-links [topbar-links sidebar-contents & contents]
   (html5
     (eumonis-header)
     [:body
-     (eumonis-topbar)
-     [:div.container
-      [:div.page-header ;{:style "padding: 40px;"}
-       (link-to "/" 
-                [:h1 "EUMONIS-Lab " 
-                 [:small "Visualisierung von PV-Betriebsdaten"]])]
-      content
-      (eumonis-footer)]]))
+     (eumonis-topbar topbar-links)
+     [:div.container-fluid
+      [:div.sidebar sidebar-contents]
+      [:div.content 
+       contents
+       (eumonis-footer)]]]))
 
+(defpartial layout [& contents]
+  (apply layout-with-links [0 [:a {:href "#"} "Home"] [:a {:href "#contact"} "Kontakt"]] nil contents))
