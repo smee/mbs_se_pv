@@ -1,16 +1,14 @@
 (ns mbs-se-pv.views.charts
   (:require 
     [mbs-se-pv.views.common :as common]
-    [mbs-se-pv.models.db :as db]
+    [mbs-db.core :as db]
     [incanter.core :as ic]
     [incanter.charts :as ch])
   (:use  
     [clojure.string :only (split)]
-    noir.core
-    hiccup.core
-    hiccup.page-helpers
+    [noir.core :only (defpage)]
     [noir.response :only (content-type)]
-    mbs-se-pv.views.util
+    [mbs-se-pv.views.util :only (dateformatrev dateformat ONE-DAY)]
     [org.clojars.smee.util :only (s2i)])
   (:import 
     [java.io ByteArrayOutputStream ByteArrayInputStream]
@@ -32,7 +30,9 @@
     (apply ic/save chart baos opts)
     (content-type "image/png" (ByteArrayInputStream. (.toByteArray baos)))))
 
-(defn- parse-times [times]
+(defn- parse-times 
+  "Parse strings of shape 'yyyyMMdd-yyyyMMdd'."
+  [times]
   (when-let [[_ start-time end-time] (re-find #"(\d{8})-(\d{8})" times)]
     (let [s (.getTime (.parse (dateformatrev) start-time))
           e (.getTime (.parse (dateformatrev) end-time))]

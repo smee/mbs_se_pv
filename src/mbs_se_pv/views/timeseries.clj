@@ -4,7 +4,7 @@
     [mbs-se-pv.views 
      [common :as common]
      [charts :as ch]]
-    [mbs-se-pv.models.db :as db])
+    [mbs-db.core :as db])
   (:use noir.core
         hiccup.core
         hiccup.page-helpers
@@ -29,25 +29,6 @@
       nil
       [:div.row
        (metadata-table metadata)])))
-
-;;;;;;;;;;;;;; show date selector for all days of a single time series ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defpage stats "/series-of/:id/single/*/date-selector" {:keys [id *]}
-  (let [name *
-        wr-id (extract-wr-id name)
-        efficiency-chart? (.endsWith name ".efficiency")
-        {:keys [min max]} (if efficiency-chart?
-                            (db/min-max-time-of (str id ".wr." wr-id ".pac"))
-                            (db/min-max-time-of name))
-        date (.format (dateformat) max)
-        link-template (if efficiency-chart?
-                        (resolve-uri (format "/series-of/%s/efficiency/%s" id wr-id))
-                        (resolve-uri (format "/series-of/%s/%s" id name)))
-        onclick-handler "$('#chart-image').removeClass('hide').attr('src', this.options[this.selectedIndex].value);"
-        ] 
-    (html
-      [:strong "Bitte w&auml;hlen Sie ein Datum:"]
-      [:p#date-picker]
-      )))
 
 ;;;;;;;;;;;;;; show all available time series info per pv installation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

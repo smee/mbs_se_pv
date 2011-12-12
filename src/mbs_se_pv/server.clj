@@ -24,3 +24,7 @@
 (def handler (server/gen-handler {:mode :prod
                   :ns 'mbs-se-pv
                   :base-url "/eumonis-mbs-se-pv"}))
+
+(comment
+  (-main)
+)

@@ -3,12 +3,10 @@
     [mbs-se-pv.views 
      [common :as common]
      [timeseries :as ts]]
-    [mbs-se-pv.models.db :as db])
-  (:use noir.core
+    [mbs-db.core :as db])
+  (:use [noir.core :only (defpage defpartial url-for)]
         [noir.response :only (redirect)]
-        hiccup.core
-        hiccup.page-helpers
-        hiccup.form-helpers
+        [hiccup.page-helpers :only (link-to javascript-tag)]
         [org.clojars.smee
          [util :only (s2i)]]
         mbs-se-pv.views.util))

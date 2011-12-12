@@ -1,6 +1,6 @@
 (ns mbs-se-pv.middleware
   (:require mbs-se-pv.views.util
-            mbs-se-pv.models.db))
+            mbs-db.core))
 
 (defn wrap-db-url 
   "Set database url from system proeprty 'DB-URL'."
@@ -12,7 +12,7 @@
                      :password     ""
                      :subname      (str "//" url)}]
     (fn [req]
-      (binding [mbs-se-pv.models.db/*db* db-settings]
+      (binding [mbs-db.core/*db* db-settings]
         (handler req)))))
 
 (defn wrap-encryption-key 
@@ -21,5 +21,5 @@ in the environment variable 'MBS-KEY'."
   [handler]
   (let [key  (get (System/getenv) "MBS-KEY" "A")]
     (fn [req]
-      (binding [mbs-se-pv.views.util/*crypt-key* key]
+      (binding [mbs-db.util/*crypt-key* key]
         (handler req)))))
