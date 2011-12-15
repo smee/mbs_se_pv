@@ -31,12 +31,29 @@
        (metadata-table metadata)])))
 
 ;;;;;;;;;;;;;; show all available time series info per pv installation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn- label-for-type [s]
+  (case s
+    "pdc" (list "P" [:sub "DC"])
+    "pac" (list "P" [:sub "AC"])
+    "temp" "Temperatur"
+    "udc" (list "U" [:sub "DC"])
+    "efficiency" "&eta;"
+     s))
+
+(defn- nice-labels [parts]
+  (let [parts (-> parts
+                (update-in [1] #(list "WR" [:sub %]))
+                (update-in [2] label-for-type))]
+    (if (< 3 (count parts))
+      (update-in parts [(dec (count parts))] #(list "String" [:sub %]))
+      parts)))
 
 (defn- restore-wr-hierarchy [series]
   (let [parts (map #(conj (->> #"\."
                             (string/split %)
                             (remove #{"wr" "string"})
-                            vec)
+                            vec
+                            nice-labels)
                           %) 
                    series)]
     (restore-hierarchy parts)))
@@ -66,8 +83,10 @@
         [:h5 "Datenreihen"]
         (->> names
           (concat efficiency-names)
+          sort
+          reverse
           restore-wr-hierarchy
-          (clojure.walk/postwalk #(if (map? %) (into (sorted-map) %) %))
+          ;(clojure.walk/postwalk #(if (map? %) (into (sorted-map) %) %))
           make-tree
           (vector :div#series-tree))
         [:a {:href ""
