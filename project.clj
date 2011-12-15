@@ -5,6 +5,7 @@
                            [noir "1.2.2-SNAPSHOT"]
                            [org.clojars.smee/common "1.2.0-SNAPSHOT"]
                            [mbs-db "1.0.0-SNAPSHOT"]
+                           [mysql/mysql-connector-java "5.1.17"]
                            [incanter "1.3.0-SNAPSHOT" 
                             :exclusions 
                             [swank-clojure swingrepl
