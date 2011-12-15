@@ -40,7 +40,7 @@
   ;  (add-lines chart t (:fitted lm)))
   ;(view chart)
   (view (scatter-plot 
-          (map (comp day-of-year :time) pac0days) 
+          (map (comp day-of-year :time first) pac0days) 
           (map (fn [[x y]] (- x y)) (map :fitted linear-models))))
   #_(map #(->> % :fitted (take 2) (apply -) println) linear-models)
   #_(view (box-plot (map #(->> % :fitted (take 2) (apply -)) linear-models))))
