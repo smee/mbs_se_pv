@@ -1,5 +1,6 @@
 (ns mbs-se-pv.views.charts
   (:require 
+    [clojure.string :as string]
     [mbs-se-pv.views.common :as common]
     [mbs-db.core :as db]
     [incanter.core :as ic]
@@ -41,6 +42,45 @@
 (defn- start-of-day [millis]
   (- millis (mod millis ONE-DAY)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn- get-series-type [s]
+  (let [parts (->> #"\."
+                (string/split s)
+                (remove #{"wr" "string"}))]
+    (keyword "mbs-se-pv.views.charts" (nth parts 2))))
+
+(derive ::pac ::power)
+(derive ::pdc ::power)
+
+(defmulti get-unit "name of the unit type of a time series" get-series-type)
+(defmethod get-unit ::power [_]
+  "Leistung in W")
+(defmethod get-unit ::temp [_]
+  "Temperatur in °C")
+(defmethod get-unit ::udc [_]
+  "Spannung in V")
+(defmethod get-unit ::gain [_]
+  "Ertrag in Wh")
+(defmethod get-unit ::efficiency [_]
+  "Wirkungsgrad in %")
+(defmethod get-unit :default [_]
+  "Werte")
+
+(defn- set-axis [chart unit-type series-idx]
+  (let [p (.. chart getPlot)
+        axis-count (.getRangeAxisCount p)
+        [idx axis] (or (first (keep-indexed #(let [axis (.. p (getRangeAxis %2))] 
+                                               (when (= unit-type (.getLabel axis)) [% axis])) 
+                                            (range axis-count)))
+                       [axis-count (org.jfree.chart.axis.NumberAxis. unit-type)])]
+    (do
+      (when (not= axis (.getRangeAxis p idx)) 
+        (.setRangeAxis p idx axis))
+      (.mapDatasetToRangeAxis p series-idx idx))))
+
+(defn- get-label [s]
+  s)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpage "/series-of/:id/*/:times/chart.png" {:keys [id * times width height]}
   (if-let [[s e] (parse-times times)]
@@ -49,12 +89,14 @@
           chart (ch/time-series-plot (map :time (first values)) (map :value (first values))
                                      :title (str "Chart für den Zeitraum " (.format (dateformat) s) " bis " (.format (dateformat) e))
                                      :x-label "Zeit"
-                                     :y-label "Wert"
+                                     :y-label (get-unit (first names))
                                      :legend true
-                                     :series-label (first names))]
+                                     :series-label (get-label (first names)))]
       (doseq [[n values] (map list (rest names) (rest values))]
         (ch/add-lines chart (map :time values) (map :value values)
-                      :series-label n))
+                        :series-label n))
+      ;; map each time series to a matching axis (one axis per physical type)
+      (dorun (map-indexed #(set-axis chart (get-unit %2) %) names))
       ;; set renderer that leaves gaps for missing values for all series
       ;; but reuse the series color
       (doseq [i (range (count names)) :let [paint (.. chart getPlot getRenderer (getSeriesPaint i))]]
