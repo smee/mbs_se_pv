@@ -89,6 +89,9 @@
           ;(clojure.walk/postwalk #(if (map? %) (into (sorted-map) %) %))
           make-tree
           (vector :div#series-tree))
+        [:div.form-stacked 
+         [:h5 "Größe:"]
+         [:input#chart-width.miniTextfield {:value "500"}] [:span "X"] [:input#chart-height.miniTextfield {:value "400"}]]
         [:a {:href ""
              :class "btn primary" 
              :onclick (str 
@@ -104,7 +107,7 @@
                         ;; create list of selected time series                        
                         "var selectedSeries = $.map($('#series-tree').dynatree('getSelectedNodes'), function(node){ return node.data.series; });" 
                         ;; create link  
-                        "var link='/series-of/" id "/'+selectedSeries.join('/')+'/'+interval+'/chart.png';
+                        "var link='/series-of/" id "/'+selectedSeries.join('/')+'/'+interval+'/chart.png?width='+$('#chart-width').val()+'&height='+$('#chart-height').val();
                          $('#current-chart').toggleClass('loading',true);" 
                         ;; show chart  
                         "$('#chart-image').attr('src', link);
