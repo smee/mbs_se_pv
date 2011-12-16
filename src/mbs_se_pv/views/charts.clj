@@ -16,7 +16,8 @@
     org.jfree.chart.renderer.xy.StandardXYItemRenderer
     org.jfree.util.UnitType
     java.text.SimpleDateFormat
-    java.sql.Timestamp))
+    java.sql.Timestamp
+    java.awt.Color))
 
 (defn- create-renderer
   "do not plot a line when at least 3 values are missing (for example during the night)" 
@@ -41,6 +42,18 @@
 
 (defn- start-of-day [millis]
   (- millis (mod millis ONE-DAY)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn color-distance 
+  "Natural color distance metric, see http:;www.compuphase.com/cmetric.htm"
+  [^Color c1 ^Color c2]
+  (let [rmean (* 0.5 (+ (.getRed c1) (.getRed c2)))
+        r (- (.getRed c1) (.getRed c2))
+        g (- (.getGreen c1) (.getGreen c2))
+        b (- (.getBlue c1) (.getBlue c2))
+        weight-r (+ 2 (/ rmean 256))
+        weight-g 4.0
+        weight-b (+ 2 (/ (- 255 rmean) 256))]
+    (Math/sqrt (+ (* weight-r r r) (* weight-g g g) (* weight-b b b)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- get-series-type [s]
@@ -52,68 +65,107 @@
 (derive ::pac ::power)
 (derive ::pdc ::power)
 
-(defmulti get-unit "name of the unit type of a time series" get-series-type)
-(defmethod get-unit ::power [_]
-  "Leistung in W")
-(defmethod get-unit ::temp [_]
-  "Temperatur in °C")
-(defmethod get-unit ::udc [_]
-  "Spannung in V")
-(defmethod get-unit ::gain [_]
-  "Ertrag in Wh")
-(defmethod get-unit ::efficiency [_]
-  "Wirkungsgrad in %")
-(defmethod get-unit :default [_]
+(defmulti get-unit-label "name of the unit type of a time series" get-series-type)
+(defmethod get-unit-label ::power [_]
+  "Leistung P in W")
+(defmethod get-unit-label ::temp [_]
+  "Temperatur K in °C")
+(defmethod get-unit-label ::udc [_]
+  "Spannung U in V")
+(defmethod get-unit-label ::gain [_]
+  "Ertrag E in Wh")
+(defmethod get-unit-label ::efficiency [_]
+  "Wirkungsgrad η in %")
+(defmethod get-unit-label :default [_]
   "Werte")
 
-(defn- set-axis [chart unit-type series-idx]
-  (let [p (.. chart getPlot)
+(def ^:private base-color {::gain  (Color. 0x803E75) ;Strong Purple
+                           ::temp  (Color. 0xFF6800) ;Vivid Orange
+                           ::udc   (Color. 0xA6BDD7) ;Very Light Blue
+                           ::pac   (Color. 0xC10020) ;Vivid Red
+                           ::pdc   (Color. 0xCEA262) ;Grayish Yellow
+                           ::efficiency (Color. 0x817066) ;Medium Gray
+                           :default (Color/BLACK)})
+
+(defn- set-axis 
+  "Ensure there is an axis for this physical type (power, voltage etc.)"
+  [chart series-name series-idx]
+  (let [unit-label (get-unit-label series-name)
+        p (.. chart getPlot)
         axis-count (.getRangeAxisCount p)
         [idx axis] (or (first (keep-indexed #(let [axis (.. p (getRangeAxis %2))] 
-                                               (when (= unit-type (.getLabel axis)) [% axis])) 
+                                               (when (= unit-label (.getLabel axis)) [% axis])) 
                                             (range axis-count)))
-                       [axis-count (org.jfree.chart.axis.NumberAxis. unit-type)])]
+                       [axis-count (org.jfree.chart.axis.NumberAxis. unit-label)])
+        c (base-color (get-series-type series-name))]
     (do
+      (.setLabelPaint axis c)
+      (.setAxisLinePaint axis c)
+      (.setTickLabelPaint axis c)
       (when (not= axis (.getRangeAxis p idx)) 
         (.setRangeAxis p idx axis))
       (.mapDatasetToRangeAxis p series-idx idx))))
 
-(defn- get-label [s]
-  s)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn- get-series-label 
+  "Unique human readable label."
+  [s]
+  (let [[_ wr-id _] (->> #"\."
+                (string/split s)
+                (remove #{"wr" "string"}))
+        type (get-series-type s)]
+    (format "%s von WR %s" (name type) wr-id)))
+
+(defn- fetch-efficiency 
+  "Fetch PAC and PDC values from database, calculate the efficiency, e.g. pac/sum(pdc) per timestamp."
+  [id wr-id s e]
+  (let [pdc (db/summed-values-in-time-range (format "%s.wr.%s.pdc.string.%%" id wr-id) (Timestamp. s) (Timestamp. (+ e ONE-DAY)))
+        pac (db/all-values-in-time-range (format "%s.wr.%s.pac" id wr-id) (Timestamp. s) (Timestamp. (+ e ONE-DAY)))
+        efficiency (map (fn [a d] (if (< 0 d) 
+                                    (* 100 (/ a d)) 
+                                    0)) 
+                        (map :value pac) (map :value pdc))]
+    (map #(hash-map :time % :value %2) (map :time pac) efficiency)))
+
+;;;;;;;;;;;;;;;; Chart generation pages ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpage "/series-of/:id/*/:times/chart.png" {:keys [id * times width height]}
   (if-let [[s e] (parse-times times)]
-    (let [names (re-seq #"[^/]+" *) ;; split at any slashes
-          values (map #(db/all-values-in-time-range % (Timestamp. s) (Timestamp. (+ e ONE-DAY))) names)
+    (let [names (re-seq #"[^/]+" *) ;; split at any slash
+          values (for [n names :let [[id wr-id] (remove #{"wr" "string"} (string/split n #"\."))]] 
+                   (if (= ::efficiency (get-series-type n))
+                     (fetch-efficiency id wr-id s e)
+                     (db/all-values-in-time-range n (Timestamp. s) (Timestamp. (+ e ONE-DAY)))))
           chart (ch/time-series-plot (map :time (first values)) (map :value (first values))
                                      :title (str "Chart für den Zeitraum " (.format (dateformat) s) " bis " (.format (dateformat) e))
                                      :x-label "Zeit"
-                                     :y-label (get-unit (first names))
+                                     :y-label (get-unit-label (first names))
                                      :legend true
-                                     :series-label (get-label (first names)))]
+                                     :series-label (get-series-label (first names)))]
       (doseq [[n values] (map list (rest names) (rest values))]
         (ch/add-lines chart (map :time values) (map :value values)
-                        :series-label n))
+                        :series-label (get-series-label n)))
       ;; map each time series to a matching axis (one axis per physical type)
-      (dorun (map-indexed #(set-axis chart (get-unit %2) %) names))
-      ;; set renderer that leaves gaps for missing values for all series
-      ;; but reuse the series color
-      (doseq [i (range (count names)) :let [paint (.. chart getPlot getRenderer (getSeriesPaint i))]]
-        (.. chart getPlot (setRenderer i (create-renderer))))
+      (dorun (map-indexed #(set-axis chart %2 %) names))
+
+      (let [r (create-renderer)]
+        (dorun
+          (map-indexed
+            (fn [i n] (let [r (create-renderer)] ;; set renderer that leaves gaps for missing values for all series
+                        (.. chart getPlot (setRenderer i r))
+                        ;; set colors
+                        (println (base-color (get-series-type n)))
+                        (.setSeriesPaint r 0 (base-color (get-series-type n)))))
+            names)))
       
       (return-image chart :height (s2i height 500) :width (s2i width 600)))
     {:status 500
      :body "Wrong dates!"}))
 
 
-
 (defpage draw-efficiency-chart "/series-of/:id/efficiency/:wr-id/:times/chart.png" {:keys [id wr-id times width height]}
   (if-let [[s e] (parse-times times)] 
-    (let [pdc (db/summed-values-in-time-range (format "%s.wr.%s.pdc.string.%%" id wr-id) (Timestamp. s) (Timestamp. (+ e ONE-DAY)))
-          pac (db/all-values-in-time-range (format "%s.wr.%s.pac" id wr-id) (Timestamp. s) (Timestamp. (+ e ONE-DAY)))
-          efficiency (map (fn [a d] (if (< 0 d) (/ a d) 0)) (map :value pac) (map :value pdc))
-          chart (doto (ch/time-series-plot (map :time pac) (map (partial * 100) efficiency)
+    (let [efficiency (fetch-efficiency id wr-id s e)
+          chart (doto (ch/time-series-plot (map :time efficiency) (map :value efficiency)
                                            :title (str "Wirkungsgrad für " id wr-id " im Zeitraum " (.format (dateformat) s) " bis " (.format (dateformat) e))
                                            :x-label "Zeit"
                                            :y-label "Wirkungsgrad in %")

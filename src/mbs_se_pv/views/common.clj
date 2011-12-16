@@ -7,6 +7,7 @@
   [:head 
    [:title "MBS_SE_PV"]
    (include-css "http://twitter.github.com/bootstrap/1.4.0/bootstrap.min.css"
+                "/css/customizations.css"
                 "/css/datepicker.css"
                 "/css/dynatree/ui.dynatree.css")
    (include-js "http://ajax.googleapis.com/ajax/libs/jquery/1.7.0/jquery.min.js"

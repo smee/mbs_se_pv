@@ -38,6 +38,7 @@
     "temp" "Temperatur"
     "udc" (list "U" [:sub "DC"])
     "efficiency" "&eta;"
+    "gain" "Ertrag"
      s))
 
 (defn- nice-labels [parts]
@@ -72,7 +73,14 @@
         names (db/all-series-names-of q)
         {:keys [min max]} (db/min-max-time-of (first names))
         date (.format (dateformat) max)
-        efficiency-names (distinct (map #(str id ".wr." (extract-wr-id %) ".efficiency") names))]
+        efficiency-names (distinct (map #(str id ".wr." (extract-wr-id %) ".efficiency") names))
+        tree (->> names
+               (concat efficiency-names)
+               sort
+               reverse
+               restore-wr-hierarchy
+               ;(clojure.walk/postwalk #(if (map? %) (into (sorted-map) %) %))
+               make-tree)]
         
     (common/layout-with-links
       (toolbar-links id 2)
@@ -81,17 +89,12 @@
         [:h5 "Datum"]
         [:p#date-picker]
         [:h5 "Datenreihen"]
-        (->> names
-          (concat efficiency-names)
-          sort
-          reverse
-          restore-wr-hierarchy
-          ;(clojure.walk/postwalk #(if (map? %) (into (sorted-map) %) %))
-          make-tree
-          (vector :div#series-tree))
+        (vector :div#series-tree tree)
         [:div.form-stacked 
          [:h5 "Größe:"]
-         [:input#chart-width.miniTextfield {:value "500"}] [:span "X"] [:input#chart-height.miniTextfield {:value "400"}]]
+         [:input#chart-width.miniTextfield {:value "700" :type "number"}] 
+         [:span "X"] 
+         [:input#chart-height.miniTextfield {:value "600" :type "number"}]]
         [:a {:href ""
              :class "btn primary" 
              :onclick (str 
