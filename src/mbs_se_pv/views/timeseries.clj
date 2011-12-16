@@ -80,7 +80,8 @@
                reverse
                restore-wr-hierarchy
                ;(clojure.walk/postwalk #(if (map? %) (into (sorted-map) %) %))
-               make-tree)]
+               make-tree)
+        base-url (or hiccup.core/*base-url* "")]
         
     (common/layout-with-links
       (toolbar-links id 2)
@@ -112,7 +113,7 @@
                         ;; do not fetch a chart without any selected series
                         "if(selectedSeries.length < 1) return false;"
                         ;; create link  
-                        "var link='/series-of/" id "/'+selectedSeries.join('/')+'/'+interval+'/chart.png?width='+$('#chart-width').val()+'&height='+$('#chart-height').val();
+                        "var link='" base-url "/series-of/" id "/'+selectedSeries.join('/')+'/'+interval+'/chart.png?width='+$('#chart-width').val()+'&height='+$('#chart-height').val();
                          $('#current-chart').toggleClass('loading',true);" 
                         ;; show chart  
                         "$('#chart-image').attr('src', link);
