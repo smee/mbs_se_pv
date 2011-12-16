@@ -108,7 +108,9 @@
                          var endDate  =''+dates[1].getFullYear()+(m2<10?'0'+m2:m2)+(d2<10?'0'+d2:d2);
                          var interval=startDate+'-'+endDate;"
                         ;; create list of selected time series                        
-                        "var selectedSeries = $.map($('#series-tree').dynatree('getSelectedNodes'), function(node){ return node.data.series; });" 
+                        "var selectedSeries = $.map($('#series-tree').dynatree('getSelectedNodes'), function(node){ return node.data.series; });"
+                        ;; do not fetch a chart without any selected series
+                        "if(selectedSeries.length < 1) return false;"
                         ;; create link  
                         "var link='/series-of/" id "/'+selectedSeries.join('/')+'/'+interval+'/chart.png?width='+$('#chart-width').val()+'&height='+$('#chart-height').val();
                          $('#current-chart').toggleClass('loading',true);" 
