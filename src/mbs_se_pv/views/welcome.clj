@@ -29,14 +29,18 @@
 (defpage start-page "/eumonis" {:keys [page length] :or {page "1" length "20"}}
   (let [page (Math/max 1 (s2i page 1))
         len (->> (s2i length 20) (Math/max 1) (Math/min 50))
-        links (map #(link-to (url-for ts/metadata-page {:id %}) %) (db/all-names-limit (* page len) len))] 
+        names (db/all-names-limit (* page len) len)
+        metadata (vals (apply db/get-metadata names))
+        links (map #(link-to (url-for ts/metadata-page {:id %}) %) names)] 
     (common/layout 
       (names-pagination page len)
       [:table#names.zebra-striped.condensed-table
-       [:thead [:tr [:th "Anlagenbezeichnung"]]]
+       [:thead [:tr [:th "Anlagenbezeichnung"] 
+                [:th "Installierte Leistung kWp"]
+                [:th "Anzahl Wechselrichter"]]]
        [:tbody 
-        (for [link links]
-          [:tr [:td link]])]]
+        (for [[link {:keys [anlagenkwp anzahlwr]}] (partition 2 (interleave links metadata))]
+          [:tr [:td link] [:td anlagenkwp] [:td anzahlwr]])]]
       (names-pagination page len))))
 
 (defpage "/" []

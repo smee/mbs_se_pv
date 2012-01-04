@@ -2,7 +2,7 @@
             :description "FIXME: write this!"
             :dev-dependencies [[lein-ring "0.4.6"]] 
             :dependencies [[org.clojure/clojure "1.3.0"]
-                           [noir "1.2.2-SNAPSHOT"]
+                           [noir "1.2.2"]
                            [org.clojars.smee/common "1.2.0-SNAPSHOT"]
                            [mbs-db "1.0.0-SNAPSHOT"]
                            [mysql/mysql-connector-java "5.1.17"]

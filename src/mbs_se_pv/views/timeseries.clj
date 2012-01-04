@@ -23,7 +23,7 @@
        [:tr [:th k] [:td v]])]))
 
 (defpage metadata-page "/details/:id" {name :id}
-  (let [metadata (db/get-metadata name)]
+  (let [metadata (-> name db/get-metadata first second)]
     (common/layout-with-links 
       (toolbar-links name 1)
       nil
