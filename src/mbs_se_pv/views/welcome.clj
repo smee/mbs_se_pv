@@ -18,17 +18,17 @@
               [:th "Installierte Leistung"]
               [:th "Anzahl Wechselrichter"]]]
      [:tbody]]
-    (javascript-tag "
+    (javascript-tag (str "
 $(document).ready(function() {
 	$('#names').dataTable( {
     'sDom': \"<'row'<'span8'l><'span8'f>r>t<'row'<'span8'i><'span8'p>>\",
 		'bProcessing': true,
 		'bServerSide': true,
-		'sAjaxSource': '/metadata.json', 
+		'sAjaxSource': '" (or hiccup.core/*base-url* "") "/metadata.json', 
     'bPaginate': true,
     'sPaginationType': 'bootstrap'
 	});
-});")))
+});"))))
 
 (defpage "/" []
   (redirect (url-for start-page)))
