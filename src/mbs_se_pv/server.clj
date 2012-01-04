@@ -2,7 +2,7 @@
   (:require 
     [noir.server :as server]
     ;; view namespaces need to be required explicitely for tomcat
-    [mbs-se-pv.views common charts timeseries welcome]
+    [mbs-se-pv.views common charts timeseries welcome metadata]
     [mbs-se-pv.middleware :as m])
   (:gen-class))
 

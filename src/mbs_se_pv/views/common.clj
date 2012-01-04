@@ -16,6 +16,7 @@
                "/js/jquery.cookie.js"
                "/js/jquery.dynatree.min.js"
                "/js/jquery.dataTables.min.js"
+               "/js/dataTables.paging.bootstrap.js"
                "/js/bootstrap-modal.js")
    
    [:style {:type "text/css" :rel "stylesheet"}
