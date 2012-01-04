@@ -26,7 +26,17 @@ $(document).ready(function() {
 		'bServerSide': true,
 		'sAjaxSource': '" (or hiccup.core/*base-url* "") "/metadata.json', 
     'bPaginate': true,
-    'sPaginationType': 'bootstrap'
+    'sPaginationType': 'bootstrap',
+    'bStateSave': true,
+     'oLanguage': {
+			'sLengthMenu': 'Zeige _MENU_ Eintr&auml;ge pro Seite',
+			'sZeroRecords': 'Kein Eintrag gefunden!',
+			'sInfo': 'Zeige Eintr&auml;ge _START_ bis _END_ von _TOTAL_ vorhandenen',
+			'sInfoEmpty': 'Zeige Eintr&auml;ge 0 bis 0 von 0 vorhandenen',
+			'sInfoFiltered': '(von insgesamt _MAX_ Eintr&auml;gen)',
+      'sProcessing': 'Suche nach passenden Eintr&auml;gen',
+      'sSearch': 'Suche:'
+		}
 	});
 });"))))
 
