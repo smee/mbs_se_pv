@@ -15,6 +15,7 @@
                "/js/datepicker.js"
                "/js/jquery.cookie.js"
                "/js/jquery.dynatree.min.js"
+               "/js/jquery.dataTables.min.js"
                "/js/bootstrap-modal.js")
    
    [:style {:type "text/css" :rel "stylesheet"}
@@ -28,6 +29,11 @@
      .loading {
           background: url(%s) no-repeat center center;
       }" (url "/img/ajax-loader.gif"))]
+   (javascript-tag 
+     "$.extend( $.fn.dataTableExt.oStdClasses, {
+       'sSortAsc': 'header headerSortDown',
+       'sSortDesc': 'header headerSortUp',
+       'sSortable': 'header'});")
    [:link {:rel "shortcut icon" :href (url "/img/favicon.ico")}]])
 
 (defpartial eumonis-topbar [[active-idx & links]]
