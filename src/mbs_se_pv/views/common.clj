@@ -44,7 +44,7 @@
 (defpartial eumonis-footer []
   [:footer
    [:div.row
-    [:div.span4 [:p "&#169; EUMONIS-Konsortium 2001"]]
+    [:div.span4 [:p "&#169; EUMONIS-Konsortium 2012"]]
     [:div.span9 [:p "Das Projekt \"EUMONIS\" wird gef&#246;rdert durch das
 			Bundesministerium f&#252;r Bildung und Forschung (BMBF) -
 			F&#246;rderkennzeichen 01IS10033, Laufzeit 01.07.2010 bis
