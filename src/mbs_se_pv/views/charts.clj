@@ -118,11 +118,9 @@
 (defn- fetch-efficiency 
   "Fetch PAC and PDC values from database, calculate the efficiency, e.g. pac/sum(pdc) per timestamp."
   [id wr-id s e]
-  (let [pdc (db/summed-values-in-time-range (format "%s.wr.%s.pdc.string.%%" id wr-id) (Timestamp. s) (Timestamp. (+ e ONE-DAY)))
-        pac (db/all-values-in-time-range (format "%s.wr.%s.pac" id wr-id) (Timestamp. s) (Timestamp. (+ e ONE-DAY)))
-        efficiency (map (fn [a d] (if (< 0 d) 
-                                    (* 100 (/ a d)) 
-                                    0)) 
+  (let [[pdc pac] (pvalues (db/summed-values-in-time-range (format "%s.wr.%s.pdc.string.%%" id wr-id) (Timestamp. s) (Timestamp. (+ e ONE-DAY)))
+                           (db/all-values-in-time-range (format "%s.wr.%s.pac" id wr-id) (Timestamp. s) (Timestamp. (+ e ONE-DAY))))
+        efficiency (map (fn [a d] (if (< 0 d)  (* 100 (/ a d)) 0)) 
                         (map :value pac) (map :value pdc))]
     (map #(hash-map :time % :value %2) (map :time pac) efficiency)))
 
@@ -131,10 +129,12 @@
 (defpage "/series-of/:id/*/:times/chart.png" {:keys [id * times width height]}
   (if-let [[s e] (parse-times times)]
     (let [names (re-seq #"[^/]+" *) ;; split at any slash
-          values (for [n names :let [[id wr-id] (remove #{"wr" "string"} (string/split n #"\."))]] 
-                   (if (= ::efficiency (get-series-type n))
-                     (fetch-efficiency id wr-id s e)
-                     (db/all-values-in-time-range n (Timestamp. s) (Timestamp. (+ e ONE-DAY)))))
+          values (pmap 
+                   (fn [n] (let [[id wr-id] (remove #{"wr" "string"} (string/split n #"\."))] 
+                             (if (= ::efficiency (get-series-type n))
+                               (fetch-efficiency id wr-id s e)
+                               (db/all-values-in-time-range n (Timestamp. s) (Timestamp. (+ e ONE-DAY))))))
+                   names)
           chart (ch/time-series-plot (map :time (first values)) (map :value (first values))
                                      :title (str "Chart für den Zeitraum " (.format (dateformat) s) " bis " (.format (dateformat) e))
                                      :x-label "Zeit"
@@ -153,11 +153,11 @@
             (fn [i n] (let [r (create-renderer)] ;; set renderer that leaves gaps for missing values for all series
                         (.. chart getPlot (setRenderer i r))
                         ;; set colors
-                        (println (base-color (get-series-type n)))
                         (.setSeriesPaint r 0 (base-color (get-series-type n)))))
             names)))
       
       (return-image chart :height (s2i height 500) :width (s2i width 600)))
+    ;; else the dates format was invalid
     {:status 400
      :body "Wrong dates!"}))
 
@@ -171,5 +171,6 @@
                                            :y-label "Wirkungsgrad in %")
                   (.. getPlot (setRenderer 0 (create-renderer))))] 
       (return-image chart :height (s2i height 500) :width (s2i width 600)))
+    ;; else the dates format was invalid
     {:status 400
      :body "Wrong dates!"}))
