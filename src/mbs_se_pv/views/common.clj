@@ -7,9 +7,9 @@
   [:head 
    [:title "MBS_SE_PV"]
    (include-css "http://twitter.github.com/bootstrap/1.4.0/bootstrap.min.css"
-                "/css/customizations.css"
                 "/css/datepicker.css"
-                "/css/dynatree/ui.dynatree.css")
+                "/css/dynatree/ui.dynatree.css"
+                "/css/customizations.css")
    (include-js "http://ajax.googleapis.com/ajax/libs/jquery/1.7.0/jquery.min.js"
                "https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"
                "/js/datepicker.js"
@@ -18,18 +18,14 @@
                "/js/jquery.dataTables.min.js"
                "/js/dataTables.paging.bootstrap.js"
                "/js/bootstrap-modal.js")
-   
+   ;; url to the image has to be constructed in case there is a context path (e.g. running in tomcat)
    [:style {:type "text/css" :rel "stylesheet"}
     (format
-      "body { 
-         padding-top: 60px; 
-       }
-      #current-chart {
-         min-height: 500px;
-      }
-     .loading {
+      ".loading {
           background: url(%s) no-repeat center center;
       }" (url "/img/ajax-loader.gif"))]
+   ;; compatibility between datatables and bootstrap
+   ;; see http://www.datatables.net/blog/Twitter_Bootstrap
    (javascript-tag 
      "$.extend( $.fn.dataTableExt.oStdClasses, {
        'sSortAsc': 'header headerSortDown',
