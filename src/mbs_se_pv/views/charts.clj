@@ -62,22 +62,18 @@
                 (remove #{"wr" "string"}))]
     (keyword "mbs-se-pv.views.charts" (nth parts 2))))
 
-(derive ::pac ::power)
-(derive ::pdc ::power)
 
-(defmulti get-unit-label "name of the unit type of a time series" get-series-type)
-(defmethod get-unit-label ::power [_]
-  "Leistung P in W")
-(defmethod get-unit-label ::temp [_]
-  "Temperatur K in °C")
-(defmethod get-unit-label ::udc [_]
-  "Spannung U in V")
-(defmethod get-unit-label ::gain [_]
-  "Ertrag E in Wh")
-(defmethod get-unit-label ::efficiency [_]
-  "Wirkungsgrad η in %")
-(defmethod get-unit-label :default [_]
-  "Werte")
+(defn get-unit-label 
+  "Name of the unit type of a time series" 
+  [series-name]
+  (case (get-series-type series-name)
+    (::pac ::pdc) "Leistung P in W"
+    ::temp "Temperatur K in °C"
+    ::udc "Spannung U in V"
+    ::gain "Ertrag E in Wh"
+    ::efficiency "Wirkungsgrad η in %"
+    "Werte"))
+
 
 (def ^:private base-color {::gain  (Color. 0x803E75) ;Strong Purple
                            ::temp  (Color. 0xFF6800) ;Vivid Orange
