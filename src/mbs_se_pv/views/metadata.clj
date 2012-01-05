@@ -7,6 +7,11 @@
         [hiccup.page-helpers :only (link-to)]
         [org.clojars.smee.util :only (s2i)]))
 
+(defn- search-for 
+  "Filter for id substrings matching the search term"
+  [search-term metadata]
+  (filter #(.contains (:id %) search-term) metadata))
+
 ;; called via ajax, see http://datatables.net/usage/server-side for details
 ;; queries, filters, slices and dices pv metadata
 (defpage "/metadata.json" {len :iDisplayLength
@@ -20,7 +25,7 @@
         start (s2i start 1)
         col-id (s2i sort-col 0)
         metadata (vals (db/get-metadata))
-        filtered (filter #(.contains (:id %) search-term) metadata)
+        filtered (search-for search-term metadata)
         sort-key (case col-id 0 :id, 1 :anlagenkwp, 2 :anzahlwr, :id)
         sorted (sort-by sort-key filtered)
         sorted (if (= "desc" sort-dir) (reverse sorted) sorted)
