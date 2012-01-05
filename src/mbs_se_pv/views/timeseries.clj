@@ -1,15 +1,16 @@
 (ns mbs-se-pv.views.timeseries
     (:require 
-    [clojure.string :as string]
-    [mbs-se-pv.views 
-     [common :as common]
-     [charts :as ch]]
-    [mbs-db.core :as db])
-  (:use noir.core
-        hiccup.core
-        hiccup.page-helpers
-        hiccup.form-helpers
-        mbs-se-pv.views.util))
+      [clojure.string :as string]
+      [mbs-se-pv.views 
+       [common :as common]
+       [charts :as ch]]
+      [mbs-db.core :as db])
+    (:use noir.core
+          hiccup.core
+          hiccup.page-helpers
+          hiccup.form-helpers
+          mbs-se-pv.views.util
+          [org.clojars.smee.map :only (map-values)]))
 
 (declare toolbar-links)
 
@@ -49,20 +50,32 @@
       (update-in parts [(dec (count parts))] #(list "String" [:sub %]))
       parts)))
 
-(defn- restore-wr-hierarchy [series]
-  (let [parts (map #(conj (->> #"\."
-                            (string/split %)
-                            (remove #{"wr" "string"})
-                            vec
-                            nice-labels)
-                          %) 
-                   series)]
+(defn- split-series-name [n]
+  (conj (->> #"\."
+          (string/split n)
+          (remove #{"wr" "string"})
+          vec
+          nice-labels)
+        n))
+
+(defn- restore-wr-hierarchy [names]
+  (let [parts (map split-series-name names)]
     (restore-hierarchy parts)))
+
+(defn- cluster-by-type [names]
+  (let [parts (map split-series-name names)
+        n (ffirst parts)
+        get-type #(drop 2 (butlast %))
+        cluster (->> parts
+                  (group-by get-type)
+                  (map-values #(map (juxt second last) %))
+                  (mapcat (fn [[t vs]] (for [v vs] (concat [n] t v)))))]
+    (restore-hierarchy cluster)))
 
 (defn- make-tree [nested]
   [:ul 
    (for [[k vs] nested]
-     (if (sequential? vs)
+     (if (and (sequential? vs) (= 1 (count vs)))
        [:li {:data (format "{series: '%s'}" (first vs))} k]
        [:li {:class "folder"} k (make-tree vs)]))])
 
@@ -78,7 +91,8 @@
                (concat efficiency-names)
                sort
                reverse
-               restore-wr-hierarchy
+               ((juxt restore-wr-hierarchy cluster-by-type))
+               (apply concat)
                ;(clojure.walk/postwalk #(if (map? %) (into (sorted-map) %) %))
                make-tree)
         base-url (or hiccup.core/*base-url* "")]
