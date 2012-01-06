@@ -39,7 +39,8 @@
     "temp" "Temperatur"
     "udc" (list "U" [:sub "DC"])
     "efficiency" "&eta;"
-    "gain" "Ertrag"
+    "gain" "Tagesertragsverlauf"
+    "daily-gain" "Ertrag pro Tag"
      s))
 
 (defn- nice-labels [parts]
@@ -87,8 +88,9 @@
         {:keys [min max]} (db/min-max-time-of (first names))
         date (.format (dateformat) max)
         efficiency-names (distinct (map #(str id ".wr." (extract-wr-id %) ".efficiency") names))
+        daily-gain-names (distinct (map #(str id ".wr." (extract-wr-id %) ".daily-gain") names))
         tree (->> names
-               (concat efficiency-names)
+               (concat efficiency-names daily-gain-names)
                sort
                reverse
                ((juxt restore-wr-hierarchy cluster-by-type))
@@ -175,3 +177,4 @@
    (link-to (url-for metadata-page {:id id}) "Allgemeines")
    (link-to (url-for all-series {:id id}) "Messwerte")]
   )
+

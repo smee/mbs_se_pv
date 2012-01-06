@@ -70,7 +70,7 @@
     (::pac ::pdc) "Leistung P in W"
     ::temp "Temperatur K in °C"
     ::udc "Spannung U in V"
-    ::gain "Ertrag E in Wh"
+    (::gain ::daily-gain) "Ertrag E in Wh"
     ::efficiency "Wirkungsgrad η in %"
     "Werte"))
 
@@ -81,6 +81,7 @@
                            ::pac   (Color. 0xC10020) ;Vivid Red
                            ::pdc   (Color. 0xCEA262) ;Grayish Yellow
                            ::efficiency (Color. 0x817066) ;Medium Gray
+                           ::daily-gain (Color. 0x817066) ;Medium Gray
                            :default (Color/BLACK)})
 
 (defn- set-axis 
@@ -127,8 +128,9 @@
     (let [names (re-seq #"[^/]+" *) ;; split at any slash
           values (pmap 
                    (fn [n] (let [[id wr-id] (remove #{"wr" "string"} (string/split n #"\."))] 
-                             (if (= ::efficiency (get-series-type n))
-                               (fetch-efficiency id wr-id s e)
+                             (case (get-series-type n) 
+                               ::efficiency (fetch-efficiency id wr-id s e)
+                               ::daily-gain (db/max-per-day (str id ".wr." wr-id ".gain") (Timestamp. s) (Timestamp. e))
                                (db/all-values-in-time-range n (Timestamp. s) (Timestamp. (+ e ONE-DAY))))))
                    names)
           chart (ch/time-series-plot (map :time (first values)) (map :value (first values))
@@ -165,7 +167,22 @@
                                            :title (str "Wirkungsgrad für " id wr-id " im Zeitraum " (.format (dateformat) s) " bis " (.format (dateformat) e))
                                            :x-label "Zeit"
                                            :y-label "Wirkungsgrad in %")
-                  (.. getPlot (setRenderer 0 (create-renderer))))] 
+                  (.. getPlot (setRenderer 0 (create-renderer))))]
+      (return-image chart :height (s2i height 500) :width (s2i width 600)))
+    ;; else the dates format was invalid
+    {:status 400
+     :body "Wrong dates!"}))
+
+(defpage "/series-of/:id/gain-per-day/:times/chart.png" {:keys [id wr-id times width height]}
+  (if-let [[s e] (parse-times times)] 
+    (let [data (db/max-per-day (str id ".wr." wr-id ".gain") (Timestamp. s) (Timestamp. e))
+          chart (doto (ch/bar-chart 
+                        (map #(.format (dateformat) (:time %)) data) (map #(/ (:value %) 1000) data)
+                        :title (format "Erträge für %s WR %s im Zeitraum %s bis %s" id wr-id (.format (dateformat) s) (.format (dateformat) e))
+                        :x-label "Zeit"
+                        :y-label "Ertrag in kWh"))] 
+      (doto (.. chart getPlot getDomainAxis)
+        (.setCategoryLabelPositions org.jfree.chart.axis.CategoryLabelPositions/UP_90))
       (return-image chart :height (s2i height 500) :width (s2i width 600)))
     ;; else the dates format was invalid
     {:status 400
