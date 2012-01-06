@@ -13,10 +13,10 @@
     [org.clojars.smee.util :only (s2i)])
   (:import 
     [java.io ByteArrayOutputStream ByteArrayInputStream]
+    org.jfree.chart.axis.CategoryLabelPositions
     org.jfree.chart.renderer.xy.StandardXYItemRenderer
     org.jfree.util.UnitType
     java.text.SimpleDateFormat
-    java.sql.Timestamp
     java.awt.Color))
 
 (defn- create-renderer
@@ -70,12 +70,13 @@
     (::pac ::pdc) "Leistung P in W"
     ::temp "Temperatur K in °C"
     ::udc "Spannung U in V"
-    ::gain "Ertrag E in Wh"
+    (::gain ::daily-gain) "Ertrag E in Wh"
     ::efficiency "Wirkungsgrad η in %"
     "Werte"))
 
 
 (def ^:private base-color {::gain  (Color. 0x803E75) ;Strong Purple
+                           ::daily-gain (Color. 0x803E75) ;Strong Purple
                            ::temp  (Color. 0xFF6800) ;Vivid Orange
                            ::udc   (Color. 0xA6BDD7) ;Very Light Blue
                            ::pac   (Color. 0xC10020) ;Vivid Red
@@ -111,45 +112,53 @@
         type (get-series-type s)]
     (format "%s von WR %s" (name type) wr-id)))
 
-(defn- fetch-efficiency 
-  "Fetch PAC and PDC values from database, calculate the efficiency, e.g. pac/sum(pdc) per timestamp."
-  [id wr-id s e]
-  (let [[pdc pac] (pvalues (db/summed-values-in-time-range (format "%s.wr.%s.pdc.string.%%" id wr-id) (Timestamp. s) (Timestamp. (+ e ONE-DAY)))
-                           (db/all-values-in-time-range (format "%s.wr.%s.pac" id wr-id) (Timestamp. s) (Timestamp. (+ e ONE-DAY))))
-        efficiency (map (fn [a d] (if (< 0 d)  (* 100 (/ a d)) 0)) 
-                        (map :value pac) (map :value pdc))]
-    (map #(hash-map :time % :value %2) (map :time pac) efficiency)))
+(defn- get-series-values 
+  "Call appropriate database queries according to (get-series-type series-name). Returns
+sequence of value sequences (seq. of maps with keys :time and :value)."
+  [series-name start-time end-time]
+  (let [[id wr-id] (remove #{"wr" "string"} (string/split series-name #"\."))
+        s (db/as-sql-timestamp start-time) 
+        e(db/as-sql-timestamp (+ end-time ONE-DAY))]
+    (case (get-series-type series-name) 
+      ::efficiency (db/get-efficiency id wr-id s e)
+      ::daily-gain (db/sum-per-day (str id ".wr." wr-id ".gain") s e)
+      (db/all-values-in-time-range series-name s e))))
 
 ;;;;;;;;;;;;;;;; Chart generation pages ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpage "/series-of/:id/*/:times/chart.png" {:keys [id * times width height]}
   (if-let [[s e] (parse-times times)]
     (let [names (re-seq #"[^/]+" *) ;; split at any slash
-          values (pmap 
-                   (fn [n] (let [[id wr-id] (remove #{"wr" "string"} (string/split n #"\."))] 
-                             (if (= ::efficiency (get-series-type n))
-                               (fetch-efficiency id wr-id s e)
-                               (db/all-values-in-time-range n (Timestamp. s) (Timestamp. (+ e ONE-DAY))))))
-                   names)
-          chart (ch/time-series-plot (map :time (first values)) (map :value (first values))
-                                     :title (str "Chart für den Zeitraum " (.format (dateformat) s) " bis " (.format (dateformat) e))
-                                     :x-label "Zeit"
-                                     :y-label (get-unit-label (first names))
-                                     :legend true
-                                     :series-label (get-series-label (first names)))]
+          values (pmap #(get-series-values % s e) names)
+          chart (ch/time-series-plot 
+                  (map :time (first values)) (map :value (first values))
+                  :title (str "Chart für den Zeitraum " (.format (dateformat) s) " bis " (.format (dateformat) e))
+                  :x-label "Zeit"
+                  :y-label (get-unit-label (first names))
+                  :legend true
+                  :series-label (get-series-label (first names)))]
+      ;; add data series for each time series to chart
       (doseq [[n values] (map list (rest names) (rest values))]
         (ch/add-lines chart (map :time values) (map :value values)
                         :series-label (get-series-label n)))
       ;; map each time series to a matching axis (one axis per physical type)
       (dorun (map-indexed #(set-axis chart %2 %) names))
 
-      (let [r (create-renderer)]
+      #_(let [plot (.. chart getPlot)
+            ds (org.jfree.data.xy.XYSeriesCollection.)] 
+        (doseq [n (range 12)]
+          (.addSeries ds (first (.getSeries (.getDataset plot n)))))
+        (.setDataset plot ds))
+      (let [dflt (create-renderer)
+            renderers {::daily-gain (org.jfree.chart.renderer.xy.XYBarRenderer.)}]
         (dorun
           (map-indexed
-            (fn [i n] (let [r (create-renderer)] ;; set renderer that leaves gaps for missing values for all series
-                        (.. chart getPlot (setRenderer i r))
-                        ;; set colors
-                        (.setSeriesPaint r 0 (base-color (get-series-type n)))))
+            (fn [i n] 
+              (let [type (get-series-type n)
+                    r (get renderers type dflt)];; set renderer that leaves gaps for missing values for all series 
+                (.. chart getPlot (setRenderer i r))
+                ;; set colors
+                (.setSeriesPaint r 0 (base-color type))))
             names)))
       
       (return-image chart :height (s2i height 500) :width (s2i width 600)))
@@ -158,14 +167,23 @@
      :body "Wrong dates!"}))
 
 
-(defpage draw-efficiency-chart "/series-of/:id/efficiency/:wr-id/:times/chart.png" {:keys [id wr-id times width height]}
+(defpage "/series-of/:id/gains/:times/chart.png" {:keys [id wr-id times width height unit]}
   (if-let [[s e] (parse-times times)] 
-    (let [efficiency (fetch-efficiency id wr-id s e)
-          chart (doto (ch/time-series-plot (map :time efficiency) (map :value efficiency)
-                                           :title (str "Wirkungsgrad für " id wr-id " im Zeitraum " (.format (dateformat) s) " bis " (.format (dateformat) e))
-                                           :x-label "Zeit"
-                                           :y-label "Wirkungsgrad in %")
-                  (.. getPlot (setRenderer 0 (create-renderer))))] 
+    (let [db-query (case unit 
+                     "day" db/sum-per-day, 
+                     "week" db/sum-per-week, 
+                     "month" db/sum-per-month, 
+                     "year" db/sum-per-year, 
+                     db/sum-per-day)
+          name (str id ".wr." wr-id ".gain")
+          data (db-query name (db/as-sql-timestamp s) (db/as-sql-timestamp e))
+          chart (doto (ch/bar-chart 
+                        (map #(.format (dateformat) (:time %)) data) (map #(/ (:value %) 1000) data)
+                        :title (format "Erträge für %s WR %s im Zeitraum %s bis %s" id wr-id (.format (dateformat) s) (.format (dateformat) e))
+                        :x-label "Zeit"
+                        :y-label "Ertrag in kWh"))] 
+      (doto (.. chart getPlot getDomainAxis)
+        (.setCategoryLabelPositions org.jfree.chart.axis.CategoryLabelPositions/UP_90))
       (return-image chart :height (s2i height 500) :width (s2i width 600)))
     ;; else the dates format was invalid
     {:status 400
