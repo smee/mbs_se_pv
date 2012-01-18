@@ -1,15 +1,10 @@
 (ns mbs-se-pv.views.reports
   (:require 
     [clojure.java.io :as io]
-    [mbs-se-pv.views.common :as common]
-    [mbs-db.core :as db]
-    [incanter.core :as ic]
-    [incanter.charts :as ch])
+    [mbs-db.core :as db])
   (:use  
-    [clojure.string :only (split)]
     [noir.core :only (defpage)]
     [noir.response :only (content-type)]
-    [mbs-se-pv.views.util :only (dateformatrev dateformat ONE-DAY)]
     [org.clojars.smee.util :only (s2i)])
   (:import
     org.eclipse.birt.report.engine.api.IRunAndRenderTask
