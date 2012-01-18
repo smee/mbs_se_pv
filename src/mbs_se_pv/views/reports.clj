@@ -17,15 +17,14 @@
     de.uol.birt.inverter.api.OutputProfile
     de.uol.birt.inverter.api.Parameter))
 
-
+(defonce birt-framework (Framework.))
 
 (defpage "/report/:id/:year/:month" {:keys [id year month]}
-  (let [f (Framework.)
-        tempfile (java.io.File/createTempFile "mbs-se-pv", "pdf")
+  (let [tempfile (java.io.File/createTempFile "mbs-se-pv", "pdf")
         url (format "jdbc:%s:%s" (:subprotocol db/*db*) (:subname db/*db*))] 
     (with-open [template (.openStream (io/resource "reports/inverter_monthly_report.rptdesign"))
-                t (.openReport f template)]
-      (doto f        
+                t (.openReport birt-framework template)]
+      (doto birt-framework        
         (.applyParameter t Parameter/JDBC_DRIVER (:classname db/*db*))
         (.applyParameter t Parameter/URL url)
         (.applyParameter t Parameter/USER (:user db/*db*))
