@@ -14,7 +14,8 @@
                              incanter/incanter-pdf 
                              incanter/incanter-mongodb 
                              incanter/incanter-processing
-                             jline]]]
+                             jline]]
+                           [de.uol.birt.api/maven-birt-integration "1.0.0-SNAPSHOT"]]
             :main mbs-se-pv.server
             :ring {:handler mbs-se-pv.server/handler})
 
