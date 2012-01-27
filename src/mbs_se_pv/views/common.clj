@@ -68,7 +68,10 @@
       [:div.sidebar sidebar-contents]
       [:div.content 
        contents
-       (eumonis-footer)]]]))
+       (eumonis-footer)]]
+     [:div#glasspane.modal.fade.in.hide
+      [:h3.modal-header "Lade..."]
+      [:div.modal-body {:align "center"} (image "/img/ajax-loader.gif")]]]))
 
 (defpartial layout [& contents]
   (apply layout-with-links [0 [:a {:href "#"} "Home"] [:a {:href "#contact"} "Kontakt"]] nil contents))
