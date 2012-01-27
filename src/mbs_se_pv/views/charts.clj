@@ -76,13 +76,12 @@
 
 
 (def ^:private base-color {::gain  (Color. 0x803E75) ;Strong Purple
-                           ::daily-gain (Color. 0x803E75) ;Strong Purple
                            ::temp  (Color. 0xFF6800) ;Vivid Orange
                            ::udc   (Color. 0xA6BDD7) ;Very Light Blue
                            ::pac   (Color. 0xC10020) ;Vivid Red
                            ::pdc   (Color. 0xCEA262) ;Grayish Yellow
                            ::efficiency (Color. 0x817066) ;Medium Gray
-                           ::daily-gain (Color. 0x817066) ;Medium Gray
+                           ::daily-gain (Color. 0x803E75) ;Strong Purple
                            :default (Color/BLACK)})
 
 (defn- set-axis 
@@ -121,7 +120,7 @@ sequence of value sequences (seq. of maps with keys :time and :value)."
         s (db/as-sql-timestamp start-time) 
         e(db/as-sql-timestamp (+ end-time ONE-DAY))]
     (case (get-series-type series-name) 
-      ::efficiency (db/get-efficiency id wr-id s e)
+      ::efficiency (map (fn [m] (update-in m [:value] min 100)) (db/get-efficiency id wr-id s e));; FIXME data should never go over 100%!
       ::daily-gain (db/sum-per-day (str id ".wr." wr-id ".gain") s e)
       (db/all-values-in-time-range series-name s e))))
 
