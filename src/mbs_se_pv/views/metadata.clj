@@ -10,7 +10,8 @@
 (defn- search-for 
   "Filter for id substrings matching the search term"
   [search-term metadata]
-  (filter #(.contains (:id %) search-term) metadata))
+  (filter #(or (.contains (:id %) search-term)
+               (= :anzahlwr (s2i search-term -1))) metadata))
 
 ;; called via ajax, see http://datatables.net/usage/server-side for details
 ;; queries, filters, slices and dices pv metadata
@@ -24,7 +25,7 @@
   (let [len (s2i len 10)
         start (s2i start 1)
         col-id (s2i sort-col 0)
-        metadata (vals (db/get-metadata))
+        metadata (->> (db/get-metadata) vals (sort-by :id))
         filtered (search-for search-term metadata)
         sort-key (case col-id 0 :id, 1 :anlagenkwp, 2 :anzahlwr, :id)
         sorted (sort-by sort-key filtered)
@@ -37,6 +38,6 @@
        :sEcho echo
        :aaData (into [] (map 
                           (juxt #(html (link-to (url-for ts/metadata-page {:id (:id %)}) (:id %))) 
-                                #(format "%.1f kWp" (/ (:anlagenkwp %) 1000.0)) 
+                                #(format "%.1f" (/ (:anlagenkwp %) 1000.0)) 
                                 :anzahlwr) 
                           spliced))})))

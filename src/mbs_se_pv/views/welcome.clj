@@ -13,9 +13,10 @@
 
 (defpage start-page "/eumonis" []
   (common/layout 
+    [:h1 "Anlagenübersicht"]
     [:table#names.zebra-striped.condensed-table
      [:thead [:tr [:th "Anlagenbezeichnung"] 
-              [:th "Installierte Leistung"]
+              [:th "Installierte Leistung (kWp)"]
               [:th "Anzahl Wechselrichter"]]]
      [:tbody]]
     (javascript-tag (str "
@@ -36,7 +37,10 @@ $(document).ready(function() {
 			'sInfoFiltered': '(von insgesamt _MAX_ Eintr&auml;gen)',
       'sProcessing': 'Suche nach passenden Eintr&auml;gen',
       'sSearch': 'Suche:'
-		}
+		},
+    'aoColumns': [
+            {}, {sClass: 'alignRight'}, {sClass: 'alignRight'}
+            ]
 	});
 });"))))
 
