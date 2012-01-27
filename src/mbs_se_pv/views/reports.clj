@@ -14,7 +14,7 @@
 
 (defonce birt-framework (Framework.))
 
-(defpage "/report/:id/:year/:month" {:keys [id year month]}
+(defpage monthly-report "/report/:id/:year/:month" {:keys [id year month]}
   (let [tempfile (java.io.File/createTempFile "mbs-se-pv", "pdf")
         url (format "jdbc:%s:%s" (:subprotocol db/*db*) (:subname db/*db*))] 
     (with-open [template (.openStream (io/resource "reports/inverter_monthly_report.rptdesign"))

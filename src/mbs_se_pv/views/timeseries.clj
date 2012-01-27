@@ -3,7 +3,8 @@
       [clojure.string :as string]
       [mbs-se-pv.views 
        [common :as common]
-       [charts :as ch]]
+       [charts :as ch]
+       [reports :as report]]
       [mbs-db.core :as db])
     (:use noir.core
           hiccup.core
@@ -112,8 +113,7 @@
          [:input#chart-width.miniTextfield {:value "700" :type "number"}] 
          [:span "X"] 
          [:input#chart-height.miniTextfield {:value "600" :type "number"}]]
-        [:a {:href ""
-             :class "btn primary" 
+        [:a.btn.primary {:href ""
              :onclick (str 
                         ;; create selected date interval: yyyyMMdd-yyyyMMdd
                         "var dates = $('#date-picker').DatePickerGetDate(false);
@@ -134,7 +134,16 @@
                         ;; show chart  
                         "$('#chart-image').attr('src', link);
                         return false;")} 
-         "Anzeigen"])       
+         "Anzeigen"]
+        [:a.btn {:href "#"
+             :onlick (format "
+var dates = $('#date-picker').DatePickerGetDate(false);
+var month=dates[1].getMonth()+1;
+var year=dates[1].getFullYear();
+var link='%s/report/%s/'+year+'/'+month;
+window.open(link);
+return false;" 
+                             base-url id)} "Report Wirkungsgrad"])       
       ;; main content
       [:div.row 
        [:div.span12        
@@ -169,7 +178,7 @@
           min
           max)))))
 
-(defn- toolbar-links 
+(defn toolbar-links 
   "Links for the toolbar, see common/eumonis-topbar or common/layout-with-links for details"
   [id active-idx]
   [active-idx
