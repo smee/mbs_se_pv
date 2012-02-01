@@ -3,8 +3,8 @@
     [incanter.core :as ic]
     [incanter.charts :as ch]
     [mbs-se-pv.views.util :as util]
-    [mbs-se-pv.models.db :as db]
-    [chart.jfreechart :as cfj])
+    [mbs-db.core :as db]
+    [chart-utils.jfreechart :as cfj])
   (:use [org.clojars.smee.time :only (millis-to-string)]))
 
 (def ^:const ONE-DAY (* 24 60 60 1000))
@@ -89,7 +89,7 @@ the calculation. N is the length of the data to use as input, should be a power 
                        vals
                        (map (partial map :value)))       
         n (bit-shift-left 1 10)
-        ffts (vec (map #(vec (fft % n)) data-per-day))
+        ffts (vec (pmap #(vec (fft % n)) data-per-day))
         f (fn [x y] (get-in ffts [(int x) (int y)]))
         x-max (count data-per-day)
         y-max (count (first ffts))
