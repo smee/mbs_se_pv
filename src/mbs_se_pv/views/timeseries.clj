@@ -35,44 +35,44 @@
 ;;;;;;;;;;;;;; show all available time series info per pv installation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- label-for-type [s]
   (case s
-    "pdc" (list "P" [:sub "DC"])
-    "pac" (list "P" [:sub "AC"])
+    "pdc" "Leistung DC"
+    "pac" "Leistung AC"
     "temp" "Temperatur"
-    "udc" (list "U" [:sub "DC"])
-    "efficiency" "&eta;"
+    "udc" "Spannung DC"
+    "efficiency" "Wirkungsgrad"
     "gain" "Tagesertragsverlauf"
     "daily-gain" "Ertrag pro Tag"
      s))
 
-(defn- nice-labels [parts]
-  (let [parts (-> parts
-                (update-in [1] #(list "WR" [:sub %]))
-                (update-in [2] label-for-type))]
-    (if (< 3 (count parts))
-      (update-in parts [(dec (count parts))] #(list "String" [:sub %]))
-      parts)))
+(defn- nice-labels [[p1 p2 p3]]
+  (->> 
+    (list (list "Wechselrichter" [:sub p1]) 
+          (if p3 (list "String" [:sub p2]) (label-for-type p2))
+          (label-for-type p3))
+    (keep identity)))
+
+(defn fix-parts-order [[p1 p2 p3 :as l]]
+  (if (nil? p3)
+     l
+    (list p1 p3 p2)))
 
 (defn- split-series-name [n]
-  (conj (->> #"\."
-          (string/split n)
-          (remove #{"wr" "string"})
-          vec
-          nice-labels)
-        n))
+  (->> #"\."
+    (string/split n)
+    next
+    (remove #{"wr" "string"})
+    fix-parts-order))
 
 (defn- restore-wr-hierarchy [names]
-  (let [parts (map split-series-name names)]
-    (restore-hierarchy parts)))
+  (->> names
+    (map #(concat ["nach Bauteil"] (nice-labels (split-series-name %)) [%]))
+    restore-hierarchy))
 
 (defn- cluster-by-type [names]
-  (let [parts (map split-series-name names)
-        n (ffirst parts)
-        get-type #(drop 2 (butlast %))
-        cluster (->> parts
-                  (group-by get-type)
-                  (map-values #(map (juxt second last) %))
-                  (mapcat (fn [[t vs]] (for [v vs] (concat [n] t v)))))]
-    (restore-hierarchy cluster)))
+  (->> names
+    (map #(let [parts (-> % split-series-name nice-labels)] 
+            (concat ["nach Datentyp"] (vector (last parts)) (butlast parts) [%])))
+    restore-hierarchy))
 
 (defn- make-tree [nested]
   [:ul 
