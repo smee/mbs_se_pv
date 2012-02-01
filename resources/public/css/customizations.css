@@ -15,3 +15,7 @@ body {
 }
 
 .alignRight { text-align: right; }
+
+form.form-stacked {
+	padding-left: 0px;
+}

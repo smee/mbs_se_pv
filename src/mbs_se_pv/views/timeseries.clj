@@ -82,6 +82,25 @@
        [:li {:class "folder"} k (make-tree vs)]))])
 
 
+(defn- date-selection-javascript [id date min max]
+  (str
+          "$('#" id "').DatePicker({
+                  format: 'd.m.Y',
+                  date: '" date "',
+                  current: '" date "',
+                  calendars: 1,
+                  onBeforeShow: function(){
+                       $('#" id "').DatePickerSetDate($('#" id "').val(), true);
+                  },
+                  onChange: function(formatted, date) {
+                       $('#" id "').val(formatted).DatePickerHide();
+                  },
+                  onRender: function(date){
+                            return {
+                                   disabled: date.valueOf()<" min " || date.valueOf()>" max ",
+                                   className: false
+                                  }}});"))
+
 (defpage all-series "/series-of/:id" {id :id}
   (let [q (str id ".%")
         c (db/count-all-series-of q)
@@ -103,26 +122,28 @@
     (common/layout-with-links
       (toolbar-links id 2)
       ;; sidebar
-      (list 
+      [:form.form-stacked 
         [:h5 "Datum"]
-        [:p#date-picker]
+        (text-field {:placeholder "Startdatum" :class "span2"} "start-date" date)
+        (text-field {:placeholder "Enddatum" :class "span2"} "end-date" date)
         [:h5 "Datenreihen"]
         (vector :div#series-tree tree)
-        [:div.form-stacked 
+        [:div 
          [:h5 "Größe:"]
-         [:input#chart-width.miniTextfield {:value "700" :type "number"}] 
+         [:input#chart-width.span2 {:value "850" :type "number"}] 
          [:span "X"] 
-         [:input#chart-height.miniTextfield {:value "600" :type "number"}]]
+         [:input#chart-height.span2 {:value "700" :type "number"}]]
         [:a.btn.primary {:href ""
              :onclick (str 
                         ;; create selected date interval: yyyyMMdd-yyyyMMdd
-                        "var dates = $('#date-picker').DatePickerGetDate(false);
-                         var m1=dates[0].getMonth()+1;
-                         var m2=dates[1].getMonth()+1;
-                         var d1=dates[0].getDate();
-                         var d2=dates[1].getDate();
-                         var startDate=''+dates[0].getFullYear()+(m1<10?'0'+m1:m1)+(d1<10?'0'+d1:d1);
-                         var endDate  =''+dates[1].getFullYear()+(m2<10?'0'+m2:m2)+(d2<10?'0'+d2:d2);
+                        "var start = $('#start-date').DatePickerGetDate(false);
+                         var end = $('#end-date').DatePickerGetDate(false);
+                         var m1=start.getMonth()+1;
+                         var m2=end.getMonth()+1;
+                         var d1=start.getDate();
+                         var d2=end.getDate();
+                         var startDate=''+start.getFullYear()+(m1<10?'0'+m1:m1)+(d1<10?'0'+d1:d1);
+                         var endDate  =''+end.getFullYear()+(m2<10?'0'+m2:m2)+(d2<10?'0'+d2:d2);
                          var interval=startDate+'-'+endDate;"
                         ;; create list of selected time series                        
                         "var selectedSeries = $.map($('#series-tree').dynatree('getSelectedNodes'), function(node){ return node.data.series; });"
@@ -137,19 +158,19 @@ $('#current-chart').hideLoading();});
                         return false;")} 
          "Anzeigen"]
         [:a.btn {:href "#"
-             :onlick (format "
-var dates = $('#date-picker').DatePickerGetDate(false);
-var month=dates[1].getMonth()+1;
-var year=dates[1].getFullYear();
+             :onclick (format "
+var date = $('#start-date').DatePickerGetDate(false);
+var month=date.getMonth()+1;
+var year=date.getFullYear();
 var link='%s/report/%s/'+year+'/'+month;
 window.open(link);
-return false;" 
-                             base-url id)} "Report Wirkungsgrad"])       
+return true;" 
+                             base-url id)} "Report Wirkungsgrad"]]       
       ;; main content
       [:div.row 
        [:div.span12        
-        [:h3 "Chart"]
-        [:div#current-chart
+        [:h2 "Chart"]
+        [:div#current-chart "Bitte wählen Sie links die zu visualisierenden Daten und ein Zeitinterval aus."
          [:img#chart-image {:src ""}]]]]
       ;; render tree via jquery plugin
       (javascript-tag 
@@ -159,25 +180,8 @@ return false;"
           persist: false,
           minExpandLevel: 2});")
       ;; render calendar input via jquery plugin
-      (javascript-tag
-        (format
-          "$('#date-picker').DatePicker({
-                  format: 'd.m.Y',
-                  date: ['%s', '%s'],
-                  current: '%s',
-                  calendars: 1,
-                  flat: true,
-                  mode: 'range',
-                  onRender: function(date){
-                            return {
-                                   disabled: date.valueOf()<%d || date.valueOf()>%d,
-                                   className: false
-                                  }}});"
-          date
-          date
-          date
-          min
-          max)))))
+      (javascript-tag (date-selection-javascript "start-date" date min max))
+      (javascript-tag (date-selection-javascript "end-date" date min max)))))
 
 (defn toolbar-links 
   "Links for the toolbar, see common/eumonis-topbar or common/layout-with-links for details"
