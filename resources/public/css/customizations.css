@@ -9,3 +9,9 @@ body {
 #current-chart {
     min-height: 500px;
 }
+.glasspane {
+	width:200px;
+	height:200px;
+}
+
+.alignRight { text-align: right; }

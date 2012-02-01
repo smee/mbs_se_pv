@@ -130,9 +130,10 @@
                         "if(selectedSeries.length < 1) return false;"
                         ;; create link  
                         "var link='" base-url "/series-of/" id "/'+selectedSeries.join('/')+'/'+interval+'/chart.png?width='+$('#chart-width').val()+'&height='+$('#chart-height').val();
-                         $('#current-chart').toggleClass('loading',true);" 
+                         $('#current-chart').showLoading();" 
                         ;; show chart  
-                        "$('#chart-image').attr('src', link);
+                        "$('#chart-image').attr('src', link).load(function(){
+$('#current-chart').hideLoading();});
                         return false;")} 
          "Anzeigen"]
         [:a.btn {:href "#"
