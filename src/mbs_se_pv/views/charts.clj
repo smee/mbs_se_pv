@@ -128,7 +128,7 @@ sequence of value sequences (seq. of maps with keys :time and :value)."
 
 (defpage "/series-of/:id/*/:times/chart.png" {:keys [id * times width height]}
   (if-let [[s e] (parse-times times)]
-    (let [names (re-seq #"[^/]+" *) ;; split at any slash
+    (let [names (re-seq #"[^/]+" (distinct *)) ;; split at any slash
           values (pmap #(get-series-values % s e) names)
           chart (ch/time-series-plot 
                   (map :time (first values)) (map :value (first values))
