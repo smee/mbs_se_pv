@@ -15,9 +15,11 @@
   (common/layout 
     [:h1 "Anlagenübersicht"]
     [:table#names.zebra-striped.condensed-table
-     [:thead [:tr [:th "Anlagenbezeichnung"] 
+     [:thead [:tr 
+              [:th "Anlagenbezeichnung"] 
               [:th "Installierte Leistung (kWp)"]
-              [:th "Anzahl Wechselrichter"]]]
+              [:th "Anzahl Wechselrichter"]
+              [:th "Postleitzahl"]]]
      [:tbody]]
     (javascript-tag (str "
 $(document).ready(function() {
@@ -39,7 +41,7 @@ $(document).ready(function() {
       'sSearch': 'Suche:'
 		},
     'aoColumns': [
-            {}, {sClass: 'alignRight'}, {sClass: 'alignRight'}
+            {}, {sClass: 'alignRight'}, {sClass: 'alignRight'}, {}
             ]
 	});
 });"))))
