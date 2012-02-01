@@ -19,3 +19,6 @@ body {
 form.form-stacked {
 	padding-left: 0px;
 }
+div.doNotFloat label{
+	float:none;
+}

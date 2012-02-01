@@ -24,7 +24,7 @@
     (javascript-tag (str "
 $(document).ready(function() {
 	$('#names').dataTable( {
-    'sDom': \"<'row'<'span8'l><'span8'f>r>t<'row'<'span8'i><'span8'p>>\",
+    'sDom': \"<'row'<'span8 doNotFloat'l><'span8 doNotFloat'f>r>t<'row'<'span8'i><'span8'p>>\",
 		'bProcessing': true,
 		'bServerSide': true,
 		'sAjaxSource': '" (or hiccup.core/*base-url* "") "/metadata.json', 
