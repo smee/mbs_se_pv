@@ -144,23 +144,15 @@ sequence of value sequences (seq. of maps with keys :time and :value)."
       ;; map each time series to a matching axis (one axis per physical type)
       (dorun (map-indexed #(set-axis chart %2 %) names))
 
-      #_(let [plot (.. chart getPlot)
-            ds (org.jfree.data.xy.XYSeriesCollection.)] 
-        (doseq [n (range 12)]
-          (.addSeries ds (first (.getSeries (.getDataset plot n)))))
-        (.setDataset plot ds))
-      (let [dflt (create-renderer)
-            renderers {::daily-gain (org.jfree.chart.renderer.xy.XYBarRenderer.)}]
-        (dorun
+      (dorun
           (map-indexed
             (fn [i n] 
-              (let [type (get-series-type n)
-                    r (get renderers type dflt)];; set renderer that leaves gaps for missing values for all series 
+              (let [r (create-renderer)] ;; set renderer that leaves gaps for missing values for all series
                 (.. chart getPlot (setRenderer i r))
                 ;; set colors
-                (.setSeriesPaint r 0 (base-color type))))
-            names)))
-      
+                (.setSeriesPaint r 0 (base-color (get-series-type n)))))
+            names))
+
       (return-image chart :height (s2i height 500) :width (s2i width 600)))
     ;; else the dates format was invalid
     {:status 400
