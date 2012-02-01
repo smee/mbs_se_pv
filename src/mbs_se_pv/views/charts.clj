@@ -38,7 +38,7 @@
   (when-let [[_ start-time end-time] (re-find #"(\d{8})-(\d{8})" times)]
     (let [s (.getTime (.parse (dateformatrev) start-time))
           e (.getTime (.parse (dateformatrev) end-time))]
-      [s e])))
+      [(min s e) (max s e)])))
 
 (defn- start-of-day [millis]
   (- millis (mod millis ONE-DAY)))
@@ -128,8 +128,8 @@ sequence of value sequences (seq. of maps with keys :time and :value)."
 
 (defpage "/series-of/:id/*/:times/chart.png" {:keys [id * times width height]}
   (if-let [[s e] (parse-times times)]
-    (let [names (re-seq #"[^/]+" (distinct *)) ;; split at any slash
-          values (pmap #(get-series-values % s e) names)
+    (let [names (re-seq #"[^/]+" *) ;; split at any slash
+          values (pmap #(get-series-values % s e) (distinct names))
           chart (ch/time-series-plot 
                   (map :time (first values)) (map :value (first values))
                   :title (str "Chart für den Zeitraum " (.format (dateformat) s) " bis " (.format (dateformat) e))
