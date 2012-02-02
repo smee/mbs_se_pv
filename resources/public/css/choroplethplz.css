@@ -1,0 +1,8 @@
+svg {
+  /*background: #eee;*/
+}
+
+#plz path {
+  stroke: #333;
+  stroke-width: 0.05px;
+}
