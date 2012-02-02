@@ -20,10 +20,10 @@
 	  .data(d3.range(0,9))
       .enter()
 	    .append("rect")
-	      .attr("y", function(d, i) { return i * 20; })
+	      .attr("y", function(d, i) { return i * 40; })
 	      .attr("class",function(d){return "q"+d+"-9"})
-	      .attr("width",20)
-	      .attr("height",50);
+	      .attr("width",15)
+	      .attr("height",40);
 	
 	d3.json("/data/plz-simple.json", function(json) {
 		states.selectAll("path")
