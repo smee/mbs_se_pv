@@ -167,7 +167,7 @@ sequence of value sequences (seq. of maps with keys :time and :value)."
                      "month" db/sum-per-month, 
                      "year" db/sum-per-year, 
                      db/sum-per-day)
-          name (str id ".wr." wr-id ".gain")
+          name (str id ".wr." (if wr-id wr-id "%") ".gain")
           data (db-query name (db/as-sql-timestamp s) (db/as-sql-timestamp e))
           chart (doto (ch/bar-chart 
                         (map #(.format (dateformat) (:time %)) data) (map #(/ (:value %) 1000) data)
