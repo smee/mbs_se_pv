@@ -16,7 +16,7 @@
 
 ;; called via ajax, see http://datatables.net/usage/server-side for details
 ;; queries, filters, slices and dices pv metadata
-(defpage "/metadata.json" {len :iDisplayLength
+(defpage "/data/metadata.json" {len :iDisplayLength
                            start :iDisplayStart
                            search-term :sSearch
                            echo :sEcho
@@ -43,3 +43,4 @@
                                 :anzahlwr
                                 :hppostleitzahl) 
                           spliced))})))
+

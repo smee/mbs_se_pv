@@ -27,7 +27,7 @@ $(document).ready(function() {
     'sDom': \"<'row'<'span8 doNotFloat'l><'span8 doNotFloat'f>r>t<'row'<'span8'i><'span8'p>>\",
 		'bProcessing': true,
 		'bServerSide': true,
-		'sAjaxSource': '" (or hiccup.core/*base-url* "") "/metadata.json', 
+		'sAjaxSource': '" (or hiccup.core/*base-url* "") "/data/metadata.json', 
     'bPaginate': true,
     'sPaginationType': 'bootstrap',
     'bStateSave': true,
