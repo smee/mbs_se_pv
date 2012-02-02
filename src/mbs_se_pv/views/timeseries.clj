@@ -16,13 +16,29 @@
 (declare toolbar-links)
 
 ;;;;;;;;;;;;;;;;;;;;;;;; show metadata as table ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(def ^:private metadata-label
+  {:anlagenkwp "Installierte Leistung in Wp"
+   :hpausricht "Ausrichtung der Module"
+   :verguetung "Vergütung pro kWh"
+   :hpemail  "Kontaktemail"
+   :hpmodul "PV-Modul" 
+   :hpstandort "Standort"
+   :hpwr "Wechselrichter"
+   :hpinbetrieb "Inbetriebnahme"
+   :hpleistung "Leistung"
+   :hpbetreiber "Betreiber"
+   :serialnr "Seriennummer des Datenloggers"
+   :hppostleitzahl "Postleitzahl"
+   :id "Name"
+   :anzahlwr "Anzahl installierter Wechselrichter"})
+
 (defn- metadata-table [metadata]
   (let [wr-details (:wr metadata)
         metadata (dissoc metadata :wr)
         k (sort (keys metadata))]
     [:table.condensed-table.zebra-striped 
-     (for [[k v] (into (sorted-map) metadata)]
-       [:tr [:th k] [:td v]])]))
+     (for [[k v] (into (sorted-map) metadata) :let [label (metadata-label k)] :when label]
+       [:tr [:th label] [:td v]])]))
 
 (defpage metadata-page "/details/:id" {name :id}
   (let [metadata (-> name db/get-metadata first second)]
@@ -30,7 +46,8 @@
       (toolbar-links name 1)
       nil
       [:div.row
-       (metadata-table metadata)])))
+       [:span6 (metadata-table metadata)]
+       [:span6 "foo"]])))
 
 ;;;;;;;;;;;;;; show all available time series info per pv installation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- label-for-type [s]
