@@ -33,13 +33,13 @@
       [:h3 "Installierte Leistung pro Postleitzahl"]
       [:div "Bitte doppelt auf eine Region klicken um alle Anlagen darin zu sehen."]
       (drop-down {:onchange "mapfn(this.value)"}"mapDataSelector" 
-                 [["Anzahl installierter PV-Anlagen" "/data/installationcounts.json"] 
-                  ["Durchschnittliche Einspeisevergütung (cent)" "/data/averagefee.json"]
-                  ["Anzahl installierter Wechselrichter" "/data/invertercount.json"]
-                  ["Installierte Leistung (Watt)" "/data/powerdistribution.json"]
-                  ["Erwarter Ertrag (kWh/kWp)" "/data/averageexpectedgain.json"]
-                  ["Anzahl von Siemenswechselrichtern" "/data/siemenscount.json"]]
-                 "/data/powerdistribution.json")
+                 [["Anzahl installierter PV-Anlagen" (resolve-uri "/data/installationcounts.json")] 
+                  ["Durchschnittliche Einspeisevergütung (cent)" (resolve-uri "/data/averagefee.json")]
+                  ["Anzahl installierter Wechselrichter" (resolve-uri "/data/invertercount.json")]
+                  ["Installierte Leistung (Watt)" (resolve-uri "/data/powerdistribution.json")]
+                  ["Erwarter Ertrag (kWh/kWp)" (resolve-uri "/data/averageexpectedgain.json")]
+                  ["Anzahl von Siemenswechselrichtern" (resolve-uri "/data/siemenscount.json")]]
+                 (resolve-uri "/data/powerdistribution.json"))
       [:div#map]
       (maps/map-includes)
       ;; FIXME introduces a global variable 'mapfn' that holds an updater function for the map >:(
