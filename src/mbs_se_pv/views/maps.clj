@@ -5,7 +5,7 @@
     [mbs-db.core :as db])
   (:use [noir.core :only (defpage defpartial url-for)]
         [noir.response :only (redirect json)]
-        [hiccup.core :only (html)]
+        [hiccup.core :only (html resolve-uri)]
         hiccup.page-helpers
         mbs-se-pv.views.util
         [clojure.string :only (join)]))
@@ -77,10 +77,10 @@
       [:div.span8
        [:h3 "Anzahl installierter Wechselrichter"]
        [:div#chart4]]] 
-     (javascript-tag (render-plz-map "chart" "Reds" "/data/powerdistribution.json" 300))
-     (javascript-tag (render-plz-map "chart2" "Blues" "/data/installationcounts.json" 10))
-     (javascript-tag (render-plz-map "chart3" "Greens" "/data/averagefee.json" 50))
-     (javascript-tag (render-plz-map "chart4" "Oranges" "/data/invertercount.json" 100))))
+     (javascript-tag (render-plz-map "chart" "Reds" (resolve-uri "/data/powerdistribution.json") 300))
+     (javascript-tag (render-plz-map "chart2" "Blues" (resolve-uri "/data/installationcounts.json") 10))
+     (javascript-tag (render-plz-map "chart3" "Greens" (resolve-uri "/data/averagefee.json") 50))
+     (javascript-tag (render-plz-map "chart4" "Oranges" (resolve-uri "/data/invertercount.json") 100))))
 
 (defpage "/plz/:plz" {plz :plz}
   (let [ids (->> (db/get-metadata) vals (filter #(= plz (:hppostleitzahl %))) (map :id) sort)]

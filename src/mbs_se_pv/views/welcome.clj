@@ -6,7 +6,7 @@
     [mbs-db.core :as db])
   (:use [noir.core :only (defpage defpartial url-for)]
         [noir.response :only (redirect json)]
-        [hiccup.core :only (html)]
+        [hiccup.core :only (html resolve-uri)]
         [hiccup.page-helpers :only (link-to javascript-tag)]
         [hiccup.form-helpers :only (drop-down)]
         mbs-se-pv.views.util))
@@ -43,7 +43,7 @@
       [:div#map]
       (maps/map-includes)
       ;; FIXME introduces a global variable 'mapfn' that holds an updater function for the map >:(
-      (javascript-tag (str "mapfn="(maps/render-plz-map "map" "RdBu" "/data/powerdistribution.json" 300000)))]
+      (javascript-tag (str "mapfn="(maps/render-plz-map "map" "RdBu" (resolve-uri "/data/powerdistribution.json") 300000)))]
      ]
     (javascript-tag (render-javascript-template "templates/render-datatable.js" (or hiccup.core/*base-url* "")))))
 
