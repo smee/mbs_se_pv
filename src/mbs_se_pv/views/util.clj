@@ -1,5 +1,7 @@
 (ns mbs-se-pv.views.util
-  (:use [org.clojars.smee.util :only (per-thread-singleton)]))
+  (:use [org.clojars.smee.util :only (per-thread-singleton)]
+        [clojure.java.io :only (resource reader)]
+        [clojure.string :only (join)]))
 
 (def timeformat (per-thread-singleton #(java.text.SimpleDateFormat. "yyyy-MM-dd HH:mm:ss")))
 (def dateformat (per-thread-singleton #(java.text.SimpleDateFormat. "dd.MM.yyyy")))
@@ -27,5 +29,7 @@
   (reduce add-path {} paths))
 
 
-
+(defn render-javascript-template
+  [resource-path & params]
+  (apply format (->> resource-path resource reader line-seq (join "\n")) params))
 

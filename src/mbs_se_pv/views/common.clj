@@ -56,8 +56,8 @@
                      :width "150px"}])]]])
 
 
-(defpartial layout-with-links [topbar-links sidebar-contents & contents]
-  (html5
+(defn layout-with-links [topbar-links sidebar-contents & contents]
+  (html5 {:xml? true}
     (eumonis-header)
     [:body
      (eumonis-topbar topbar-links)
@@ -67,5 +67,5 @@
        contents
        (eumonis-footer)]]]))
 
-(defpartial layout [& contents]
+(defn layout [& contents]
   (apply layout-with-links [0 [:a {:href "#"} "Home"] [:a {:href "#contact"} "Kontakt"]] nil contents))

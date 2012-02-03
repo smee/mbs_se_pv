@@ -8,7 +8,6 @@
         [hiccup.core :only (html)]
         hiccup.page-helpers
         mbs-se-pv.views.util
-        [clojure.java.io :only (resource reader)]
         [clojure.string :only (join)]))
 
 
@@ -38,9 +37,8 @@
 
 
 (defn render-plz-map [div-id color-css-class json-link max-value]
-  (let [template (->> "templates/choroplethplz.js" resource reader line-seq (join "\n"))
-        base-url (or hiccup.core/*base-url* "")]
-    (format template div-id color-css-class base-url json-link (int max-value))))
+  (let [base-url (or hiccup.core/*base-url* "")]
+    (render-javascript-template "templates/choroplethplz.js" div-id color-css-class base-url json-link (int max-value))))
 
 (defpartial map-includes []
   (include-css "/css/choroplethplz.css"
@@ -48,7 +46,7 @@
   (include-js "http://mbostock.github.com/d3/d3.min.js"
               "http://mbostock.github.com/d3/d3.geo.min.js"))
 
-(defpage "/map" {}
+(defpage maps "/maps" {}
   (common/layout 
     (map-includes) 
      [:div.row

@@ -13,7 +13,11 @@
 ;;;;;;;;;;; show all available pv installation names ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpage start-page "/eumonis" []
-  (common/layout 
+  (common/layout-with-links
+    [0
+     (link-to (url-for start-page) "&Uuml;bersicht")
+     (link-to (url-for maps/maps) "Karten")]
+    nil  
     [:h1 "Anlagenübersicht"]
     [:div.row
      [:div.span10
@@ -31,30 +35,7 @@
       (maps/map-includes)
       (javascript-tag (maps/render-plz-map "map" "Reds" "/data/powerdistribution.json" 300000))]
      ]
-    (javascript-tag (str "
-$(document).ready(function() {
-	$('#names').dataTable( {
-    'sDom': \"<'row'<'span5 doNotFloat'l><'span5 doNotFloat'f>r>t<'row'<'span3'i><'span7'p>>\",
-		'bProcessing': true,
-		'bServerSide': true,
-		'sAjaxSource': '" (or hiccup.core/*base-url* "") "/data/metadata.json', 
-    'bPaginate': true,
-    'sPaginationType': 'bootstrap',
-    'bStateSave': true,
-     'oLanguage': {
-			'sLengthMenu': 'Zeige _MENU_ Eintr&auml;ge pro Seite',
-			'sZeroRecords': 'Kein Eintrag gefunden!',
-			'sInfo': 'Zeige Eintr&auml;ge _START_ bis _END_ von _TOTAL_ vorhandenen',
-			'sInfoEmpty': 'Zeige Eintr&auml;ge 0 bis 0 von 0 vorhandenen',
-			'sInfoFiltered': '(von insgesamt _MAX_ Eintr&auml;gen)',
-      'sProcessing': 'Suche nach passenden Eintr&auml;gen',
-      'sSearch': 'Suche:'
-		},
-    'aoColumns': [
-            {}, {sClass: 'alignRight'}, {sClass: 'alignRight'}, {}
-            ]
-	});
-});"))))
+    (javascript-tag (render-javascript-template "templates/render-datatable.js" (or hiccup.core/*base-url* "")))))
 
 (defpage "/" []
   (redirect (url-for start-page)))
