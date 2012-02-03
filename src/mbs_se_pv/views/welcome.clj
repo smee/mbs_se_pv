@@ -8,6 +8,7 @@
         [noir.response :only (redirect json)]
         [hiccup.core :only (html)]
         [hiccup.page-helpers :only (link-to javascript-tag)]
+        [hiccup.form-helpers :only (drop-down)]
         mbs-se-pv.views.util))
 
 ;;;;;;;;;;; show all available pv installation names ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -30,10 +31,17 @@
        [:tbody]]]
      [:div.span6 
       [:h3 "Installierte Leistung pro Postleitzahl"]
-      "Bitte doppelt auf eine Region klicken um alle Anlagen darin zu sehen."
+      [:div "Bitte doppelt auf eine Region klicken um alle Anlagen darin zu sehen."]
+      (drop-down {:onchange "mapfn(this.value)"}"mapDataSelector" 
+                 [["Anzahl installierter PV-Anlagen" "/data/installationcounts.json"] 
+                  ["Durchschnittliche Einspeisevergütung" "/data/averagefee.json"]
+                  ["Anzahl installierter Wechselrichter" "/data/invertercount.json"]
+                  ["Installierte Leistung" "/data/powerdistribution.json"]]
+                 "/data/powerdistribution.json")
       [:div#map]
       (maps/map-includes)
-      (javascript-tag (maps/render-plz-map "map" "Reds" "/data/powerdistribution.json" 300000))]
+      ;; FIXME introduces a global variable 'mapfn' that holds an updater function for the map >:(
+      (javascript-tag (str "mapfn="(maps/render-plz-map "map" "Reds" "/data/powerdistribution.json" 300000)))]
      ]
     (javascript-tag (render-javascript-template "templates/render-datatable.js" (or hiccup.core/*base-url* "")))))
 
