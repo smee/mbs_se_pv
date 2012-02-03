@@ -14,7 +14,7 @@
 (defpage "/data/powerdistribution.json" {}
   (let [metadata (vals (db/get-metadata))
         groups (group-by :hppostleitzahl metadata)
-        power (zipmap (keys groups) (map #(apply + (map :anlagenkwp %)) (vals groups)))] 
+        power (zipmap (keys groups) (map #(int (/ (apply + (map :anlagenkwp %)) 1000)) (vals groups)))] 
     (json power)))
 
 (defpage "/data/installationcounts.json" {}
@@ -29,11 +29,25 @@
         fee (zipmap (keys groups) (for [g (vals groups) :let [n (count g), sum (apply + (map :verguetung g))]] (int (/ sum n))))] 
     (json fee)))
 
+(defpage "/data/averageexpectedgain.json" {}
+  (let [metadata (vals (db/get-metadata))
+        groups (group-by :hppostleitzahl metadata)
+        fee (zipmap (keys groups) (for [g (vals groups) :let [n (count g), sum (apply + (map :sollyearkwp g))]] (int (/ sum n))))] 
+    (json fee)))
+
 (defpage "/data/invertercount.json" {}
   (let [metadata (vals (db/get-metadata))
         groups (group-by :hppostleitzahl metadata)
         fee (zipmap (keys groups) (map #(apply + (map :anzahlwr %)) (vals groups)))] 
     (json fee)))
+
+(defpage "/data/siemenscount.json" {}
+  (let [metadata (vals (db/get-metadata))
+        groups (group-by :hppostleitzahl metadata)
+        in-str? (fn [s x] (and (not (nil? s)) (.contains (.toLowerCase s) x)))
+        siemens (zipmap (keys groups) (for [g (vals groups) :let [wrs (map :hpwr g)]] (count (filter #(in-str? % "siemens") wrs))))] 
+    (json siemens)))
+
 
 
 (defn render-plz-map [div-id color-css-class json-link max-value]
@@ -51,21 +65,21 @@
     (map-includes) 
      [:div.row
       [:div.span8 
-       [:h3 "Installierte Leistung"]
+       [:h3 "Installierte Leistung (in kW)"]
        [:div#chart]]
       [:div.span8
        [:h3 "Anzahl installierter PV-Anlagen"]
        [:div#chart2]]]
      [:div.row
       [:div.span8
-       [:h3 "Durchschnittliche Einspeisevergütung"]
+       [:h3 "Durchschnittliche Einspeisevergütung (in cent)"]
        [:div#chart3]]
       [:div.span8
        [:h3 "Anzahl installierter Wechselrichter"]
        [:div#chart4]]] 
-     (javascript-tag (render-plz-map "chart" "Reds" "/data/powerdistribution.json" 300000))
+     (javascript-tag (render-plz-map "chart" "Reds" "/data/powerdistribution.json" 300))
      (javascript-tag (render-plz-map "chart2" "Blues" "/data/installationcounts.json" 10))
-     (javascript-tag (render-plz-map "chart3" "Greens" "/data/averagefee.json" 6000))
+     (javascript-tag (render-plz-map "chart3" "Greens" "/data/averagefee.json" 50))
      (javascript-tag (render-plz-map "chart4" "Oranges" "/data/invertercount.json" 100))))
 
 (defpage "/plz/:plz" {plz :plz}
