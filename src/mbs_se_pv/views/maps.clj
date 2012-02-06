@@ -8,7 +8,8 @@
         [hiccup.core :only (html resolve-uri)]
         hiccup.page-helpers
         mbs-se-pv.views.util
-        [clojure.string :only (join)]))
+        [clojure.string :only (join)]
+        [org.clojars.smee.util :only (s2i)]))
 
 
 (defpage "/data/powerdistribution.json" {}
@@ -39,6 +40,18 @@
   (let [metadata (vals (db/get-metadata))
         groups (group-by :hppostleitzahl metadata)
         fee (zipmap (keys groups) (map #(apply + (map :anzahlwr %)) (vals groups)))] 
+    (json fee)))
+
+(defpage "/data/odd.json" {}
+  (let [metadata (vals (db/get-metadata))
+        plz (distinct (map :hppostleitzahl metadata))
+        fee (zipmap plz (map #(if (odd? (s2i % 0)) 1 0) plz))] 
+    (json fee)))
+
+(defpage "/data/even.json" {}
+  (let [metadata (vals (db/get-metadata))
+        plz (distinct (map :hppostleitzahl metadata))
+        fee (zipmap plz (map #(if (even? (s2i % 0)) 1 0) plz))] 
     (json fee)))
 
 (defpage "/data/siemenscount.json" {}

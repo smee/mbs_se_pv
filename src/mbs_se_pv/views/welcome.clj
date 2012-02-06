@@ -36,9 +36,12 @@
                  [["Anzahl installierter PV-Anlagen" (resolve-uri "/data/installationcounts.json")] 
                   ["Durchschnittliche Einspeisevergütung (cent)" (resolve-uri "/data/averagefee.json")]
                   ["Anzahl installierter Wechselrichter" (resolve-uri "/data/invertercount.json")]
-                  ["Installierte Leistung (Watt)" (resolve-uri "/data/powerdistribution.json")]
+                  ["Installierte Leistung (kW)" (resolve-uri "/data/powerdistribution.json")]
                   ["Erwarter Ertrag (kWh/kWp)" (resolve-uri "/data/averageexpectedgain.json")]
-                  ["Anzahl von Siemenswechselrichtern" (resolve-uri "/data/siemenscount.json")]]
+                  ["Anzahl von Siemenswechselrichtern" (resolve-uri "/data/siemenscount.json")]
+                  ["Anzahl von Siemenswechselrichtern" (resolve-uri "/data/siemenscount.json")]
+                  ["Gerade Postleitzahlen" (resolve-uri "/data/even.json")]
+                  ["Ungerade Postleitzahlen" (resolve-uri "/data/odd.json")]]
                  (resolve-uri "/data/powerdistribution.json"))
       [:div#map]
       (maps/map-includes)
