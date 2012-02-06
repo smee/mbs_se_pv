@@ -13,6 +13,7 @@
     [org.clojars.smee.util :only (s2i)])
   (:import 
     [java.io ByteArrayOutputStream ByteArrayInputStream]
+    org.jfree.chart.axis.AxisLocation
     org.jfree.chart.axis.CategoryLabelPositions
     org.jfree.chart.renderer.xy.StandardXYItemRenderer
     org.jfree.util.UnitType
@@ -42,6 +43,35 @@
 
 (defn- start-of-day [millis]
   (- millis (mod millis ONE-DAY)))
+
+(defn convert-si-unit 
+  "Convert a number in the most fitting SI unit. Returns a vector of scaled number and unit prefix.
+ (convert-si-unit 0.02)
+ => [20.0 \\m]"
+  [n]
+  (some (fn [[mag suffix]] (when (>= n mag) [(/ n mag) suffix])) 
+        [[1e12 \T] 
+         [1e9  \G] 
+         [1e6  \M] 
+         [1e3  \k] 
+         [1 nil] 
+         [1e-3 \m] 
+         [1e-6 \µ] 
+         [1e-9 \n]]))
+
+(defn- create-si-prefix-formatter 
+  "Creates an instance of java.text.NumberFormat that prints formatted doubles with their respective
+SI unit prefixes"
+  ([^java.text.NumberFormat nf] (create-si-prefix-formatter nf ""))
+  ([^java.text.NumberFormat nf suffix]
+    (proxy [java.text.NumberFormat] []
+      (format [n sb fp]
+              (if-let [[n prefix] (convert-si-unit n) ] 
+                (.append sb (str (.format nf n) prefix suffix))
+                (do 
+                  (.format nf n sb fp)
+                  (.append sb suffix)))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn color-distance 
   "Natural color distance metric, see http:;www.compuphase.com/cmetric.htm"
@@ -62,55 +92,47 @@
                 (remove #{"wr" "string"}))]
     (keyword "mbs-se-pv.views.charts" (nth parts 2))))
 
-
-(defn get-unit-label 
-  "Name of the unit type of a time series" 
-  [series-name]
-  (case (get-series-type series-name)
-    (::pac ::pdc) "Leistung P in W"
-    ::temp "Temperatur K in °C"
-    ::udc "Spannung U in V"
-    (::gain ::daily-gain) "Ertrag E in Wh"
-    ::efficiency "Wirkungsgrad η in %"
-    "Werte"))
-
-
-(def ^:private base-color {::gain  (Color. 0x803E75) ;Strong Purple
-                           ::temp  (Color. 0xFF6800) ;Vivid Orange
-                           ::udc   (Color. 0xA6BDD7) ;Very Light Blue
-                           ::pac   (Color. 0xC10020) ;Vivid Red
-                           ::pdc   (Color. 0xCEA262) ;Grayish Yellow
-                           ::efficiency (Color. 0x817066) ;Medium Gray
-                           ::daily-gain (Color. 0x803E75) ;Strong Purple
-                           :default (Color/BLACK)})
+(def ^:private unit-properties 
+  {::pac        {:color (Color. 0xC10020) :unit "W" :label "Leistung"} 
+   ::pdc        {:color (Color. 0xC10020) :unit "W" :label "Leistung"}
+   ::temp       {:color (Color. 0xFF6800) :unit "°C" :label "Temperatur"}
+   ::udc        {:color (Color. 0xA6BDD7) :unit "V" :label "Spannung"}
+   ::gain       {:color (Color. 0x803E75) :unit "Wh" :label "Ertrag"} 
+   ::daily-gain {:color (Color. 0x803E75) :unit "Wh" :label "Ertrag"}
+   ::efficiency {:color (Color. 0x817066) :unit "%" :label "Wirkungsgrad"}})
 
 (defn- set-axis 
   "Ensure there is an axis for this physical type (power, voltage etc.)"
   [chart series-name series-idx]
-  (let [unit-label (get-unit-label series-name)
+  (let [props (unit-properties (get-series-type series-name))
+        axis-label (:label props)
+        c (:color props)
         p (.. chart getPlot)
         axis-count (.getRangeAxisCount p)
-        [idx axis] (or (first (keep-indexed #(let [axis (.. p (getRangeAxis %2))] 
-                                               (when (= unit-label (.getLabel axis)) [% axis])) 
-                                            (range axis-count)))
-                       [axis-count (org.jfree.chart.axis.NumberAxis. unit-label)])
-        c (base-color (get-series-type series-name))]
-    (do
-      (.setLabelPaint axis c)
-      (.setAxisLinePaint axis c)
-      (.setTickLabelPaint axis c)
-      (when (not= axis (.getRangeAxis p idx)) 
-        (.setRangeAxis p idx axis))
-      (.mapDatasetToRangeAxis p series-idx idx))))
+        [idx axis] (or (first (keep-indexed 
+                                #(let [axis (.. p (getRangeAxis %2))] 
+                                   (when (= axis-label (.getLabel axis)) [% axis])) 
+                                (range axis-count)))
+                       [axis-count (org.jfree.chart.axis.NumberAxis. axis-label)])]
+    (doto axis
+      (.setLabelPaint c)
+      (.setAxisLinePaint c)
+      (.setTickLabelPaint c)
+      (.setNumberFormatOverride (create-si-prefix-formatter (java.text.DecimalFormat. "#.##")  (:unit props))))
+    (when (not= axis (.getRangeAxis p idx)) 
+      (.setRangeAxis p idx axis))
+    (.mapDatasetToRangeAxis p series-idx idx)
+    (doseq [n (range (.getRangeAxisCount p)) :let [axis (.. p (getRangeAxis n))
+                                                   pos (if (odd? n) AxisLocation/TOP_OR_LEFT AxisLocation/BOTTOM_OR_RIGHT)]]
+      (.setRangeAxisLocation p n pos))))
+
 
 (defn- get-series-label 
   "Unique human readable label."
   [s]
-  (let [[_ wr-id _] (->> #"\."
-                (string/split s)
-                (remove #{"wr" "string"}))
+  (let [[_ wr-id] (re-find #".*\.wr\.(\d+)\..*" s )
         type (get-series-type s)]
-    (format "%s von WR %s" (name type) wr-id)))
+    (format "%s von WR %s" (-> s get-series-type unit-properties :label) wr-id)))
 
 (defn- get-series-values 
   "Call appropriate database queries according to (get-series-type series-name). Returns
@@ -131,16 +153,19 @@ sequence of value sequences (seq. of maps with keys :time and :value)."
     (let [names (re-seq #"[^/]+" *) ;; split at any slash
           values (pmap #(get-series-values % s e) (distinct names))
           chart (ch/time-series-plot 
-                  (map :time (first values)) (map :value (first values))
+                  (map :time (first values)) 
+                  (map :value (first values))
                   :title (str "Chart für den Zeitraum " (.format (dateformat) s) " bis " (.format (dateformat) e))
                   :x-label "Zeit"
-                  :y-label (get-unit-label (first names))
+                  :y-label (-> names first get-series-type unit-properties :label)
                   :legend true
                   :series-label (get-series-label (first names)))]
       ;; add data series for each time series to chart
       (doseq [[n values] (map list (rest names) (rest values))]
-        (ch/add-lines chart (map :time values) (map :value values)
-                        :series-label (get-series-label n)))
+        (ch/add-lines chart 
+                      (map :time values) 
+                      (map :value values)
+                      :series-label (get-series-label n)))
       ;; map each time series to a matching axis (one axis per physical type)
       (dorun (map-indexed #(set-axis chart %2 %) names))
 
@@ -150,7 +175,7 @@ sequence of value sequences (seq. of maps with keys :time and :value)."
               (let [r (create-renderer)] ;; set renderer that leaves gaps for missing values for all series
                 (.. chart getPlot (setRenderer i r))
                 ;; set colors
-                (.setSeriesPaint r 0 (base-color (get-series-type n)))))
+                (.setSeriesPaint r 0 (-> n get-series-type unit-properties :color))))
             names))
 
       (return-image chart :height (s2i height 500) :width (s2i width 600)))
