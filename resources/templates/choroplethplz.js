@@ -63,6 +63,9 @@
 	function quantize(d) {
 		return "q" + Math.min(maxColorIdx,~~(scale(data[d.properties.PLZ99]))) + "-9";
 	}
+	function isNumeric(string) {
+	    return (string - 0) == string && string.length > 0;
+	}
 	// return an update function
 	// needs two parameters: url for data json, new maximum value for the color
 	// scale.
@@ -73,13 +76,12 @@
 				// use maximum value for scaling the legend
 				maxValue = -1;
 				for(var i in json){
-					if(json[i]>maxValue) 
+					if(isNumeric(i) && json[i]>maxValue) 
 						maxValue=json[i];
 				}				
 			}else
 				maxValue = newMax;
 			scale=scale.domain([1,maxValue]);
-
 			data = json;
 			states.selectAll("path").attr("class", quantize);
 			canvas.selectAll("text").text(function(d){return ">" + ~~scale.invert(d)});
