@@ -46,7 +46,7 @@
       [:div#map]
       (maps/map-includes)
       ;; FIXME introduces a global variable 'mapfn' that holds an updater function for the map >:(
-      (javascript-tag (str "mapfn="(maps/render-plz-map "map" "RdBu" (resolve-uri "/data/powerdistribution.json") 300000)))]
+      (javascript-tag (str "mapfn="(maps/render-plz-map "map" "RdBu" (resolve-uri "/data/powerdistribution.json") 82000)))]
      ]
     (javascript-tag (render-javascript-template "templates/render-datatable.js" (or hiccup.core/*base-url* "")))))
 
