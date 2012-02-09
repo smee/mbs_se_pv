@@ -102,7 +102,8 @@ SI unit prefixes"
    ::efficiency {:color (Color. 0x817066) :unit "%" :label "Wirkungsgrad"}})
 
 (defn- set-axis 
-  "Ensure there is an axis for this physical type (power, voltage etc.)"
+  "Ensure there is an axis for this physical type (power, voltage etc.). Sets a unique color per unit. 
+Distributes all axis so there is a roughly equal number of axes on each side of the chart."
   [chart series-name series-idx]
   (let [props (unit-properties (get-series-type series-name))
         axis-label (:label props)
