@@ -3,7 +3,8 @@
     [mbs-se-pv.views 
      [common :as common]
      [maps :as maps]]
-    [mbs-db.core :as db])
+    [mbs-db.core :as db]
+    [mbs-se-pv.views.timeseries :as ts])
   (:use [noir.core :only (defpage defpartial url-for)]
         [noir.response :only (redirect json)]
         [hiccup.core :only (html resolve-uri)]
@@ -28,7 +29,13 @@
                 [:th "Installierte Leistung (kWp)"]
                 [:th "Anzahl Wechselrichter"]
                 [:th "Postleitzahl"]]]
-       [:tbody]]]
+       [:tbody
+        (for [{:keys [id anlagenkwp anzahlwr hppostleitzahl]} (->> (db/get-metadata) vals (take 10))]
+          [:tr 
+           [:td (link-to (url-for ts/metadata-page {:id id}) id)]
+           [:td anlagenkwp]
+           [:td hppostleitzahl]
+           [:td hppostleitzahl]])]]]
      [:div.span6 
       [:h3 "Installierte Leistung pro Postleitzahl"]
       [:div "Bitte doppelt auf eine Region klicken um alle Anlagen darin zu sehen."]
