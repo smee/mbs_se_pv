@@ -12,31 +12,8 @@
         [hiccup.form-helpers :only (drop-down)]
         mbs-se-pv.views.util))
 
-;;;;;;;;;;; show all available pv installation names ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defpage start-page "/eumonis" []
-  (common/layout-with-links
-    [0
-     (link-to (url-for start-page) "&Uuml;bersicht")
-     (link-to (url-for maps/maps) "Karten")]
-    nil  
-    [:h1 "Anlagenübersicht"]
-    [:div.row
-     [:div.span10
-      [:table#names.zebra-striped.condensed-table
-       [:thead [:tr 
-                [:th (apply str "Anlagenbezeichnung" (repeat 10 "&nbsp;"))] 
-                [:th "Installierte Leistung (kWp)"]
-                [:th "Anzahl Wechselrichter"]
-                [:th "Postleitzahl"]]]
-       [:tbody
-        (for [{:keys [id anlagenkwp anzahlwr hppostleitzahl]} (->> (db/get-metadata) vals (take 10))]
-          [:tr 
-           [:td (link-to (url-for ts/metadata-page {:id id}) id)]
-           [:td anlagenkwp]
-           [:td hppostleitzahl]
-           [:td hppostleitzahl]])]]]
-     [:div.span6 
+(defpartial render-map []
+  [:div.span6 
       [:h3 "Installierte Leistung pro Postleitzahl"]
       [:div "Bitte doppelt auf eine Region klicken um alle Anlagen darin zu sehen."]
       (drop-down {:onchange "mapfn(this.value)"}"mapDataSelector" 
@@ -53,7 +30,33 @@
       [:div#map]
       (maps/map-includes)
       ;; FIXME introduces a global variable 'mapfn' that holds an updater function for the map >:(
-      (javascript-tag (str "mapfn="(maps/render-plz-map "map" "RdBu" (resolve-uri "/data/powerdistribution.json") 82000)))]
+      (javascript-tag (str "mapfn="(maps/render-plz-map "map" "RdBu" (resolve-uri "/data/powerdistribution.json") 82000)))])
+
+;;;;;;;;;;; show all available pv installation names ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defpage start-page "/eumonis" []
+  (common/layout-with-links
+    [0
+     (link-to (url-for start-page) "&Uuml;bersicht")
+     (link-to (url-for maps/maps) "Karten")]
+    nil  
+    [:h1 "Anlagenübersicht"]
+    [:div.row
+     [:div.span16
+      [:table#names.zebra-striped.condensed-table
+       [:thead [:tr 
+                [:th (apply str "Anlagenbezeichnung" (repeat 10 "&nbsp;"))] 
+                [:th "Installierte Leistung (kWp)"]
+                [:th "Anzahl Wechselrichter"]
+                [:th "Postleitzahl"]]]
+       [:tbody
+        (for [{:keys [id anlagenkwp anzahlwr hppostleitzahl]} (->> (db/get-metadata) vals (take 10))]
+          [:tr 
+           [:td (link-to (url-for ts/metadata-page {:id id}) id)]
+           [:td anlagenkwp]
+           [:td hppostleitzahl]
+           [:td hppostleitzahl]])]]]
+     ;(render-map)
      ]
     (javascript-tag (render-javascript-template "templates/render-datatable.js" (or hiccup.core/*base-url* "")))))
 

@@ -31,23 +31,51 @@
    :hppostleitzahl "Postleitzahl"
    :id "Name"
    :anzahlwr "Anzahl installierter Wechselrichter"})
+(defn ^:private metadata-value [k v]
+  (case k
+    :anlagenkwp (.format (create-si-prefix-formatter "###.##" "Wh") v)
+    :verguetung (format "%.2f€" (float (/ v 100)))
+    v))
 
 (defn- metadata-table [metadata]
   (let [wr-details (:wr metadata)
         metadata (dissoc metadata :wr)
         k (sort (keys metadata))]
     [:table.condensed-table.zebra-striped 
-     (for [[k v] (into (sorted-map) metadata) :let [label (metadata-label k)] :when label]
-       [:tr [:th label] [:td v]])]))
+     (for [[k v] (into (sorted-map) metadata) 
+           :let [label (metadata-label k)] 
+           :when label]
+       [:tr [:th label] [:td (metadata-value k v)]])]))
 
 (defpage metadata-page "/details/:id" {name :id}
-  (let [metadata (-> name db/get-metadata first second)]
+  (let [metadata (-> name db/get-metadata first second)
+        now (System/currentTimeMillis)
+        today (.format (dateformatrev) now)
+        last-month (.format (dateformatrev) (- now (* 365 ONE-DAY)))
+        w 400
+        h 250]
     (common/layout-with-links 
       (toolbar-links name 1)
       nil
       [:div.row
-       [:span6 (metadata-table metadata)]
-       [:span6 "foo"]])))
+       [:div.span6
+        [:h3 "Anlagendaten"]
+        (metadata-table metadata)
+        [:a.btn.large.success {:src (resolve-uri (url-for all-series {:id name}))} "Messwerte"]]
+       [:div.span6.offset1
+        [:h3 "Erträge im letzten Jahr"]
+        [:h4 "Gesamtertrag pro Tag"]
+        [:img.loading-bg {:src (format "/gains/%s/%s-%s/chart.png?unit=day&width=%d&height=%d" name last-month today w h)
+                          :width w
+                          :height h}]
+        [:h4 "Gesamtertrag pro Woche"]
+        [:img.loading-bg {:src (format "/gains/%s/%s-%s/chart.png?unit=week&width=%d&height=%d" name last-month today w h)
+                          :width w
+                          :height h}]
+        [:h4 "Gesamtertrag pro Monat"]
+        [:img.loading-bg {:src (format "/gains/%s/%s-%s/chart.png?unit=month&width=%d&height=%d" name last-month today w h)
+                          :width w
+                          :height h}]]])))
 
 ;;;;;;;;;;;;;; show all available time series info per pv installation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- label-for-type [s]

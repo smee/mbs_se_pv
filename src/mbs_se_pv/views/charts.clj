@@ -9,7 +9,7 @@
     [clojure.string :only (split)]
     [noir.core :only (defpage)]
     [noir.response :only (content-type)]
-    [mbs-se-pv.views.util :only (dateformatrev dateformat ONE-DAY)]
+    [mbs-se-pv.views.util :only (dateformatrev dateformat ONE-DAY convert-si-unit create-si-prefix-formatter)]
     [org.clojars.smee.util :only (s2i)])
   (:import 
     [java.io ByteArrayOutputStream ByteArrayInputStream]
@@ -44,33 +44,6 @@
 (defn- start-of-day [millis]
   (- millis (mod millis ONE-DAY)))
 
-(defn convert-si-unit 
-  "Convert a number in the most fitting SI unit. Returns a vector of scaled number and unit prefix.
- (convert-si-unit 0.02)
- => [20.0 \\m]"
-  [n]
-  (some (fn [[mag suffix]] (when (>= n mag) [(/ n mag) suffix])) 
-        [[1e12 \T] 
-         [1e9  \G] 
-         [1e6  \M] 
-         [1e3  \k] 
-         [1 nil] 
-         [1e-3 \m] 
-         [1e-6 \µ] 
-         [1e-9 \n]]))
-
-(defn- create-si-prefix-formatter 
-  "Creates an instance of java.text.NumberFormat that prints formatted doubles with their respective
-SI unit prefixes"
-  ([^java.text.NumberFormat nf] (create-si-prefix-formatter nf ""))
-  ([^java.text.NumberFormat nf suffix]
-    (proxy [java.text.NumberFormat] []
-      (format [n sb fp]
-              (if-let [[n prefix] (convert-si-unit n) ] 
-                (.append sb (str (.format nf n) prefix suffix))
-                (do 
-                  (.format nf n sb fp)
-                  (.append sb suffix)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn color-distance 
@@ -119,7 +92,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
       (.setLabelPaint c)
       (.setAxisLinePaint c)
       (.setTickLabelPaint c)
-      (.setNumberFormatOverride (create-si-prefix-formatter (java.text.DecimalFormat. "#.##")  (:unit props))))
+      (.setNumberFormatOverride (create-si-prefix-formatter "#.##"  (:unit props))))
     (when (not= axis (.getRangeAxis p idx)) 
       (.setRangeAxis p idx axis))
     (.mapDatasetToRangeAxis p series-idx idx)
@@ -185,7 +158,7 @@ sequence of value sequences (seq. of maps with keys :time and :value)."
      :body "Wrong dates!"}))
 
 
-(defpage "/series-of/:id/gains/:times/chart.png" {:keys [id wr-id times width height unit]}
+(defpage "/gains/:id/:times/chart.png" {:keys [id wr-id times width height unit]}
   (if-let [[s e] (parse-times times)] 
     (let [db-query (case unit 
                      "day" db/sum-per-day, 
@@ -197,7 +170,7 @@ sequence of value sequences (seq. of maps with keys :time and :value)."
           data (db-query name (db/as-sql-timestamp s) (db/as-sql-timestamp e))
           chart (doto (ch/bar-chart 
                         (map #(.format (dateformat) (:time %)) data) (map #(/ (:value %) 1000) data)
-                        :title (format "Erträge für %s WR %s im Zeitraum %s bis %s" id wr-id (.format (dateformat) s) (.format (dateformat) e))
+                        ;:title (format "Gesamtertrag für %s WR %s im Zeitraum %s bis %s" id wr-id (.format (dateformat) s) (.format (dateformat) e))
                         :x-label "Zeit"
                         :y-label "Ertrag in kWh"))] 
       (doto (.. chart getPlot getDomainAxis)

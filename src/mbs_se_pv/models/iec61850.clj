@@ -30,3 +30,4 @@
   [s]
   (let [is (find-possible-abbrev s)]    
     (.trim (reduce replace-abbrev s is))))
+

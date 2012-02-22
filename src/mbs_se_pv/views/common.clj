@@ -6,7 +6,7 @@
 (defpartial eumonis-header []
   [:head 
    [:title "MBS_SE_PV"]
-   (include-css "http://twitter.github.com/bootstrap/1.4.0/bootstrap.min.css"
+   (include-css "/css/bootstrap.1.4.0.min.css"
                 "/css/datepicker.css"
                 "/css/dynatree/ui.dynatree.css"
                 "/css/showLoading.css"
