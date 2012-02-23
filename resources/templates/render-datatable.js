@@ -14,8 +14,13 @@
 				'sInfo': 'Zeige Einträge _START_ bis _END_ von _TOTAL_ vorhandenen',
 				'sInfoEmpty': 'Zeige Einträge 0 bis 0 von 0 vorhandenen',
 				'sInfoFiltered': '(von insgesamt _MAX_ Einträgen)',
-	      'sProcessing': 'Suche nach passenden Einträgen',
-	      'sSearch': 'Suche:'
+				'sProcessing': 'Suche nach passenden Einträgen',
+				'sSearch': 'Suche:',
+				'oPaginate': {
+					'sPrevious': 'Vorherige',
+					'sNext': 'Nächste'
+				}
+				
 			},
 	    'aoColumns': [
 	            {}, {sClass: 'alignRight'}, {sClass: 'alignRight'}, {}
