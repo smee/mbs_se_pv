@@ -61,7 +61,7 @@
        [:div.span6
         [:h3 "Anlagendaten"]
         (metadata-table metadata)
-        [:a.btn.large.success {:src (resolve-uri (url-for all-series {:id name}))} "Messwerte"]]
+        [:a.btn.large.success {:href (resolve-uri (url-for all-series {:id name}))} "Messwerte"]]
        [:div.span6.offset1
         [:h3 "Erträge im letzten Jahr"]
         [:h4 "Gesamtertrag pro Tag"]
@@ -160,6 +160,7 @@
          [:span "X"] 
          [:input#chart-height.span2 {:value "700" :type "number"}]]
         [:a.btn.primary {:href "" :onclick (render-javascript-template "templates/load-chart.js" base-url id)} "Anzeigen"]
+        [:a.btn {:href "" :onclick (render-javascript-template "templates/load-discord-chart.js" base-url id)} "Discord"]
         [:a.btn {:href "#" :onclick (render-javascript-template "templates/show-report.js" base-url id)} "Report Wirkungsgrad"]]       
       ;; main content
       [:div.row 

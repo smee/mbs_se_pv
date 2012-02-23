@@ -175,18 +175,34 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
     {:status 400
      :body "Wrong dates!"}))
 
+(defn- day-number [{millis :time}]
+  (int (/ millis (* 1000 60 60 24))))
 
 ;; show day that represents the biggest discord of a given series.
-(defpage "/series-of/:id/*/:times/discord.png" {:keys [id * times width height]}
+(defpage "/series-of/:id/*/:times/discord.png" {:keys [id * times width height num]}
   (if-let [[s e] (parse-times times)]
-    (let [name (first (re-seq #"[^/]+" *))
+    (let [num (s2i num 1)
+          name (first (re-seq #"[^/]+" *))
           data (get-series-values name s e)
-          days (->> data (partition-by #(int (/ (:time %) (* 1000 60 60 24)))))
-          [discord-idx _] (discord/find-discord-daily (map (partial map :value) days))]))
-  ;; else the dates format was invalid
+          days (partition-by day-number data)
+          _ (println "got " (count days) " days in " times)
+          discords (discord/find-multiple-discords-daily (map (partial map :value) days) num)
+          discord-days (->> discords
+                         (map #(nth days (first %)))
+                         (map vec)
+                         (map (fn [day] (map #(update-in % [:time] mod ONE-DAY) day))))]
+      (-> (create-time-series-chart 
+            (for [[idx v] discords] (format "Discord am %s: %f" (.format (dateformat) (-> days (nth idx) first :time)) v)) 
+            discord-days 
+            str)
+        (ch/set-x-label "Zeit")
+        (ch/set-y-label (-> name get-series-type unit-properties :label))
+        (ch/set-title (str "Die ungewöhnlichsten Tage"))
+        (enhance-chart [name])
+        (return-image :height (s2i height 500) :width (s2i width 600))))
+    ;; else the dates format was invalid
   {:status 400
-   :body "Wrong dates!"})
-
+   :body "Wrong dates!"}))
 
 ;; show summed gain as bar charts for days, weeks, months, years
 (defpage "/gains/:id/:times/chart.png" {:keys [id wr-id times width height unit]}
