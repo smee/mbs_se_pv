@@ -4,7 +4,8 @@
     [mbs-se-pv.views.common :as common]
     [mbs-db.core :as db]
     [incanter.core :as ic]
-    [incanter.charts :as ch])
+    [incanter.charts :as ch]
+    [timeseries.discord :as discord])
   (:use  
     [clojure.string :only (split)]
     [noir.core :only (defpage)]
@@ -74,6 +75,27 @@
    ::daily-gain {:color (Color. 0x803E75) :unit "Wh" :label "Ertrag"}
    ::efficiency {:color (Color. 0x817066) :unit "%" :label "Wirkungsgrad"}})
 
+(defn- get-series-label 
+  "Unique human readable label."
+  [s]
+  (let [[_ wr-id] (re-find #".*\.wr\.(\d+)\..*" s )
+        type (get-series-type s)]
+    (format "%s von WR %s" (-> s get-series-type unit-properties :label) wr-id)))
+
+
+(defn- get-series-values 
+  "Call appropriate database queries according to (get-series-type series-name). Returns
+sequence of value sequences (seq. of maps with keys :time and :value)."
+  [series-name start-time end-time]
+  (let [[id wr-id] (remove #{"wr" "string"} (string/split series-name #"\."))
+        s (db/as-sql-timestamp start-time) 
+        e(db/as-sql-timestamp (+ end-time ONE-DAY))]
+    (case (get-series-type series-name) 
+      ::efficiency (map (fn [m] (update-in m [:value] min 100)) (db/get-efficiency id wr-id s e));; FIXME data should never go over 100%!
+      ::daily-gain (db/sum-per-day (str id ".wr." wr-id ".gain") s e)
+      (db/all-values-in-time-range series-name s e))))
+
+;;;;;;;;;;;;;;;; Functions for rendering nice physical time series data ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- set-axis 
   "Ensure there is an axis for this physical type (power, voltage etc.). Sets a unique color per unit. 
 Distributes all axis so there is a roughly equal number of axes on each side of the chart."
@@ -100,64 +122,72 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                                                    pos (if (odd? n) AxisLocation/TOP_OR_LEFT AxisLocation/BOTTOM_OR_RIGHT)]]
       (.setRangeAxisLocation p n pos))))
 
+(defn- enhance-chart 
+  "Make the chart look nice by introducing axes according to physical types, colors etc."
+  [chart names]
+  ;; map each time series to a matching axis (one axis per physical type)
+  (dorun (map-indexed #(set-axis chart %2 %) names))
+  ;; set renderer that leaves gaps for missing values for all series
+  (dorun
+    (map-indexed
+      (fn [i n] 
+        (let [r (create-renderer)] 
+          (.. chart getPlot (setRenderer i r))
+          ;; set colors
+          (.setSeriesPaint r 0 (-> n get-series-type unit-properties :color))))
+      names))
+  chart)
 
-(defn- get-series-label 
-  "Unique human readable label."
-  [s]
-  (let [[_ wr-id] (re-find #".*\.wr\.(\d+)\..*" s )
-        type (get-series-type s)]
-    (format "%s von WR %s" (-> s get-series-type unit-properties :label) wr-id)))
+(defn- create-time-series-chart 
+  "Create a new time series chart and add all series."
+  [names series]
+  (let [[name1 & names] names
+        [val1 & values] series 
+        chart (ch/time-series-plot 
+                (map :time val1) 
+                (map :value val1)
+                :legend true
+                :series-label (get-series-label name1))]
+    ;; plot each time series to chart
+    (doseq [[name series] (map list names series)]
+        (ch/add-lines chart 
+                      (map :time series) 
+                      (map :value series)
+                      :series-label (get-series-label name)))
+    chart))
 
-(defn- get-series-values 
-  "Call appropriate database queries according to (get-series-type series-name). Returns
-sequence of value sequences (seq. of maps with keys :time and :value)."
-  [series-name start-time end-time]
-  (let [[id wr-id] (remove #{"wr" "string"} (string/split series-name #"\."))
-        s (db/as-sql-timestamp start-time) 
-        e(db/as-sql-timestamp (+ end-time ONE-DAY))]
-    (case (get-series-type series-name) 
-      ::efficiency (map (fn [m] (update-in m [:value] min 100)) (db/get-efficiency id wr-id s e));; FIXME data should never go over 100%!
-      ::daily-gain (db/sum-per-day (str id ".wr." wr-id ".gain") s e)
-      (db/all-values-in-time-range series-name s e))))
 
 ;;;;;;;;;;;;;;;; Chart generation pages ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpage "/series-of/:id/*/:times/chart.png" {:keys [id * times width height]}
   (if-let [[s e] (parse-times times)]
-    (let [names (re-seq #"[^/]+" *) ;; split at any slash
-          values (pmap #(get-series-values % s e) (distinct names))
-          chart (ch/time-series-plot 
-                  (map :time (first values)) 
-                  (map :value (first values))
-                  :title (str "Chart für den Zeitraum " (.format (dateformat) s) " bis " (.format (dateformat) e))
-                  :x-label "Zeit"
-                  :y-label (-> names first get-series-type unit-properties :label)
-                  :legend true
-                  :series-label (get-series-label (first names)))]
-      ;; add data series for each time series to chart
-      (doseq [[n values] (map list (rest names) (rest values))]
-        (ch/add-lines chart 
-                      (map :time values) 
-                      (map :value values)
-                      :series-label (get-series-label n)))
-      ;; map each time series to a matching axis (one axis per physical type)
-      (dorun (map-indexed #(set-axis chart %2 %) names))
-
-      (dorun
-          (map-indexed
-            (fn [i n] 
-              (let [r (create-renderer)] ;; set renderer that leaves gaps for missing values for all series
-                (.. chart getPlot (setRenderer i r))
-                ;; set colors
-                (.setSeriesPaint r 0 (-> n get-series-type unit-properties :color))))
-            names))
-
-      (return-image chart :height (s2i height 500) :width (s2i width 600)))
+    (let [names (distinct (re-seq #"[^/]+" *)) ;; split at any slash
+          values (pmap #(get-series-values % s e) names)]
+      
+      (-> (create-time-series-chart names values)
+        (ch/set-x-label "Zeit")
+        (ch/set-y-label (-> names first get-series-type unit-properties :label))
+        (ch/set-title (str "Chart für den Zeitraum " (.format (dateformat) s) " bis " (.format (dateformat) e)))
+        (enhance-chart names)
+        (return-image :height (s2i height 500) :width (s2i width 600))))
     ;; else the dates format was invalid
     {:status 400
      :body "Wrong dates!"}))
 
 
+;; show day that represents the biggest discord of a given series.
+(defpage "/series-of/:id/*/:times/discord.png" {:keys [id * times width height]}
+  (if-let [[s e] (parse-times times)]
+    (let [name (first (re-seq #"[^/]+" *))
+          data (get-series-values name s e)
+          days (->> data (partition-by #(int (/ (:time %) (* 1000 60 60 24)))))
+          [discord-idx _] (discord/find-discord-daily (map (partial map :value) days))]))
+  ;; else the dates format was invalid
+  {:status 400
+   :body "Wrong dates!"})
+
+
+;; show summed gain as bar charts for days, weeks, months, years
 (defpage "/gains/:id/:times/chart.png" {:keys [id wr-id times width height unit]}
   (if-let [[s e] (parse-times times)] 
     (let [db-query (case unit 
