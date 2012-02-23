@@ -65,15 +65,15 @@
        [:div.span6.offset1
         [:h3 "Erträge im letzten Jahr"]
         [:h4 "Gesamtertrag pro Tag"]
-        [:img.loading-bg {:src (format "/gains/%s/%s-%s/chart.png?unit=day&width=%d&height=%d" name last-month today w h)
+        [:img.loading-bg {:src (resolve-uri (format "/gains/%s/%s-%s/chart.png?unit=day&width=%d&height=%d" name last-month today w h))
                           :width w
                           :height h}]
         [:h4 "Gesamtertrag pro Woche"]
-        [:img.loading-bg {:src (format "/gains/%s/%s-%s/chart.png?unit=week&width=%d&height=%d" name last-month today w h)
+        [:img.loading-bg {:src (resolve-uri (format "/gains/%s/%s-%s/chart.png?unit=week&width=%d&height=%d" name last-month today w h))
                           :width w
                           :height h}]
         [:h4 "Gesamtertrag pro Monat"]
-        [:img.loading-bg {:src (format "/gains/%s/%s-%s/chart.png?unit=month&width=%d&height=%d" name last-month today w h)
+        [:img.loading-bg {:src (resolve-uri (format "/gains/%s/%s-%s/chart.png?unit=month&width=%d&height=%d" name last-month today w h))
                           :width w
                           :height h}]]])))
 
