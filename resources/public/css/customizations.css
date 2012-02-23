@@ -23,6 +23,7 @@ div.doNotFloat label{
 	float:none;
 }
 .loading-bg {
-    background: url('/img/loading.gif') no-repeat;
+    background: url('../img/loading.gif') no-repeat;
     background-position: center;
+    background-color: #ddd;
 }
