@@ -140,21 +140,22 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 
 (defn- create-time-series-chart 
   "Create a new time series chart and add all series."
-  [names series]
+  ([names series] (create-time-series-chart names series get-series-label))
+  ([names series label-fn ]
   (let [[name1 & names] names
-        [val1 & values] series 
+        [val1 & series] series 
         chart (ch/time-series-plot 
                 (map :time val1) 
                 (map :value val1)
                 :legend true
-                :series-label (get-series-label name1))]
+                :series-label (label-fn name1))]
     ;; plot each time series to chart
     (doseq [[name series] (map list names series)]
         (ch/add-lines chart 
                       (map :time series) 
                       (map :value series)
-                      :series-label (get-series-label name)))
-    chart))
+                      :series-label (label-fn name)))
+    chart)))
 
 
 ;;;;;;;;;;;;;;;; Chart generation pages ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
