@@ -114,7 +114,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
       (.setLabelPaint c)
       (.setAxisLinePaint c)
       (.setTickLabelPaint c)
-      (.setNumberFormatOverride (create-si-prefix-formatter "#.##"  (:unit props))))
+      (.setNumberFormatOverride (create-si-prefix-formatter "#.## "  (:unit props))))
     (when (not= axis (.getRangeAxis p idx)) 
       (.setRangeAxis p idx axis))
     (.mapDatasetToRangeAxis p series-idx idx)
@@ -185,7 +185,6 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
           name (first (re-seq #"[^/]+" *))
           data (get-series-values name s e)
           days (partition-by day-number data)
-          _ (println "got " (count days) " days in " times)
           discords (discord/find-multiple-discords-daily (map (partial map :value) days) num)
           discord-days (->> discords
                          (map #(nth days (first %)))
@@ -205,7 +204,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
    :body "Wrong dates!"}))
 
 ;; show summed gain as bar charts for days, weeks, months, years
-(defpage "/gains/:id/:times/chart.png" {:keys [id wr-id times width height unit]}
+(defpage gain-chart "/gains/:id/:times/chart.png" {:keys [id wr-id times width height unit]}
   (if-let [[s e] (parse-times times)] 
     (let [db-query (case unit 
                      "day" db/sum-per-day, 

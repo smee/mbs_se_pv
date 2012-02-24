@@ -11,7 +11,9 @@
           hiccup.page-helpers
           hiccup.form-helpers
           mbs-se-pv.views.util
-          [org.clojars.smee.map :only (map-values)]))
+          [org.clojars.smee 
+           [map :only (map-values)]
+           [util :only (s2i)]]))
 
 (declare toolbar-links)
 
@@ -110,7 +112,7 @@
 
 (defn- restore-wr-hierarchy [names]
   (->> names
-    (map #(concat ["nach Bauteil"] (nice-labels (split-series-name %)) [%]))
+    (map #(concat ["Daten" "nach Bauteil"] (nice-labels (split-series-name %)) [%]))
     restore-hierarchy))
 
 (defn- cluster-by-type [names]
@@ -137,11 +139,8 @@
         daily-gain-names (distinct (map #(str id ".wr." (extract-wr-id %) ".daily-gain") names))
         tree (->> names
                (concat efficiency-names daily-gain-names)
-               sort
-               reverse
                ((juxt restore-wr-hierarchy cluster-by-type))
                (apply concat)
-               ;(clojure.walk/postwalk #(if (map? %) (into (sorted-map) %) %))
                make-tree)
         base-url (or hiccup.core/*base-url* "")]
         
