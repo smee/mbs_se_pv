@@ -5,13 +5,16 @@
     [mbs-db.core :as db]
     [incanter.core :as ic]
     [incanter.charts :as ch]
-    [timeseries.discord :as discord])
+    [timeseries.discord :as discord]
+    [chart-utils.jfreechart :as cjf])
   (:use  
     [clojure.string :only (split)]
     [noir.core :only (defpage)]
     [noir.response :only (content-type)]
     [mbs-se-pv.views.util :only (dateformatrev dateformat ONE-DAY convert-si-unit create-si-prefix-formatter)]
-    [org.clojars.smee.util :only (s2i)])
+    [org.clojars.smee 
+     [time :only (as-sql-timestamp)]
+     [util :only (s2i)]])
   (:import 
     [java.io ByteArrayOutputStream ByteArrayInputStream]
     org.jfree.chart.axis.AxisLocation
@@ -88,8 +91,8 @@
 sequence of value sequences (seq. of maps with keys :time and :value)."
   [series-name start-time end-time]
   (let [[id wr-id] (remove #{"wr" "string"} (string/split series-name #"\."))
-        s (db/as-sql-timestamp start-time) 
-        e(db/as-sql-timestamp (+ end-time ONE-DAY))]
+        s (as-sql-timestamp start-time) 
+        e(as-sql-timestamp (+ end-time ONE-DAY))]
     (case (get-series-type series-name) 
       ::efficiency (map (fn [m] (update-in m [:value] min 100)) (db/get-efficiency id wr-id s e));; FIXME data should never go over 100%!
       ::daily-gain (db/sum-per-day (str id ".wr." wr-id ".gain") s e)
@@ -213,7 +216,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                      "year" db/sum-per-year, 
                      db/sum-per-day)
           name (str id ".wr." (if wr-id wr-id "%") ".gain")
-          data (db-query name (db/as-sql-timestamp s) (db/as-sql-timestamp e))
+          data (db-query name (as-sql-timestamp s) (as-sql-timestamp e))
           chart (doto (ch/bar-chart 
                         (map #(.format (dateformat) (:time %)) data) (map #(/ (:value %) 1000) data)
                         ;:title (format "Gesamtertrag für %s WR %s im Zeitraum %s bis %s" id wr-id (.format (dateformat) s) (.format (dateformat) e))
@@ -225,3 +228,4 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
     ;; else the dates format was invalid
     {:status 400
      :body "Wrong dates!"}))
+

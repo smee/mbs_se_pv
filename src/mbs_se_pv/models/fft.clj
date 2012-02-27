@@ -5,7 +5,7 @@
     [mbs-se-pv.views.util :as util]
     [mbs-db.core :as db]
     [chart-utils.jfreechart :as cfj])
-  (:use [org.clojars.smee.time :only (millis-to-string)]))
+  (:use [org.clojars.smee.time :only (millis-to-string as-sql-timestamp)]))
 
 (def ^:const ONE-DAY (* 24 60 60 1000))
 
@@ -75,8 +75,8 @@ the calculation. N is the length of the data to use as input, should be a power 
  ; {:pre [(>= 365 (int (/ (- end-millis start-millis) ONE-DAY)))]}
     ;; waterfall display of ffts per day
   (let [ ;; load data per day
-        s (java.sql.Timestamp. start-millis) 
-        e (java.sql.Timestamp. end-millis)     
+        s (as-sql-timestamp start-millis) 
+        e (as-sql-timestamp end-millis)     
         total-days (int (/ (- end-millis start-millis) ONE-DAY))
         
         db-values (db/all-values-in-time-range name s e)
@@ -114,8 +114,8 @@ the calculation. N is the length of the data to use as input, should be a power 
 (comment
   (def data 
     (let [name "singwitz.wr.0.pac"
-          s (->> "20110601" (.parse (util/dateformatrev)) .getTime java.sql.Timestamp.) 
-          e (->> "20110602" (.parse (util/dateformatrev)) .getTime java.sql.Timestamp.)
+          s (->> "20110601" (.parse (util/dateformatrev)) as-sql-timestamp) 
+          e (->> "20110602" (.parse (util/dateformatrev)) as-sql-timestamp)
           db-data (db/all-values-in-time-range name s e)]
       (map :value db-data)))
   
