@@ -1,7 +1,7 @@
 (function(baseUrl){
 	$(document).ready(function() {
 		$('#names').dataTable( {
-	    'sDom': "<'row'<'span5 doNotFloat'l><'span5 doNotFloat'f>r>t<'row'<'span3'i><'span7'p>>",
+	    'sDom': "<'row'<'span5 doNotFloat'l><'span5 doNotFloat'f>r>t<'row'<'span3'i><'span8'p>>",
 			'bProcessing': true,
 			'bServerSide': true,
 			'sAjaxSource': baseUrl+'/data/metadata.json', 
