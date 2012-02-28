@@ -18,39 +18,51 @@
 (declare toolbar-links)
 
 ;;;;;;;;;;;;;;;;;;;;;;;; show metadata as table ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(def ^:private metadata-label
-  {:anlagenkwp "Installierte Leistung in Wp"
-   :hpausricht "Ausrichtung der Module"
-   :verguetung "Vergütung pro kWh"
-   :hpemail  "Kontaktemail"
-   :hpmodul "PV-Modul" 
-   :hpstandort "Standort"
+(def ^:private installation-labels
+  [:first-date "Erster Messwert am"
+   :last-date "Letzter Messwert am"
+   :id "Name der Anlage"
+   :anlagenkwp "Installierte Leistung in Wp"
+   :anzahlwr "Anzahl installierter Wechselrichter"
+   :hpmodul "PV-Module" 
    :hpwr "Wechselrichter"
-   :hpinbetrieb "Inbetriebnahme"
-   :hpleistung "Leistung"
-   :hpbetreiber "Betreiber"
-   :serialnr "Seriennummer des Datenloggers"
+   :hpausricht "Ausrichtung der Module"
+   ])
+(def ^:private personal-labels
+  [:hpbetreiber "Betreiber"
+   :verguetung "Vergütung pro kWh"
+   :hpstandort "Standort"
    :hppostleitzahl "Postleitzahl"
-   :id "Name"
-   :anzahlwr "Anzahl installierter Wechselrichter"})
+   :hpemail  "Kontaktemail"
+   :hpinbetrieb "Inbetriebnahme"
+   :serialnr "Seriennummer des Datenloggers"
+   ])
+
 (defn ^:private metadata-value [k v]
   (case k
-    :anlagenkwp (.format (create-si-prefix-formatter "###.##" "Wh") v)
-    :verguetung (format "%.2f€" (float (/ v 100)))
+    :anlagenkwp (.format (create-si-prefix-formatter "###.##" " Wh") v)
+    :verguetung (format "%.2f €" (float (/ v 100)))
     v))
 
-(defn- metadata-table [metadata]
+(defn- metadata-table [metadata labels]
   (let [wr-details (:wr metadata)
         metadata (dissoc metadata :wr)
         k (sort (keys metadata))]
     [:table.condensed-table.zebra-striped 
-     (for [[k v] (into (sorted-map) metadata) 
-           :let [label (metadata-label k)] 
-           :when label]
-       [:tr [:th label] [:td (metadata-value k v)]])]))
+     (for [[k label] (partition 2 labels) 
+           :let [value (metadata k)] 
+           :when value]
+       [:tr [:th label] [:td (metadata-value k value)]])]))
+
+
+(defpartial render-gain-image [name last-month today w h type]
+  [:img.loading-bg {:src (resolve-uri (format "/gains/%s/%s-%s/chart.png?unit=%s&width=%d&height=%d" name last-month today type w h))
+                    :width w
+                    :height h}])
 
 (defpage metadata-page "/details/:id" {name :id}
-  (let [metadata (-> name db/get-metadata first second)
+  (let [{:keys [min max]} (-> name (str "%") db/all-series-names-of first db/min-max-time-of)
+        metadata (-> name db/get-metadata first second (assoc :first-date (.format (dateformat) min)) (assoc :last-date (.format (dateformat) max)))
         now (System/currentTimeMillis)
         today (.format (dateformatrev) now)
         last-month (.format (dateformatrev) (- now (* 365 ONE-DAY)))
@@ -62,22 +74,18 @@
       [:div.row
        [:div.span6
         [:h3 "Anlagendaten"]
-        (metadata-table metadata)
+        (metadata-table metadata installation-labels)
+        [:h3 "Betreiber"]
+        (metadata-table metadata personal-labels)
         [:a.btn.large.success {:href (resolve-uri (url-for all-series {:id name}))} "Messwerte"]]
        [:div.span6.offset1
         [:h3 "Erträge im letzten Jahr"]
         [:h4 "Gesamtertrag pro Tag"]
-        [:img.loading-bg {:src (resolve-uri (format "/gains/%s/%s-%s/chart.png?unit=day&width=%d&height=%d" name last-month today w h))
-                          :width w
-                          :height h}]
+        (render-gain-image name last-month today w h "day")
         [:h4 "Gesamtertrag pro Woche"]
-        [:img.loading-bg {:src (resolve-uri (format "/gains/%s/%s-%s/chart.png?unit=week&width=%d&height=%d" name last-month today w h))
-                          :width w
-                          :height h}]
+        (render-gain-image name last-month today w h "week")
         [:h4 "Gesamtertrag pro Monat"]
-        [:img.loading-bg {:src (resolve-uri (format "/gains/%s/%s-%s/chart.png?unit=month&width=%d&height=%d" name last-month today w h))
-                          :width w
-                          :height h}]]])))
+        (render-gain-image name last-month today w h "month")]])))
 
 ;;;;;;;;;;;;;; show all available time series info per pv installation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- label-for-type [s]
