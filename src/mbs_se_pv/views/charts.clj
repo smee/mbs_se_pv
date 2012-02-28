@@ -8,6 +8,7 @@
     [timeseries.discord :as discord]
     [chart-utils.jfreechart :as cjf])
   (:use  
+    timeseries.align
     [clojure.string :only (split)]
     [noir.core :only (defpage)]
     [noir.response :only (content-type)]
@@ -229,3 +230,43 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
     {:status 400
      :body "Wrong dates!"}))
 
+;;;;;;;;;;;;;;;; heat map overview ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn- hm [hours minutes]
+  (* 60 1000 (+ minutes (* hours 60))))
+
+(defn- insert-missing-days [start-date end-date days]
+  (let [all-day-numbers (range (day-number {:time start-date}) (day-number {:time end-date}))
+        m (reduce #(assoc % %2 []) (sorted-map) all-day-numbers)
+        m (reduce #(assoc % (day-number (first %2)) %2) m days)]
+    (vals m)))
+
+(defpage "/series-of/:id/*/:times/heat-map.png" {:keys [id * times width height hours minutes]}
+  (if-let [[s e] (parse-times times)]
+    (let [name (first (distinct (re-seq #"[^/]+" *))) ;; split at any slash
+          values (get-series-values name s e)
+          days (->> values (partition-by day-number) (insert-missing-days s e))
+          daily-start (hm 6 0)
+          daily-end (hm 22 0)
+          five-min (hm (s2i hours 0) (s2i minutes 5))
+          gridded (map #(smooth (into-time-grid (map (juxt :time :value) %) daily-start daily-end five-min)) days)
+          days (vec (map #(vec (map second %)) gridded))
+          x-max (count days )
+          y-max (apply max (map count days))
+          f (fn [x y] 
+              (if-let [v (get-in days [(int (/ (- x s) ONE-DAY)) (int (/ (- y daily-start) five-min))])]
+                v
+                0))
+          chart (doto (cjf/heat-map f s (+ s (clojure.core/* ONE-DAY x-max)) daily-start daily-end 
+                                    :color? true
+                                    :title (format "Tagesverläufe von %s im Zeitraum %s" name times)
+                                    :x-label "Tag"
+                                    :y-label "Werte"
+                                    :z-label (-> name get-series-type unit-properties :label) 
+                                    :x-step (count days)
+                                    :y-step y-max
+                                    :color? true)
+                  (.. getPlot getRenderer (setBlockWidth ONE-DAY))
+                  (.. getPlot getRenderer (setBlockHeight five-min)))]
+      (.. chart getPlot (setDomainAxis (org.jfree.chart.axis.DateAxis.)))
+      (.. chart getPlot (setRangeAxis (org.jfree.chart.axis.DateAxis.)))
+      (return-image chart :height (s2i height 500) :width (s2i width 600)))))
