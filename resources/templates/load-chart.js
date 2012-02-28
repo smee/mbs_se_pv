@@ -13,8 +13,10 @@ return (function(baseUrl, id){
     var selectedSeries = $.map($('#series-tree').dynatree('getSelectedNodes'), function(node){ return node.data.series; });
 // do not fetch a chart without any selected series
     if(selectedSeries.length < 1) return false;
+// find selected chart type
+    var pngName=$('input[name=chart-type]:checked').val();
 // create link
-    var link=baseUrl+'/series-of/'+ id+'/'+selectedSeries.join('/')+'/'+interval+'/chart.png?width='+$('#chart-width').val()+'&height='+$('#chart-height').val();
+    var link=baseUrl+'/series-of/'+ id+'/'+selectedSeries.join('/')+'/'+interval+'/'+pngName+'.png?width='+$('#chart-width').val()+'&height='+$('#chart-height').val();
      $('#current-chart').showLoading(); 
 // show chart
     $('#chart-image').attr('src', link).load(function(){

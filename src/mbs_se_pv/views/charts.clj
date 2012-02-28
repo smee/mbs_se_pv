@@ -244,7 +244,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
   (if-let [[s e] (parse-times times)]
     (let [name (first (distinct (re-seq #"[^/]+" *))) ;; split at any slash
           values (get-series-values name s e)
-          days (->> values (partition-by day-number) (insert-missing-days s e))
+          days (->> values (partition-by day-number) (insert-missing-days s e)) 
           daily-start (hm 6 0)
           daily-end (hm 22 0)
           five-min (hm (s2i hours 0) (s2i minutes 5))

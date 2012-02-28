@@ -121,13 +121,32 @@
             (concat ["nach Datentyp"] (vector (last parts)) (butlast parts) [%])))
     restore-hierarchy))
 
-(defn- make-tree [nested]
+(defn- make-nested-list [nested]
   [:ul 
    (for [[k vs] nested]
      (if (and (sequential? vs) (= 1 (count vs)))
        [:li {:data (format "{series: '%s'}" (first vs))} k]
-       [:li {:class "folder"} k (make-tree vs)]))])
+       [:li {:class "folder"} k (make-nested-list vs)]))])
 
+(defpartial series-tree [id names elem-id]
+  (let [efficiency-names (distinct (map #(str id ".wr." (extract-wr-id %) ".efficiency") names))
+        daily-gain-names (distinct (map #(str id ".wr." (extract-wr-id %) ".daily-gain") names))
+        tree (->> names
+               (concat efficiency-names daily-gain-names)
+               ((juxt restore-wr-hierarchy cluster-by-type))
+               (apply concat)
+               make-nested-list)]
+     [:div {:id elem-id} 
+      tree
+      ;; render tree via jquery plugin
+      (javascript-tag 
+        (format
+          "$('#%s').dynatree({
+           checkbox:true,
+           selectMode: 3,          
+           persist: false,
+           minExpandLevel: 2});"
+          elem-id))]))
 
 (defpage all-series "/series-of/:id" {id :id}
   (let [q (str id ".%")
@@ -135,13 +154,6 @@
         names (db/all-series-names-of q)
         {:keys [min max]} (db/min-max-time-of (first names))
         date (.format (dateformat) max)
-        efficiency-names (distinct (map #(str id ".wr." (extract-wr-id %) ".efficiency") names))
-        daily-gain-names (distinct (map #(str id ".wr." (extract-wr-id %) ".daily-gain") names))
-        tree (->> names
-               (concat efficiency-names daily-gain-names)
-               ((juxt restore-wr-hierarchy cluster-by-type))
-               (apply concat)
-               make-tree)
         base-url (or hiccup.core/*base-url* "")]
         
     (common/layout-with-links
@@ -152,14 +164,19 @@
         (text-field {:placeholder "Startdatum" :class "span2"} "start-date" date)
         (text-field {:placeholder "Enddatum" :class "span2"} "end-date" date)
         [:h5 "Datenreihen"]
-        (vector :div#series-tree tree)
+        (series-tree id names "series-tree")
+        [:div
+         [:h5 "Art der Anzeige:"]
+         [:ul.inputs-list
+          [:li [:label (radio-button "chart-type" true "chart") "Zeitreihe"]]
+          [:li [:label (radio-button "chart-type" false "heat-map") "Heatmap"]]
+          [:li [:label (radio-button "chart-type" false "discord") "Ungewöhnlicher Tag"]]]]
         [:div 
          [:h5 "Größe:"]
          [:input#chart-width.span2 {:value "850" :type "number"}] 
          [:span "X"] 
          [:input#chart-height.span2 {:value "700" :type "number"}]]
         [:a.btn.primary {:href "" :onclick (render-javascript-template "templates/load-chart.js" base-url id)} "Anzeigen"]
-        [:a.btn {:href "" :onclick (render-javascript-template "templates/load-discord-chart.js" base-url id)} "Discord"]
         [:a.btn {:href "#" :onclick (render-javascript-template "templates/show-report.js" base-url id)} "Report Wirkungsgrad"]]       
       ;; main content
       [:div.row 
@@ -167,13 +184,6 @@
         [:h2 "Chart"]
         [:div#current-chart "Bitte wählen Sie links die zu visualisierenden Daten und ein Zeitinterval aus."
          [:img#chart-image {:src ""}]]]]
-      ;; render tree via jquery plugin
-      (javascript-tag 
-        "$('#series-tree').dynatree({
-          checkbox:true,
-          selectMode: 3,          
-          persist: false,
-          minExpandLevel: 2});")
       ;; render calendar input via jquery plugin
       (javascript-tag (render-javascript-template "templates/date-selector.js" "#start-date" date min max))
       (javascript-tag (render-javascript-template "templates/date-selector.js" "#end-date" date min max)))))
