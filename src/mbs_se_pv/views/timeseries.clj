@@ -185,7 +185,11 @@
          [:span "X"] 
          [:input#chart-height.span2 {:value "700" :type "number"}]]
         [:a.btn.primary {:href "" :onclick (render-javascript-template "templates/load-chart.js" base-url id)} "Anzeigen"]
-        [:a.btn {:href "#" :onclick (render-javascript-template "templates/show-report.js" base-url id)} "Report Wirkungsgrad"]]       
+        [:div
+         [:h5 "Report Wirkungsgrad"]
+         [:span.help-block "Bitte wählen Sie den Monat aus, für den ein Report erstellt werden soll:"]
+         (text-field {:placeholder "Monat für Report" :class "span2"} "report-date" date)
+         [:a.btn {:href "#" :onclick (render-javascript-template "templates/show-report.js" base-url id)} "Erstellen"]]]       
       ;; main content
       [:div.row 
        [:div.span12        
@@ -194,7 +198,8 @@
          [:img#chart-image {:src ""}]]]]
       ;; render calendar input via jquery plugin
       (javascript-tag (render-javascript-template "templates/date-selector.js" "#start-date" date min max))
-      (javascript-tag (render-javascript-template "templates/date-selector.js" "#end-date" date min max)))))
+      (javascript-tag (render-javascript-template "templates/date-selector.js" "#end-date" date min max))
+      (javascript-tag (render-javascript-template "templates/date-selector.js" "#report-date" date min max)))))
 
 (defn toolbar-links 
   "Links for the toolbar, see common/eumonis-topbar or common/layout-with-links for details"
