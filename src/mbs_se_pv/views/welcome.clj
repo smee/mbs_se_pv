@@ -40,24 +40,21 @@
      (link-to (url-for start-page) "&Uuml;bersicht")
      (link-to (url-for maps/maps) "Karten")]
     nil  
-    [:h1 "Anlagenübersicht"]
-    [:div.row
-     [:div.span16
-      [:table#names.zebra-striped.condensed-table
-       [:thead [:tr 
-                [:th (apply str "Anlagenbezeichnung" (repeat 10 "&nbsp;"))] 
-                [:th "Installierte Leistung (kWp)"]
-                [:th "Anzahl Wechselrichter"]
-                [:th "Postleitzahl"]]]
-       [:tbody
-        (for [{:keys [id anlagenkwp anzahlwr hppostleitzahl]} (->> (db/get-metadata) vals (take 10))]
-          [:tr 
-           [:td (link-to (url-for ts/metadata-page {:id id}) id)]
-           [:td anlagenkwp]
-           [:td hppostleitzahl]
-           [:td hppostleitzahl]])]]]
-     ;(render-map)
-     ]
+    [:div.span12
+     [:h1 "Anlagenübersicht"]
+     [:table#names.table.table-striped.table-condensed
+      [:thead [:tr 
+               [:th (apply str "Anlagenbezeichnung" (repeat 10 "&nbsp;"))] 
+               [:th "Installierte Leistung (kWp)"]
+               [:th "Anzahl Wechselrichter"]
+               [:th "Postleitzahl"]]]
+      [:tbody
+       (for [{:keys [id anlagenkwp anzahlwr hppostleitzahl]} (->> (db/get-metadata) vals (take 10))]
+         [:tr 
+          [:td (link-to (url-for ts/metadata-page {:id id}) id)]
+          [:td anlagenkwp]
+          [:td hppostleitzahl]
+          [:td hppostleitzahl]])]]]
     (javascript-tag (render-javascript-template "templates/render-datatable.js" (or hiccup.core/*base-url* "")))))
 
 (defpage "/" []

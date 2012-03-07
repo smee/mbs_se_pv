@@ -75,21 +75,21 @@
 
 (defpage maps "/maps" {}
   (common/layout 
-    (map-includes) 
-     [:div.row
-      [:div.span8 
+     [:div.row-fluid
+      [:div.span6 
        [:h3 "Installierte Leistung (in kW)"]
        [:div#chart]]
-      [:div.span8
+      [:div.span6
        [:h3 "Anzahl installierter PV-Anlagen"]
        [:div#chart2]]]
-     [:div.row
-      [:div.span8
+     [:div.row-fluid
+      [:div.span6
        [:h3 "Durchschnittliche Einspeisevergütung (in cent)"]
        [:div#chart3]]
-      [:div.span8
+      [:div.span6
        [:h3 "Anzahl installierter Wechselrichter"]
        [:div#chart4]]] 
+      (map-includes)
      (javascript-tag (render-plz-map "chart" "Reds" (resolve-uri "/data/powerdistribution.json") 300))
      (javascript-tag (render-plz-map "chart2" "Blues" (resolve-uri "/data/installationcounts.json") 10))
      (javascript-tag (render-plz-map "chart3" "Greens" (resolve-uri "/data/averagefee.json") 50))

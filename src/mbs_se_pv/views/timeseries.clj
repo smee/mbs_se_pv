@@ -48,11 +48,11 @@
   (let [wr-details (:wr metadata)
         metadata (dissoc metadata :wr)
         k (sort (keys metadata))]
-    [:table.condensed-table.zebra-striped 
+    [:table.table.table-striped.table-condensed 
      (for [[k label] (partition 2 labels) 
            :let [value (metadata k)] 
            :when value]
-       [:tr [:th label] [:td (metadata-value k value)]])]))
+       [:tr [:th.span4 label] [:td (metadata-value k value)]])]))
 
 
 (defpartial render-gain-image [name last-month today w h type]
@@ -71,21 +71,20 @@
     (common/layout-with-links 
       (toolbar-links name 1)
       nil
-      [:div.row
-       [:div.span6
+      [:div.span6
         [:h3 "Anlagendaten"]
         (metadata-table metadata installation-labels)
         [:h3 "Betreiber"]
         (metadata-table metadata personal-labels)
-        [:a.btn.large.success {:href (resolve-uri (url-for all-series {:id name}))} "Messwerte"]]
-       [:div.span6.offset1
+        [:a.btn.btn-large.btn-success {:href (resolve-uri (url-for all-series {:id name}))} "Messwerte"]]
+       [:div.span6
         [:h3 "Erträge im letzten Jahr"]
         [:h4 "Gesamtertrag pro Tag"]
         (render-gain-image name last-month today w h "day")
         [:h4 "Gesamtertrag pro Woche"]
         (render-gain-image name last-month today w h "week")
         [:h4 "Gesamtertrag pro Monat"]
-        (render-gain-image name last-month today w h "month")]])))
+        (render-gain-image name last-month today w h "month")])))
 
 ;;;;;;;;;;;;;; show all available time series info per pv installation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- label-for-type [s]
@@ -167,35 +166,49 @@
     (common/layout-with-links
       (toolbar-links id 2)
       ;; sidebar
-      [:form.form-stacked 
-        [:h5 "Datum"]
-        (text-field {:placeholder "Startdatum" :class "span2"} "start-date" date)
-        (text-field {:placeholder "Enddatum" :class "span2"} "end-date" date)
-        [:h5 "Datenreihen"]
-        (series-tree id names "series-tree")
+      [:div.span3
+       [:form.form-vertical.well 
         [:div
-         [:h5 "Art der Anzeige:"]
-         [:ul.inputs-list
-          [:li [:label (radio-button "chart-type" true "chart") "Zeitreihe"]]
-          [:li [:label (radio-button "chart-type" false "heat-map") "Heatmap"]]
-          [:li [:label (radio-button "chart-type" false "discord") "Ungewöhnlicher Tag"]]]]
-        [:div 
-         [:h5 "Größe:"]
-         [:input#chart-width.span2 {:value "850" :type "number"}] 
+         [:h4 "Datum"]
+         [:div.input-prepend 
+          [:span.add-on "von: "] 
+          (text-field {:placeholder "Startdatum" :class "input-small"} "start-date" date)]
+         [:div.input-prepend
+          [:span.add-on "bis: "]
+          (text-field {:placeholder "Enddatum" :class "input-small"} "end-date" date)]]
+        [:div
+         [:h4 "Datenreihen"]
+         (series-tree id names "series-tree")]
+        [:div
+         [:h4 "Art der Anzeige:"]
+         [:div.controls
+          [:label.radio (radio-button "chart-type" true "chart") "Zeitreihe"]
+          [:label.radio (radio-button "chart-type" false "heat-map") "Heatmap"]
+          [:label.radio (radio-button "chart-type" false "discord") "Ungewöhnlicher Tag"]]
+         ]
+        [:div
+         [:h4 "Größe:"]
+         [:input#chart-width.input-mini {:value "850" :type "number"}] 
          [:span "X"] 
-         [:input#chart-height.span2 {:value "700" :type "number"}]]
-        [:a.btn.primary {:href "" :onclick (render-javascript-template "templates/load-chart.js" base-url id)} "Anzeigen"]
-        [:div
-         [:h5 "Report Wirkungsgrad"]
-         [:span.help-block "Bitte wählen Sie den Monat aus, für den ein Report erstellt werden soll:"]
-         (text-field {:placeholder "Monat für Report" :class "span2"} "report-date" date)
-         [:a.btn {:href "#" :onclick (render-javascript-template "templates/show-report.js" base-url id)} "Erstellen"]]]       
+         [:input#chart-height.input-mini {:value "700" :type "number"}]
+         [:span "px"]]
+        [:button.btn-primary.btn-large {:href "" :onclick (render-javascript-template "templates/load-chart.js" base-url id)} 
+         [:i.icon-picture.icon-white]
+         " Anzeigen"]
+        ]
+      [:form.form-vertical 
+       [:div.well
+         [:h4 "Report Wirkungsgrad"]
+         [:span.help-inline "Bitte wählen Sie den Monat aus, für den ein Report erstellt werden soll:"]
+         (text-field {:placeholder "Monat für Report" :class "input-small"} "report-date" date)
+         [:button.btn {:href "#" :onclick (render-javascript-template "templates/show-report.js" base-url id)} 
+          [:i.icon-list-alt]
+          " Erstellen"]]]]
       ;; main content
-      [:div.row 
-       [:div.span12        
-        [:h2 "Chart"]
-        [:div#current-chart "Bitte wählen Sie links die zu visualisierenden Daten und ein Zeitinterval aus."
-         [:img#chart-image {:src ""}]]]]
+      [:div.span9        
+       [:h2 "Chart"]
+       [:div#current-chart "Bitte wählen Sie links die zu visualisierenden Daten und ein Zeitinterval aus."
+        [:img#chart-image {:src ""}]]]
       ;; render calendar input via jquery plugin
       (javascript-tag (render-javascript-template "templates/date-selector.js" "#start-date" date min max))
       (javascript-tag (render-javascript-template "templates/date-selector.js" "#end-date" date min max))
