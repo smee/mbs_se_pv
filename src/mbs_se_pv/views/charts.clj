@@ -11,7 +11,7 @@
     timeseries.align
     [clojure.string :only (split)]
     [noir.core :only (defpage)]
-    [noir.response :only (content-type)]
+    [noir.response :only (content-type json)]
     [mbs-se-pv.views.util :only (dateformatrev dateformat ONE-DAY convert-si-unit create-si-prefix-formatter)]
     [org.clojars.smee 
      [time :only (as-sql-timestamp)]
@@ -269,4 +269,21 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                   (.. getPlot getRenderer (setBlockHeight five-min)))]
       (.. chart getPlot (setDomainAxis (org.jfree.chart.axis.DateAxis.)))
       (.. chart getPlot (setRangeAxis (org.jfree.chart.axis.DateAxis.)))
-      (return-image chart :height (s2i height 500) :width (s2i width 600)))))
+      (return-image chart :height (s2i height 500) :width (s2i width 600)))
+    {:status 400
+     :body "Wrong dates!"}))
+
+(defpage "/series-of/:id/*/:times/data.json" {:keys [id * times]}
+  (if-let [[s e] (parse-times times)]
+    (let [names (distinct (re-seq #"[^/]+" *)) ;; split at any slash
+          values (map (partial map (juxt :time :value)) (map #(get-series-values % s e) names))]
+      (json
+        {:title (str "Betriebsdaten im Zeitraum " times)
+         :x-label "Zeit"
+         :series (map #(let [type (get-series-type %)
+                             v %2
+                             {:keys [unit label]} (get unit-properties type)] 
+                         (hash-map :name %, :unit unit, :label label, :type type, :data %2)) 
+                      names values)}))
+    {:status 400
+     :body "Wrong dates!"}))
