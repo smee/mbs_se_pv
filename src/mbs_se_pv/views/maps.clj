@@ -3,10 +3,14 @@
     [mbs-se-pv.views 
      [common :as common]]
     [mbs-db.core :as db])
-  (:use [noir.core :only (defpage defpartial url-for)]
-        [noir.response :only (redirect json)]
-        [hiccup.core :only (html resolve-uri)]
-        hiccup.page-helpers
+  (:use [noir 
+         [core :only (defpage defpartial url-for)]
+         [options :only (resolve-url)]
+         [response :only (redirect json)]]        
+        [hiccup 
+         [core :only (html)]
+         [element :only (javascript-tag unordered-list link-to)]
+         [page :only (include-css include-js)]]
         mbs-se-pv.views.util
         [clojure.string :only (join)]
         [org.clojars.smee.util :only (s2i)]))
@@ -64,7 +68,7 @@
 
 
 (defn render-plz-map [div-id color-css-class json-link max-value]
-  (let [base-url (or hiccup.core/*base-url* "")]
+  (let [base-url (or (noir.options/get :base-url) "")]
     (render-javascript-template "templates/choroplethplz.js" div-id color-css-class base-url json-link (int max-value))))
 
 (defpartial map-includes []
@@ -90,10 +94,10 @@
        [:h3 "Anzahl installierter Wechselrichter"]
        [:div#chart4]]] 
       (map-includes)
-     (javascript-tag (render-plz-map "chart" "Reds" (resolve-uri "/data/powerdistribution.json") 300))
-     (javascript-tag (render-plz-map "chart2" "Blues" (resolve-uri "/data/installationcounts.json") 10))
-     (javascript-tag (render-plz-map "chart3" "Greens" (resolve-uri "/data/averagefee.json") 50))
-     (javascript-tag (render-plz-map "chart4" "Oranges" (resolve-uri "/data/invertercount.json") 100))))
+     (javascript-tag (render-plz-map "chart" "Reds" (resolve-url "/data/powerdistribution.json") 300))
+     (javascript-tag (render-plz-map "chart2" "Blues" (resolve-url "/data/installationcounts.json") 10))
+     (javascript-tag (render-plz-map "chart3" "Greens" (resolve-url "/data/averagefee.json") 50))
+     (javascript-tag (render-plz-map "chart4" "Oranges" (resolve-url "/data/invertercount.json") 100))))
 
 (defpage "/plz/:plz" {plz :plz}
   (let [ids (->> (db/get-metadata) vals (filter #(= plz (:hppostleitzahl %))) (map :id) sort)]

@@ -1,7 +1,9 @@
 (ns mbs-se-pv.views.common
   (:use noir.core
-        hiccup.core
-        hiccup.page-helpers))
+        [hiccup core
+         [element]
+         [page :only (html5 include-css include-js)]]
+        ))
 
 (defpartial eumonis-header []
   [:head 
@@ -26,7 +28,7 @@
    (javascript-tag 
      "$.extend( $.fn.dataTableExt.oStdClasses, {
       'sWrapper': 'dataTables_wrapper form-inline'});")
-   [:link {:rel "shortcut icon" :href (url "/img/favicon.ico")}]])
+   [:link {:rel "shortcut icon" :href "img/favicon.ico"}]])
 
 (defpartial eumonis-topbar [[active-idx & links]]
   [:div.navbar
@@ -48,13 +50,13 @@
 			30.06.2014."]]
     [:div.span2
      (link-to "http://www.bmbf.de/" 
-              [:img {:src (url "/img/bmbf-ohne-rand.gif") 
+              [:img {:src "img/bmbf-ohne-rand.gif" 
                      :alt "gef&#246;rdert durch das Bundesministerium f&#252;r Bildung und Forschung"
                      :width "150px"}])]])
 
 
 (defn layout-with-links [topbar-links sidebar-contents & contents]
-  (html5 {:xml? true}
+  (html5
     (eumonis-header)
     [:body
      (eumonis-topbar topbar-links)

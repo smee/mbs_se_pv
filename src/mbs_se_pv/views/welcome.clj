@@ -5,11 +5,14 @@
      [maps :as maps]]
     [mbs-db.core :as db]
     [mbs-se-pv.views.timeseries :as ts])
-  (:use [noir.core :only (defpage defpartial url-for)]
-        [noir.response :only (redirect json)]
-        [hiccup.core :only (html resolve-uri)]
-        [hiccup.page-helpers :only (link-to javascript-tag)]
-        [hiccup.form-helpers :only (drop-down)]
+  (:use [noir 
+         [core :only (defpage defpartial url-for)]
+         [options :only (resolve-url)]
+         [response :only (redirect json)]]
+        [hiccup 
+         [core :only (html)]
+         [element :only (link-to javascript-tag)]
+         [form :only (drop-down)]]
         mbs-se-pv.views.util))
 
 (defpartial render-map []
@@ -17,20 +20,20 @@
       [:h3 "Installierte Leistung pro Postleitzahl"]
       [:div "Bitte doppelt auf eine Region klicken um alle Anlagen darin zu sehen."]
       (drop-down {:onchange "mapfn(this.value)"}"mapDataSelector" 
-                 [["Anzahl installierter PV-Anlagen" (resolve-uri "/data/installationcounts.json")] 
-                  ["Durchschnittliche Einspeisevergütung (cent)" (resolve-uri "/data/averagefee.json")]
-                  ["Anzahl installierter Wechselrichter" (resolve-uri "/data/invertercount.json")]
-                  ["Installierte Leistung (kW)" (resolve-uri "/data/powerdistribution.json")]
-                  ["Erwarter Ertrag (kWh/kWp)" (resolve-uri "/data/averageexpectedgain.json")]
-                  ["Anzahl von Siemenswechselrichtern" (resolve-uri "/data/siemenscount.json")]
-                  ["Anzahl von Siemenswechselrichtern" (resolve-uri "/data/siemenscount.json")]
-                  ["Gerade Postleitzahlen" (resolve-uri "/data/even.json")]
-                  ["Ungerade Postleitzahlen" (resolve-uri "/data/odd.json")]]
-                 (resolve-uri "/data/powerdistribution.json"))
+                 [["Anzahl installierter PV-Anlagen" (resolve-url "/data/installationcounts.json")] 
+                  ["Durchschnittliche Einspeisevergütung (cent)" (resolve-url "/data/averagefee.json")]
+                  ["Anzahl installierter Wechselrichter" (resolve-url "/data/invertercount.json")]
+                  ["Installierte Leistung (kW)" (resolve-url "/data/powerdistribution.json")]
+                  ["Erwarter Ertrag (kWh/kWp)" (resolve-url "/data/averageexpectedgain.json")]
+                  ["Anzahl von Siemenswechselrichtern" (resolve-url "/data/siemenscount.json")]
+                  ["Anzahl von Siemenswechselrichtern" (resolve-url "/data/siemenscount.json")]
+                  ["Gerade Postleitzahlen" (resolve-url "/data/even.json")]
+                  ["Ungerade Postleitzahlen" (resolve-url "/data/odd.json")]]
+                 (resolve-url "/data/powerdistribution.json"))
       [:div#map]
       (maps/map-includes)
       ;; FIXME introduces a global variable 'mapfn' that holds an updater function for the map >:(
-      (javascript-tag (str "mapfn="(maps/render-plz-map "map" "RdBu" (resolve-uri "/data/powerdistribution.json") 82000)))])
+      (javascript-tag (str "mapfn="(maps/render-plz-map "map" "RdBu" (resolve-url "/data/powerdistribution.json") 82000)))])
 
 ;;;;;;;;;;; show all available pv installation names ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -55,7 +58,7 @@
           [:td anlagenkwp]
           [:td hppostleitzahl]
           [:td hppostleitzahl]])]]]
-    (javascript-tag (render-javascript-template "templates/render-datatable.js" (or hiccup.core/*base-url* "")))))
+    (javascript-tag (render-javascript-template "templates/render-datatable.js" (base-url)))))
 
 (defpage "/" []
   (redirect (url-for start-page)))

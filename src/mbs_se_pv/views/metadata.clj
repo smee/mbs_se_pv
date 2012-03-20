@@ -3,8 +3,9 @@
             [mbs-se-pv.views.timeseries :as ts])
   (:use [noir.core :only (defpage url-for)]
         [noir.response :only (json)]
-        [hiccup.core :only (html)]
-        [hiccup.page-helpers :only (link-to)]
+        [hiccup 
+         [core :only (html)]
+         [element :only (link-to)]]
         [org.clojars.smee.util :only (s2i)]))
 
 (defn- search-for 

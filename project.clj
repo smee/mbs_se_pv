@@ -1,14 +1,14 @@
 (defproject mbs-se-pv "0.1.0-SNAPSHOT"
             :description "FIXME: write this!"
-            :dev-dependencies [[lein-ring "0.4.6"]] 
+            :dev-dependencies [[lein-ring "0.6.1"]] 
             :dependencies [[org.clojure/clojure "1.3.0"]
-                           [noir "1.2.2"]
-                           [org.clojars.smee/common "1.2.0-SNAPSHOT"]
+                           [noir "1.3.0-beta1"]
+                           [org.clojars.smee/common "1.2.0"]
                            [mbs-db "1.0.0-SNAPSHOT"]
                            [solar-datamining "1.0.0-SNAPSHOT"]
-                           [chart-utils "1.0.0-SNAPSHOT"]
+                           [chart-utils "1.0.0"]
                            [mysql/mysql-connector-java "5.1.17"]
-                           [incanter "1.3.0-SNAPSHOT" 
+                           [incanter "1.3.0" 
                             :exclusions 
                             [swank-clojure swingrepl
                              incanter/incanter-excel 

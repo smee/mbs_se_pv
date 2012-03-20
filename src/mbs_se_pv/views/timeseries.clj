@@ -6,10 +6,10 @@
        [charts :as ch]
        [reports :as report]]
       [mbs-db.core :as db])
-    (:use noir.core
-          hiccup.core
-          hiccup.page-helpers
-          hiccup.form-helpers
+    (:use [noir 
+           core
+           [options :only (resolve-url)]]
+          [hiccup core element form]
           mbs-se-pv.views.util
           [org.clojars.smee 
            [map :only (map-values)]
@@ -56,7 +56,7 @@
 
 
 (defpartial render-gain-image [name last-month today w h type]
-  [:img.loading-bg {:src (resolve-uri (format "/gains/%s/%s-%s/chart.png?unit=%s&width=%d&height=%d" name last-month today type w h))
+  [:img.loading-bg {:src (resolve-url (format "/gains/%s/%s-%s/chart.png?unit=%s&width=%d&height=%d" name last-month today type w h))
                     :width w
                     :height h}])
 
@@ -76,7 +76,7 @@
         (metadata-table metadata installation-labels)
         [:h3 "Betreiber"]
         (metadata-table metadata personal-labels)
-        [:a.btn.btn-large.btn-success {:href (resolve-uri (url-for all-series {:id name}))} "Messwerte"]]
+        [:a.btn.btn-large.btn-success {:href (resolve-url (url-for all-series {:id name}))} "Messwerte"]]
        [:div.span6
         [:h3 "Erträge im letzten Jahr"]
         [:h4 "Gesamtertrag pro Tag"]
@@ -161,7 +161,7 @@
         names (db/all-series-names-of q)
         {:keys [min max]} (db/min-max-time-of (first names))
         date (.format (dateformat) max)
-        base-url (or hiccup.core/*base-url* "")]
+        base-url (base-url)]
         
     (common/layout-with-links
       (toolbar-links id 2)

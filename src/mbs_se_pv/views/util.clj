@@ -1,7 +1,8 @@
 (ns mbs-se-pv.views.util
   (:use [org.clojars.smee.util :only (per-thread-singleton)]
         [clojure.java.io :only (resource reader)]
-        [clojure.string :only (join)]))
+        [clojure.string :only (join)])
+  (:require [noir.options]))
 
 (def timeformat (per-thread-singleton #(java.text.SimpleDateFormat. "yyyy-MM-dd HH:mm:ss")))
 (def dateformat (per-thread-singleton #(java.text.SimpleDateFormat. "dd.MM.yyyy")))
@@ -59,3 +60,6 @@ SI unit prefixes"
                 (if-let [[n prefix] (convert-si-unit n) ] 
                   (.append sb (str (.format nf n) prefix suffix))
                   (do  (.format nf n sb fp) (.append sb suffix))))))))
+
+(defn base-url []
+  (or (noir.options/get :base-url) ""))
