@@ -10,6 +10,7 @@
         [hiccup 
          [core :only (html)]
          [element :only (javascript-tag unordered-list link-to)]
+         [form :only (drop-down)]
          [page :only (include-css include-js)]]
         mbs-se-pv.views.util
         [clojure.string :only (join)]
@@ -77,16 +78,36 @@
   (include-js "http://mbostock.github.com/d3/d3.min.js"
               "http://mbostock.github.com/d3/d3.geo.min.js"))
 
+(defpartial render-maps [color-scheme]
+  [:div.span6 
+      [:div "Bitte doppelt auf eine Region klicken, um alle Anlagen darin zu sehen."]
+      (drop-down {:onchange "mapfn(this.value)"}"mapDataSelector" 
+                 [["Anzahl installierter PV-Anlagen" (resolve-url "/data/installationcounts.json")] 
+                  ["Durchschnittliche Einspeisevergütung (cent)" (resolve-url "/data/averagefee.json")]
+                  ["Anzahl installierter Wechselrichter" (resolve-url "/data/invertercount.json")]
+                  ["Installierte Leistung (kW)" (resolve-url "/data/powerdistribution.json")]
+                  ["Erwarter Ertrag (kWh/kWp)" (resolve-url "/data/averageexpectedgain.json")]
+                  ["Anzahl von Siemenswechselrichtern" (resolve-url "/data/siemenscount.json")]
+                  ["Anzahl von Siemenswechselrichtern" (resolve-url "/data/siemenscount.json")]
+                  ["Gerade Postleitzahlen" (resolve-url "/data/even.json")]
+                  ["Ungerade Postleitzahlen" (resolve-url "/data/odd.json")]]
+                 (resolve-url "/data/powerdistribution.json"))
+      [:div#map]
+      (map-includes)
+      ;; FIXME introduces a global variable 'mapfn' that holds an updater function for the map >:(
+      (javascript-tag (str "mapfn="(render-plz-map "map" color-scheme (resolve-url "/data/powerdistribution.json") 82000)))])
+
 (defpage maps "/maps" {}
-  (common/layout 
-     [:div.row-fluid
+  (common/layout
+    (render-maps "RdBu") 
+     #_[:div.row-fluid
       [:div.span6 
        [:h3 "Installierte Leistung (in kW)"]
        [:div#chart]]
       [:div.span6
        [:h3 "Anzahl installierter PV-Anlagen"]
        [:div#chart2]]]
-     [:div.row-fluid
+     #_[:div.row-fluid
       [:div.span6
        [:h3 "Durchschnittliche Einspeisevergütung (in cent)"]
        [:div#chart3]]
@@ -94,10 +115,11 @@
        [:h3 "Anzahl installierter Wechselrichter"]
        [:div#chart4]]] 
       (map-includes)
-     (javascript-tag (render-plz-map "chart" "Reds" (resolve-url "/data/powerdistribution.json") 300))
-     (javascript-tag (render-plz-map "chart2" "Blues" (resolve-url "/data/installationcounts.json") 10))
-     (javascript-tag (render-plz-map "chart3" "Greens" (resolve-url "/data/averagefee.json") 50))
-     (javascript-tag (render-plz-map "chart4" "Oranges" (resolve-url "/data/invertercount.json") 100))))
+     ;(javascript-tag (render-plz-map "chart" "Reds" (resolve-url "/data/powerdistribution.json") 300))
+     ;(javascript-tag (render-plz-map "chart2" "Blues" (resolve-url "/data/installationcounts.json") 10))
+     ;(javascript-tag (render-plz-map "chart3" "Greens" (resolve-url "/data/averagefee.json") 50))
+     ;(javascript-tag (render-plz-map "chart4" "Oranges" (resolve-url "/data/invertercount.json") 100))
+     ))
 
 (defpage "/plz/:plz" {plz :plz}
   (let [ids (->> (db/get-metadata) vals (filter #(= plz (:hppostleitzahl %))) (map :id) sort)]
@@ -106,3 +128,4 @@
       (unordered-list
         (for [id ids]
           (link-to (str "/details/" id) id))))))
+

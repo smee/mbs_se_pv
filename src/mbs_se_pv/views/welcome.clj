@@ -11,29 +11,8 @@
          [response :only (redirect json)]]
         [hiccup 
          [core :only (html)]
-         [element :only (link-to javascript-tag)]
-         [form :only (drop-down)]]
+         [element :only (link-to javascript-tag)]]
         mbs-se-pv.views.util))
-
-(defpartial render-map []
-  [:div.span6 
-      [:h3 "Installierte Leistung pro Postleitzahl"]
-      [:div "Bitte doppelt auf eine Region klicken um alle Anlagen darin zu sehen."]
-      (drop-down {:onchange "mapfn(this.value)"}"mapDataSelector" 
-                 [["Anzahl installierter PV-Anlagen" (resolve-url "/data/installationcounts.json")] 
-                  ["Durchschnittliche Einspeisevergütung (cent)" (resolve-url "/data/averagefee.json")]
-                  ["Anzahl installierter Wechselrichter" (resolve-url "/data/invertercount.json")]
-                  ["Installierte Leistung (kW)" (resolve-url "/data/powerdistribution.json")]
-                  ["Erwarter Ertrag (kWh/kWp)" (resolve-url "/data/averageexpectedgain.json")]
-                  ["Anzahl von Siemenswechselrichtern" (resolve-url "/data/siemenscount.json")]
-                  ["Anzahl von Siemenswechselrichtern" (resolve-url "/data/siemenscount.json")]
-                  ["Gerade Postleitzahlen" (resolve-url "/data/even.json")]
-                  ["Ungerade Postleitzahlen" (resolve-url "/data/odd.json")]]
-                 (resolve-url "/data/powerdistribution.json"))
-      [:div#map]
-      (maps/map-includes)
-      ;; FIXME introduces a global variable 'mapfn' that holds an updater function for the map >:(
-      (javascript-tag (str "mapfn="(maps/render-plz-map "map" "RdBu" (resolve-url "/data/powerdistribution.json") 82000)))])
 
 ;;;;;;;;;;; show all available pv installation names ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
