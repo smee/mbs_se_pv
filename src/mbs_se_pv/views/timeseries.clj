@@ -192,7 +192,7 @@
          [:span "X"] 
          [:input#chart-height.input-mini {:value "700" :type "number"}]
          [:span "px"]]
-        [:button.btn-primary.btn-large {:href "" :onclick (render-javascript-template "templates/load-chart.js" base-url id)} 
+        [:button.btn-primary.btn-large {:href "" :onclick (render-javascript-template "templates/load-dynamic-chart.js" base-url id)} 
          [:i.icon-picture.icon-white]
          " Anzeigen"]
         ]
@@ -208,7 +208,13 @@
       [:div.span9        
        [:h2 "Chart"]
        [:div#current-chart "Bitte wählen Sie links die zu visualisierenden Daten und ein Zeitinterval aus."
-        [:img#chart-image {:src ""}]]]
+        [:div#chart]
+        (javascript-tag "var chart=vis.createChart({
+		\"title\" : \"Chart!\",
+		\"root\" : \"#chart\",
+		\"height\" : 500,
+		\"width\" : 900
+	})")]]
       ;; render calendar input via jquery plugin
       (javascript-tag (render-javascript-template "templates/date-selector.js" "#start-date" date min max))
       (javascript-tag (render-javascript-template "templates/date-selector.js" "#end-date" date min max))

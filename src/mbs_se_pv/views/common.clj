@@ -12,7 +12,8 @@
                 "/css/datepicker.css"
                 "/css/dynatree/ui.dynatree.css"
                 "/css/showLoading.css"
-                "/css/customizations.css")
+                "/css/customizations.css"
+                "/css/vis.css")
    (include-js "http://ajax.googleapis.com/ajax/libs/jquery/1.7.0/jquery.min.js"
                "https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"
                "/js/datepicker.js"
@@ -21,7 +22,9 @@
                "/js/jquery.dataTables.min.js"
                "/js/jquery.showLoading.min.js"
                "/js/dataTables.paging.bootstrap.js"
-               "/js/bootstrap-modal.js")
+               "/js/bootstrap-modal.js"
+               "/js/d3.v2.min.js"
+               "/js/vis.js")
    
    ;; compatibility between datatables and bootstrap
    ;; see http://www.datatables.net/blog/Twitter_Bootstrap

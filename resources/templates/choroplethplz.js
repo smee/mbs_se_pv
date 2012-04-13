@@ -72,7 +72,7 @@
 	return function(dataUrl,newMax){
 		d3.json(dataUrl, function(json) {
 			// console.log("got new data from "+dataUrl)
-			if(typeof newMax == "undefined"){
+			if(arguments.length === 1){
 				// use maximum value for scaling the legend
 				maxValue = -1;
 				for(var i in json){
