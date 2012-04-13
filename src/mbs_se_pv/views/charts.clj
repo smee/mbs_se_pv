@@ -9,6 +9,7 @@
     [chart-utils.jfreechart :as cjf])
   (:use  
     timeseries.align
+    [timeseries.functions :only (mean)]
     [clojure.string :only (split)]
     [noir.core :only (defpage)]
     [noir.response :only (content-type json)]
@@ -304,10 +305,22 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
     {:status 400
      :body "Wrong dates!"}))
 
-(defpage "/series-of/:id/*/:times/data.json" {:keys [id * times]}
+(defn- reduce-points [numpoints values]
+  (let [n (count values)
+        numpoints (min (max numpoints 1) n)] 
+    (if (= n numpoints)
+      values
+      (let [slices (partition-all (/ n numpoints) values)
+            times (map ffirst slices)
+            values (map (fn [slice] (mean (map second slice))) slices)]
+        (map vector times values)))))
+
+(defpage "/series-of/:id/*/:times/data.json" {:keys [id * times numpoints]}
   (if-let [[s e] (parse-times times)]
-    (let [names (distinct (re-seq #"[^/]+" *)) ;; split at any slash
-          values (map (partial map (juxt :time :value)) (map #(get-series-values % s e) names))]
+    (let [numpoints (s2i numpoints nil)
+          names (distinct (re-seq #"[^/]+" *)) ;; split at any slash
+          values (map (partial map (juxt :time :value)) (map #(get-series-values % s e) names))
+          values (if numpoints (map (partial reduce-points numpoints) values) values)]
       (json
         {:title (str "Betriebsdaten im Zeitraum " times)
          :x-label "Zeit"
