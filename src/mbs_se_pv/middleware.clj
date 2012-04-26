@@ -8,8 +8,8 @@
   (let [url  (get (System/getenv) "DB-URL" "localhost:5029/solarlog")
         db-settings {:classname   "com.mysql.jdbc.Driver"
                      :subprotocol "mysql"
-                     :user        "read"
-                     :password     "eumpw"
+                     :user        "root"
+                     :password     ""
                      :subname      (str "//" url)}]
     (fn [req]
       (binding [mbs-db.core/*db* db-settings]

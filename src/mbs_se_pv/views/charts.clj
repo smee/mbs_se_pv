@@ -97,16 +97,16 @@
   (let [parts (->> #"\."
                 (string/split s)
                 (remove #{"wr" "string"}))]
-    (keyword "mbs-se-pv.views.charts" (nth parts 2))))
+    (keyword (nth parts 2))))
 
 (def ^:private unit-properties 
-  {::pac        {:color (Color. 0xC10020) :unit "W" :label "Leistung"} 
-   ::pdc        {:color (Color. 0xC10020) :unit "W" :label "Leistung"}
-   ::temp       {:color (Color. 0xFF6800) :unit "°C" :label "Temperatur"}
-   ::udc        {:color (Color. 0xA6BDD7) :unit "V" :label "Spannung"}
-   ::gain       {:color (Color. 0x803E75) :unit "Wh" :label "Ertrag"} 
-   ::daily-gain {:color (Color. 0x803E75) :unit "Wh" :label "Ertrag"}
-   ::efficiency {:color (Color. 0x817066) :unit "%" :label "Wirkungsgrad" :min 0 :max 99.999}})
+  {:pac        {:color (Color. 0xC10020) :unit "W" :label "Leistung"} 
+   :pdc        {:color (Color. 0xC10020) :unit "W" :label "Leistung"}
+   :temp       {:color (Color. 0xFF6800) :unit "°C" :label "Temperatur"}
+   :udc        {:color (Color. 0xA6BDD7) :unit "V" :label "Spannung"}
+   :gain       {:color (Color. 0x803E75) :unit "Wh" :label "Ertrag"} 
+   :daily-gain {:color (Color. 0x803E75) :unit "Wh" :label "Ertrag"}
+   :efficiency {:color (Color. 0x817066) :unit "%" :label "Wirkungsgrad" :min 0 :max 99.999}})
 
 (defn- get-series-label 
   "Unique human readable label."
@@ -124,8 +124,8 @@ sequence of value sequences (seq. of maps with keys :time and :value)."
         s (as-sql-timestamp start-time) 
         e(as-sql-timestamp (+ end-time ONE-DAY))]
     (case (get-series-type series-name) 
-      ::efficiency (map (fn [m] (update-in m [:value] min 100)) (db/get-efficiency id wr-id s e));; FIXME data should never go over 100%!
-      ::daily-gain (db/sum-per-day (str id ".wr." wr-id ".gain") s e)
+      :efficiency (map (fn [m] (update-in m [:value] min 100)) (db/get-efficiency id wr-id s e));; FIXME data should never go over 100%!
+      :daily-gain (db/sum-per-day (str id ".wr." wr-id ".gain") s e)
       (db/all-values-in-time-range series-name s e))))
 
 ;;;;;;;;;;;;;;;; Functions for rendering nice physical time series data ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -295,7 +295,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                                     :y-step y-max
                                     :z-min (-> name get-series-type unit-properties :min)
                                     :z-max (-> name get-series-type unit-properties :max)
-                                    :colors (when (= ::efficiency (get-series-type name)) efficiency-colors)
+                                    :colors (when (= :efficiency (get-series-type name)) efficiency-colors)
                                     :color? true)
                   (.. getPlot getRenderer (setBlockWidth ONE-DAY))
                   (.. getPlot getRenderer (setBlockHeight five-min)))]
@@ -312,7 +312,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
       values
       (let [slices (partition-all (/ n numpoints) values)
             times (map ffirst slices)
-            values (map (fn [slice] (mean (map second slice))) slices)]
+            values (map (fn [slice] (mean (map (comp double second) slice))) slices)]
         (map vector times values)))))
 
 (defpage "/series-of/:id/*/:times/data.json" {:keys [id * times numpoints]}
@@ -321,6 +321,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
           names (distinct (re-seq #"[^/]+" *)) ;; split at any slash
           values (map (partial map (juxt :time :value)) (map #(get-series-values % s e) names))
           values (if numpoints (map (partial reduce-points numpoints) values) values)]
+      ;(doseq [vs values] (println (apply max (map second vs))))
       (json
         {:title (str "Betriebsdaten im Zeitraum " times)
          :x-label "Zeit"

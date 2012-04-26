@@ -1,5 +1,6 @@
 (ns mbs-se-pv.views.common
-  (:use noir.core
+  (:use [noir core
+         [options :only (resolve-url)]]
         [hiccup core
          [element]
          [page :only (html5 include-css include-js)]]
@@ -53,7 +54,7 @@
 			30.06.2014."]]
     [:div.span2
      (link-to "http://www.bmbf.de/" 
-              [:img {:src "img/bmbf-ohne-rand.gif" 
+              [:img {:src (resolve-url "/img/bmbf-ohne-rand.gif") 
                      :alt "gef&#246;rdert durch das Bundesministerium f&#252;r Bildung und Forschung"
                      :width "150px"}])]])
 

@@ -16,15 +16,17 @@ return (function(baseUrl, id){
 // find selected chart type
     
 // create link
-    var link=baseUrl+'/series-of/'+ id+'/'+selectedSeries.join('/')+'/'+interval+'/data.json?numpoints=100';
+    var link=baseUrl+'/series-of/'+ id+'/'+selectedSeries.join('/')+'/'+interval+'/data.json?numpoints=200';
     $('#chart').showLoading();     
       $.getJSON(link,function(json){
-    	  chart=vis.createChart({
+    	  var options = {
     			"title" : "Chart",
     			"root" : "#chart",
     			"height" : 500,
     			"width" : 900
-    		});
+    		};
+    	  chart=chart || options;
+    	  chart=vis.createChart(chart);
     	  $('#chart').hideLoading();
     	  for(var series in json.series){
     		  chart.addSeries(json.series[series]);
