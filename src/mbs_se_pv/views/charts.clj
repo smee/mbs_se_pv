@@ -14,7 +14,7 @@
     [noir.response :only (content-type json)]
     [mbs-se-pv.views.util :only (dateformatrev dateformat ONE-DAY convert-si-unit create-si-prefix-formatter)]
     [org.clojars.smee 
-     [time :only (as-sql-timestamp)]
+     [time :only (as-sql-timestamp as-date)]
      [util :only (s2i)]])
   (:import 
     [java.io ByteArrayOutputStream ByteArrayInputStream]
@@ -318,3 +318,84 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                       names values)}))
     {:status 400
      :body "Wrong dates!"}))
+
+;;;;;;;;;;;; render a tiling map of a chart ;;;;;;;;;;;;;;;;;;;;;;
+(defn- render-grid [len x y zoom]
+  (let [bi (java.awt.image.BufferedImage. len len java.awt.image.BufferedImage/TYPE_INT_ARGB)
+        g (.createGraphics bi)
+        baos (ByteArrayOutputStream.)]
+    (doto g
+      (.setColor Color/RED)
+      (.drawRect 0 0 (dec len) (dec len)) 
+      (.drawString (format "[%d,%d] @ %d" x y zoom) 20 20))
+    (javax.imageio.ImageIO/write bi "png" baos)
+    (content-type "image/png" (ByteArrayInputStream. (.toByteArray baos)))))
+
+(defn- hide-axis [chart]
+  (dotimes [i (.. chart getPlot getRangeAxisCount)] 
+    (doto (.. chart getPlot (getRangeAxis i))
+      (.setVisible false)
+      (.setLowerMargin 0)
+      (.setUpperMargin 0)))
+  (doto (.. chart getPlot getDomainAxis)
+    (.setVisible false)
+    (.setLowerMargin 0)
+    (.setUpperMargin 0))  
+  (doto chart 
+    (.setBorderVisible false)
+    (.removeLegend)
+    (.setTitle nil)
+    (.. getPlot (setOutlineVisible false))
+    (.. getPlot (setInsets org.jfree.ui.RectangleInsets/ZERO_INSETS))
+    (.setPadding org.jfree.ui.RectangleInsets/ZERO_INSETS))  
+  
+  chart)
+
+(defpage "/tiles/*/:times/:x/:y/:zoom" {:keys [times x y zoom] :as params}
+  (if-let [[s e] (parse-times times)]
+    (let [names (distinct (re-seq #"[^/]+" (get params :*))) ;; split at any slash
+          values (pmap #(get-series-values % s e) names)
+          chart (create-time-series-chart names values)
+          x (s2i x), y (s2i y), zoom (s2i zoom)
+          ;TODO find true maximum y for all series!
+          v (first values)
+          xmin (apply min (map :time v))
+          xmax (apply max (map :time v))
+          x-range (- xmax xmin)
+          ymin (apply min (map :value v))
+          ymax (apply max (map :value v))
+          y-range (- ymax ymin)
+          num-tiles (long (Math/pow 2 zoom))
+          tile-x-len (long (/ x-range num-tiles))
+          tile-y-len (long (/ y-range num-tiles))
+          tile-xmin (+ xmin (* x tile-x-len))
+          tile-xmax (+ xmin (* (inc x) tile-x-len))
+          tile-ymin (- ymax (* (inc y) tile-y-len))
+          tile-ymax (- ymax (* y tile-y-len))]
+      ;(println tile-xmin tile-xmax tile-ymin tile-ymax)
+      ;; draw square / grid
+      ;(render-grid 256 x y zoom)
+      (noir.response/set-headers 
+        {"Cache-Control" "public, max-age=60, s-maxage=60"}
+        (-> chart
+          ;(enhance-chart names)
+          (ch/set-x-range (as-date tile-xmin) (as-date tile-xmax))
+          (cjf/set-y-ranges tile-ymin tile-ymax)
+          hide-axis
+          return-image)))
+    {:status 400
+   :body "Wrong dates!"}))
+
+(defpage "/map" []
+  (hiccup.core/html
+    (hiccup.page/include-css "http://cdn.leafletjs.com/leaflet-0.4/leaflet.css")
+    (hiccup.page/include-js "http://cdn.leafletjs.com/leaflet-0.4/leaflet.js")
+    [:div#map {:style "height: 800px;"}]
+    (hiccup.element/javascript-tag
+      "var map = L.map('map').setView([51.505, -0.09], 2);
+
+L.tileLayer('http://localhost:8080/tiles/PV-Anlage_0001kW_001872.wr.0.pdc.string.0/20110822-20110825/{x}/{y}/{z}', {
+    attribution: 'done by me :)',
+    noWrap: true,
+    maxZoom: 10
+}).addTo(map);")))
