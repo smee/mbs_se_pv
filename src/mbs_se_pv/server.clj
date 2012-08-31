@@ -7,7 +7,6 @@
   (:gen-class))
 
 (server/add-middleware m/wrap-db-url)
-(server/add-middleware m/wrap-encryption-key)
 
 (defn -main [& m]
   (let [mode (keyword (or (first m) :dev))

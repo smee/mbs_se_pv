@@ -9,7 +9,8 @@
     (:use [noir 
            core
            [options :only (resolve-url)]]
-          [hiccup core element form]
+          [hiccup core element form
+           [util :only (url-encode)]]
           mbs-se-pv.views.util
           [org.clojars.smee 
            [map :only (map-values)]
@@ -60,31 +61,31 @@
                     :width w
                     :height h}])
 
-(defpage metadata-page "/details/:id" {name :id}
-  (let [{:keys [min max]} (-> name (str "%") db/all-series-names-of first db/min-max-time-of)
-        metadata (-> name db/get-metadata first second (assoc :first-date (.format (dateformat) min)) (assoc :last-date (.format (dateformat) max)))
+(defpage metadata-page "/details/:id" {plant :id}
+  (let [{:keys [min max]} (db/min-max-time-of plant (-> plant db/all-series-names-of-plant first))
+        metadata (-> plant db/get-metadata first second (assoc :first-date (.format (dateformat) min)) (assoc :last-date (.format (dateformat) max)))
         now (System/currentTimeMillis)
         today (.format (dateformatrev) now)
         last-month (.format (dateformatrev) (- now (* 365 ONE-DAY)))
         w 400
         h 250]
     (common/layout-with-links 
-      (toolbar-links name 1)
+      (toolbar-links plant 1)
       nil
       [:div.span6
         [:h3 "Anlagendaten"]
         (metadata-table metadata installation-labels)
         [:h3 "Betreiber"]
         (metadata-table metadata personal-labels)
-        [:a.btn.btn-large.btn-success {:href (resolve-url (url-for all-series {:id name}))} "Messwerte"]]
+        [:a.btn.btn-large.btn-success {:href (resolve-url (url-for all-series {:id plant}))} "Messwerte"]]
        [:div.span6
         [:h3 "Erträge im letzten Jahr"]
         [:h4 "Gesamtertrag pro Tag"]
-        (render-gain-image name last-month today w h "day")
+        (render-gain-image plant last-month today w h "day")
         [:h4 "Gesamtertrag pro Woche"]
-        (render-gain-image name last-month today w h "week")
+        (render-gain-image plant last-month today w h "week")
         [:h4 "Gesamtertrag pro Monat"]
-        (render-gain-image name last-month today w h "month")])))
+        (render-gain-image plant last-month today w h "month")])))
 
 ;;;;;;;;;;;;;; show all available time series info per pv installation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- label-for-type [s]
@@ -156,10 +157,9 @@
           elem-id))]))
 
 (defpage all-series "/series-of/:id" {id :id}
-  (let [q (str id ".%")
-        c (db/count-all-series-of q)
-        names (db/all-series-names-of q)
-        {:keys [min max]} (db/min-max-time-of (first names))
+  (let [c (db/count-all-series-of-plant id)
+        names (db/all-series-names-of-plant id)
+        {:keys [min max]} (db/min-max-time-of id (first names))
         date (.format (dateformat) max)
         base-url (base-url)]
         
@@ -219,7 +219,7 @@
   [id active-idx]
   [active-idx
    (link-to "/" "&Uuml;bersicht")
-   (link-to (url-for metadata-page {:id id}) "Allgemeines")
-   (link-to (url-for all-series {:id id}) "Messwerte")]
+   (link-to (url-for metadata-page {:id (url-encode id)}) "Allgemeines")
+   (link-to (url-for all-series {:id (url-encode id)}) "Messwerte")]
   )
 

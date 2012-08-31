@@ -93,19 +93,48 @@
    [99 (java.awt.Color. 0x118800)]])
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- get-series-type [s]
-  (let [parts (->> #"\."
-                (string/split s)
-                (remove #{"wr" "string"}))]
-    (keyword "mbs-se-pv.views.charts" (nth parts 2))))
+  (let [parts (->> s
+                (remove #(Character/isDigit %))
+                (partition-by #{\. \/})  
+                (take-nth 2)
+                (map (partial apply str))
+                (drop 2) ;; device name, ln name
+                (string/join "."))]
+    (keyword "mbs-se-pv.views.charts" parts)))
 
-(def ^:private unit-properties 
-  {::pac        {:color (Color. 0xC10020) :unit "W" :label "Leistung"} 
-   ::pdc        {:color (Color. 0xC10020) :unit "W" :label "Leistung"}
-   ::temp       {:color (Color. 0xFF6800) :unit "°C" :label "Temperatur"}
-   ::udc        {:color (Color. 0xA6BDD7) :unit "V" :label "Spannung"}
-   ::gain       {:color (Color. 0x803E75) :unit "Wh" :label "Ertrag"} 
-   ::daily-gain {:color (Color. 0x803E75) :unit "Wh" :label "Ertrag"}
-   ::efficiency {:color (Color. 0x817066) :unit "%" :label "Wirkungsgrad" :min 0 :max 99.999}})
+(defn- unit-properties [val] 
+  (let[m1 {::A.phsA.cVal ::curr
+           ::A.phsB.cVal ::curr
+           ::A.phsC.cVal ::curr
+           ::Amp.mag.f ::curr
+           ::EnclTmp.mag.f ::temp
+           ::EnvTmp.mag.f ::temp
+           ::HeatSinkTmp.mag.f ::temp
+           ::HorInsol.mag.f ::ins
+           ::Hz.mag.f ::freq
+           ::PhV.phsA.cVal ::udc
+           ::PhV.phsB.cVal ::udc
+           ::PhV.phsC.cVal ::udc
+           ::Ris.mag.f ::res
+           ::TotVA.mag.f ::pac
+           ::TotVAr.mag.f ::pac
+           ::TotW.mag.f ::pac
+           ::TotWh.actVal ::gain
+           ::TTMP.TmpSv.instMag ::temp
+           ::Vol.mag.f ::udc
+           ::Watt.mag.f ::pac}  
+       m2 {::pac        {:color (Color. 0xC10020) :unit "W" :label "Leistung"} 
+           ::pdc        {:color (Color. 0xC10020) :unit "W" :label "Leistung"}
+           ::temp       {:color (Color. 0xFF6800) :unit "°C" :label "Temperatur"}
+           ::udc        {:color (Color. 0xA6BDD7) :unit "V" :label "Spannung"}
+           ::res        {:color (Color. 0x0000a0) :unit "Ohm" :label "Widerstand"}
+           ::ins        {:color Color/YELLOW      :unit "W/m²" :label "Einstrahlung"}
+           ::freq       {:color (Color. 0x111111) :unit "Hz" :label "Frequenz"}
+           ::curr       {:color Color/RED         :unit "A" :label "Stromstärke"}
+           ::gain       {:color (Color. 0x803E75) :unit "Wh" :label "Ertrag"} 
+           ::daily-gain {:color (Color. 0x803E75) :unit "Wh" :label "Ertrag"}
+           ::efficiency {:color (Color. 0x817066) :unit "%" :label "Wirkungsgrad" :min 0 :max 99.999}}]
+    (-> val m1 m2)))
 
 (defn- get-series-label 
   "Unique human readable label."
@@ -117,15 +146,15 @@
 
 (defn- get-series-values 
   "Call appropriate database queries according to (get-series-type series-name). Returns
-sequence of value sequences (seq. of maps with keys :time and :value)."
-  [series-name start-time end-time]
-  (let [[id wr-id] (remove #{"wr" "string"} (string/split series-name #"\."))
-        s (as-sql-timestamp start-time) 
-        e(as-sql-timestamp (+ end-time ONE-DAY))]
-    (case (get-series-type series-name) 
-      ::efficiency (map (fn [m] (update-in m [:value] min 100)) (db/get-efficiency id wr-id s e));; FIXME data should never go over 100%!
-      ::daily-gain (db/sum-per-day (str id ".wr." wr-id ".gain") s e)
-      (db/all-values-in-time-range series-name s e))))
+sequence of value sequences (seq. of maps with keys :timestamp and :value)."
+  [plant-name series-id start-time end-time]
+  (let [s (as-sql-timestamp start-time) 
+        e (as-sql-timestamp (+ end-time ONE-DAY))]
+    (def x [plant-name series-id s e])
+    (case (get-series-type series-id) 
+      ::efficiency (map (fn [m] (update-in m [:value] min 100)) (db/get-efficiency series-id s e))
+      ::daily-gain (db/sum-per-day series-id s e)
+      (db/all-values-in-time-range plant-name series-id s e))))
 
 ;;;;;;;;;;;;;;;; Functions for rendering nice physical time series data ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- set-axis 
@@ -173,18 +202,19 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 (defn- create-time-series-chart 
   "Create a new time series chart and add all series."
   ([names series] (create-time-series-chart names series get-series-label))
-  ([names series label-fn ]
+  ([names series label-fn]
+    (println names)
   (let [[name1 & names] names
         [val1 & series] series 
         chart (ch/time-series-plot 
-                (map :time val1) 
+                (map :timestamp val1) 
                 (map :value val1)
                 :legend true
                 :series-label (label-fn name1))]
     ;; plot each time series to chart
     (doseq [[name series] (map list names series)]
         (ch/add-lines chart 
-                      (map :time series) 
+                      (map :timestamp series) 
                       (map :value series)
                       :series-label (label-fn name)))
     chart)))
@@ -194,8 +224,8 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 
 (defpage "/series-of/:id/*/:times/chart.png" {:keys [id * times width height]}
   (if-let [[s e] (parse-times times)]
-    (let [names (distinct (re-seq #"[^/]+" *)) ;; split at any slash
-          values (pmap #(get-series-values % s e) names)]
+    (let [names (distinct (re-seq #"[^-]+" *)) ;; split at any minus
+          values (pmap #(get-series-values id % s e) names)]
       
       (-> (create-time-series-chart names values)
         (ch/set-x-label "Zeit")
@@ -207,7 +237,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
     {:status 400
      :body "Wrong dates!"}))
 
-(defn- day-number [{millis :time}]
+(defn- day-number [{millis :timestamp}]
   (int (/ millis (* 1000 60 60 24))))
 
 ;; show day that represents the biggest discord of a given series.
@@ -215,13 +245,13 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
   (if-let [[s e] (parse-times times)]
     (let [num (s2i num 1)
           name (first (re-seq #"[^/]+" *))
-          data (get-series-values name s e)
+          data (get-series-values id name s e)
           days (partition-by day-number data)
           discords (discord/find-multiple-discords-daily (map (partial map :value) days) num)
           discord-days (->> discords
                          (map #(nth days (first %)))
                          (map vec)
-                         (map (fn [day] (map #(update-in % [:time] mod ONE-DAY) day))))]
+                         (map (fn [day] (map #(update-in % [:timestamp] mod ONE-DAY) day))))]
       (-> (create-time-series-chart 
             (for [[idx v] discords] (format "Discord am %s: %f" (.format (dateformat) (-> days (nth idx) first :time)) v)) 
             discord-days 
@@ -236,7 +266,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
    :body "Wrong dates!"}))
 
 ;; show summed gain as bar charts for days, weeks, months, years
-(defpage gain-chart "/gains/:id/:times/chart.png" {:keys [id wr-id times width height unit]}
+(defpage gain-chart "/gains/:id/:times/chart.png" {:keys [id times width height unit]}
   (if-let [[s e] (parse-times times)] 
     (let [db-query (case unit 
                      "day" db/sum-per-day, 
@@ -244,10 +274,10 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                      "month" db/sum-per-month, 
                      "year" db/sum-per-year, 
                      db/sum-per-day)
-          name (str id ".wr." (if wr-id wr-id "%") ".gain")
+          name id
           data (db-query name (as-sql-timestamp s) (as-sql-timestamp e))
           chart (doto (ch/bar-chart 
-                        (map #(.format (dateformat) (:time %)) data) (map #(/ (:value %) 1000) data)
+                        (map #(.format (dateformat) (:timestamp %)) data) (map #(/ (:value %) 1000) data)
                         ;:title (format "Gesamtertrag für %s WR %s im Zeitraum %s bis %s" id wr-id (.format (dateformat) s) (.format (dateformat) e))
                         :x-label "Zeit"
                         :y-label "Ertrag in kWh"))] 
@@ -263,7 +293,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
   (* 60 1000 (+ minutes (* hours 60))))
 
 (defn- insert-missing-days [start-date end-date days]
-  (let [all-day-numbers (range (day-number {:time start-date}) (day-number {:time end-date}))
+  (let [all-day-numbers (range (day-number {:timestamp start-date}) (day-number {:timestamp end-date}))
         m (reduce #(assoc % %2 []) (sorted-map) all-day-numbers)
         m (reduce #(assoc % (day-number (first %2)) %2) m days)]
     (vals m)))
@@ -271,12 +301,12 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 (defpage "/series-of/:id/*/:times/heat-map.png" {:keys [id * times width height hours minutes]}
   (if-let [[s e] (parse-times times)]
     (let [name (first (distinct (re-seq #"[^/]+" *))) ;; split at any slash
-          values (get-series-values name s e)
+          values (get-series-values id name s e)
           days (->> values (partition-by day-number) (insert-missing-days s e)) 
           daily-start (hm 6 0)
           daily-end (hm 22 0)
           five-min (hm (s2i hours 0) (s2i minutes 5))
-          gridded (map #(smooth (into-time-grid (map (juxt :time :value) %) daily-start daily-end five-min)) days)
+          gridded (map #(smooth (into-time-grid (map (juxt :timestamp :value) %) daily-start daily-end five-min)) days)
           days (vec (map #(vec (map second %)) gridded))
           x-max (count days )
           y-max (apply max (map count days))
@@ -307,7 +337,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 (defpage "/series-of/:id/*/:times/data.json" {:keys [id * times]}
   (if-let [[s e] (parse-times times)]
     (let [names (distinct (re-seq #"[^/]+" *)) ;; split at any slash
-          values (map (partial map (juxt :time :value)) (map #(get-series-values % s e) names))]
+          values (map (partial map (juxt :timestamp :value)) (map #(get-series-values id % s e) names))]
       (json
         {:title (str "Betriebsdaten im Zeitraum " times)
          :x-label "Zeit"
@@ -351,16 +381,16 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
   
   chart)
 
-(defpage "/tiles/*/:times/:x/:y/:zoom" {:keys [times x y zoom] :as params}
+(defpage "/tiles/:id/*/:times/:x/:y/:zoom" {:keys [id times x y zoom] :as params}
   (if-let [[s e] (parse-times times)]
-    (let [names (distinct (re-seq #"[^/]+" (get params :*))) ;; split at any slash
-          values (pmap #(get-series-values % s e) names)
+    (let [names (distinct (re-seq #"[^-]+" (get params :*))) ;; split at any minus
+          values (pmap #(get-series-values id % s e) names)
           chart (create-time-series-chart names values)
           x (s2i x), y (s2i y), zoom (s2i zoom)
           ;TODO find true maximum y for all series!
           v (first values)
-          xmin (apply min (map :time v))
-          xmax (apply max (map :time v))
+          xmin (apply min (map :timestamp v))
+          xmax (apply max (map :timestamp v))
           x-range (- xmax xmin)
           ymin (apply min (map :value v))
           ymax (apply max (map :value v))
@@ -394,7 +424,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
     (hiccup.element/javascript-tag
       "var map = L.map('map').setView([51.505, -0.09], 2);
 
-L.tileLayer('http://localhost:8080/tiles/PV-Anlage_0001kW_001872.wr.0.pdc.string.0/20110822-20110825/{x}/{y}/{z}', {
+L.tileLayer('http://localhost:8080/tiles/Ourique%20PV-Anlage/INVU1/MMDC0.Watt.mag.f/20110822-20110825/{x}/{y}/{z}', {
     attribution: 'done by me :)',
     noWrap: true,
     maxZoom: 10
