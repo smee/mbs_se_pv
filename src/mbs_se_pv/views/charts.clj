@@ -276,7 +276,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
           name id
           data (db-query name (as-sql-timestamp s) (as-sql-timestamp e))
           chart (doto (ch/bar-chart 
-                        (map #(.format (dateformat) (:timestamp %)) data) (map #(/ (:value %) 1000) data)
+                        (map #(.format (dateformat) (:time %)) data) (map #(/ (:value %) 1000) data)
                         ;:title (format "Gesamtertrag für %s WR %s im Zeitraum %s bis %s" id wr-id (.format (dateformat) s) (.format (dateformat) e))
                         :x-label "Zeit"
                         :y-label "Ertrag in kWh"))] 
