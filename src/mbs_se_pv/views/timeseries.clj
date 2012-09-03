@@ -88,46 +88,19 @@
         (render-gain-image plant last-month today w h "month")])))
 
 ;;;;;;;;;;;;;; show all available time series info per pv installation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn- label-for-type [s]
-  (case s
-    "pdc" "Leistung DC"
-    "pac" "Leistung AC"
-    "temp" "Temperatur"
-    "udc" "Spannung DC"
-    "efficiency" "Wirkungsgrad"
-    "gain" "Tagesertragsverlauf"
-    "daily-gain" "Ertrag pro Tag"
-     s))
-
-(defn- nice-labels [[p1 p2 p3]]
-  (->> 
-    (list (list "Wechselrichter" [:sub p1]) 
-          (if p3 (list "String" [:sub p2]) (label-for-type p2))
-          (label-for-type p3))
-    (keep identity)))
-
-(defn fix-parts-order [[p1 p2 p3 :as l]]
-  (if (nil? p3)
-     l
-    (list p1 p3 p2)))
-
-(defn- split-series-name [n]
-  (->> #"\."
-    (string/split n)
-    next
-    (remove #{"wr" "string"})
-    fix-parts-order))
 
 (defn- restore-wr-hierarchy [names]
-  (->> names
+  #_(->> names
     (map #(concat ["Daten" "nach Bauteil"] (nice-labels (split-series-name %)) [%]))
-    restore-hierarchy))
+    restore-hierarchy)
+  {"foo" names})
 
 (defn- cluster-by-type [names]
-  (->> names
+  #_(->> names
     (map #(let [parts (-> % split-series-name nice-labels)] 
             (concat ["nach Datentyp"] (vector (last parts)) (butlast parts) [%])))
-    restore-hierarchy))
+    restore-hierarchy)
+  {})
 
 (defn- make-nested-list [nested]
   [:ul 
@@ -137,10 +110,7 @@
        [:li {:class "folder"} k (make-nested-list vs)]))])
 
 (defpartial series-tree [id names elem-id]
-  (let [efficiency-names (distinct (map #(str id ".wr." (extract-wr-id %) ".efficiency") names))
-        daily-gain-names (distinct (map #(str id ".wr." (extract-wr-id %) ".daily-gain") names))
-        tree (->> names
-               (concat efficiency-names daily-gain-names)
+  (let [tree (->> names
                ((juxt restore-wr-hierarchy cluster-by-type))
                (apply concat)
                make-nested-list)]
