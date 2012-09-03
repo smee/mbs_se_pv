@@ -243,7 +243,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 (defpage "/series-of/:id/*/:times/discord.png" {:keys [id * times width height num]}
   (if-let [[s e] (parse-times times)]
     (let [num (s2i num 1)
-          name (first (re-seq #"[^/]+" *))
+          name *
           data (get-series-values id name s e)
           days (partition-by day-number data)
           discords (discord/find-multiple-discords-daily (map (partial map :value) days) num)
@@ -252,7 +252,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                          (map vec)
                          (map (fn [day] (map #(update-in % [:timestamp] mod ONE-DAY) day))))]
       (-> (create-time-series-chart 
-            (for [[idx v] discords] (format "Discord am %s: %f" (.format (dateformat) (-> days (nth idx) first :time)) v)) 
+            (for [[idx v] discords] (format "Discord am %s: %f" (.format (dateformat) (-> days (nth idx) first :timestamp)) v)) 
             discord-days 
             str)
         (ch/set-x-label "Zeit")
@@ -299,7 +299,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 
 (defpage "/series-of/:id/*/:times/heat-map.png" {:keys [id * times width height hours minutes]}
   (if-let [[s e] (parse-times times)]
-    (let [name (first (distinct (re-seq #"[^/]+" *))) ;; split at any slash
+    (let [name (first (distinct (re-seq #"[^-]+" *))) ;; split at any slash
           values (get-series-values id name s e)
           days (->> values (partition-by day-number) (insert-missing-days s e)) 
           daily-start (hm 6 0)
@@ -335,7 +335,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 
 (defpage "/series-of/:id/*/:times/data.json" {:keys [id * times]}
   (if-let [[s e] (parse-times times)]
-    (let [names (distinct (re-seq #"[^/]+" *)) ;; split at any slash
+    (let [names (distinct (re-seq #"[^-]+" *)) ;; split at any slash
           values (map (partial map (juxt :timestamp :value)) (map #(get-series-values id % s e) names))]
       (json
         {:title (str "Betriebsdaten im Zeitraum " times)
