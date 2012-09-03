@@ -4,14 +4,14 @@
       [mbs-se-pv.views 
        [common :as common]
        [charts :as ch]
-       [reports :as report]]
+       [reports :as report]
+       [util :as util]]
       [mbs-db.core :as db])
     (:use [noir 
            core
            [options :only (resolve-url)]]
-          [hiccup core element form
-           [util :only (url-encode)]]
-          mbs-se-pv.views.util
+          [hiccup core element form]
+          [ring.util.codec :only (url-encode)]
           [org.clojars.smee 
            [map :only (map-values)]
            [util :only (s2i)]]))
@@ -41,7 +41,7 @@
 
 (defn ^:private metadata-value [k v]
   (case k
-    :anlagenkwp (.format (create-si-prefix-formatter "###.##" " Wh") v)
+    :anlagenkwp (.format (util/create-si-prefix-formatter "###.##" " Wh") v)
     :verguetung (format "%.2f €" (float (/ v 100)))
     v))
 
@@ -62,11 +62,11 @@
                     :height h}])
 
 (defpage metadata-page "/details/:id" {plant :id}
-  (let [{:keys [min max]} (db/min-max-time-of plant (-> plant db/all-series-names-of-plant first))
-        metadata (-> plant db/get-metadata first second (assoc :first-date (.format (dateformat) min)) (assoc :last-date (.format (dateformat) max)))
+  (let [{:keys [min max]} (db/min-max-time-of plant (-> plant db/all-series-names-of-plant ffirst))
+        metadata (-> plant db/get-metadata first second (assoc :first-date (.format (util/dateformat) min)) (assoc :last-date (.format (util/dateformat) max)))
         now (System/currentTimeMillis)
-        today (.format (dateformatrev) now)
-        last-month (.format (dateformatrev) (- now (* 365 ONE-DAY)))
+        today (.format (util/dateformatrev) now)
+        last-month (.format (util/dateformatrev) (- now (* 365 util/ONE-DAY)))
         w 400
         h 250]
     (common/layout-with-links 
@@ -88,18 +88,24 @@
         (render-gain-image plant last-month today w h "month")])))
 
 ;;;;;;;;;;;;;; show all available time series info per pv installation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn- extract-ln-name [name]
+  (let [rev (reverse name)
+        [digits-rev rev] (split-with #(Character/isDigit %) rev)
+        [ln-name-rev prefix-rev] (split-at 4 rev)]
+    (map #(apply str (reverse %)) [prefix-rev ln-name-rev digits-rev])))
 
-(defn- restore-wr-hierarchy [names]
-  #_(->> names
-    (map #(concat ["Daten" "nach Bauteil"] (nice-labels (split-series-name %)) [%]))
-    restore-hierarchy)
-  {"foo" names})
+(defn- split-iec-name [[n label]]
+  (let [[ld-name ln-name & _] (string/split n #"/|\.")
+        [prefix ln-name id] (extract-ln-name ln-name)]
+    (remove empty? [ld-name ln-name prefix id label n])))
+
+(defn- restore-physical-hierarchy [names]
+  (->> names
+    (map split-iec-name)
+    util/restore-hierarchy)
+  #_(util/restore-hierarchy (into {} (map (fn [[k v]] [v k]) names))))
 
 (defn- cluster-by-type [names]
-  #_(->> names
-    (map #(let [parts (-> % split-series-name nice-labels)] 
-            (concat ["nach Datentyp"] (vector (last parts)) (butlast parts) [%])))
-    restore-hierarchy)
   {})
 
 (defn- make-nested-list [nested]
@@ -111,10 +117,12 @@
 
 (defpartial series-tree [id names elem-id]
   (let [tree (->> names
-               ((juxt restore-wr-hierarchy cluster-by-type))
-               (apply concat)
+               (restore-physical-hierarchy)
+               (map-values #(vec %))
+               (clojure.walk/postwalk #(if (map? %) (into (sorted-map) %) %))
                make-nested-list)]
-     [:div {:id elem-id} 
+    (def n names) 
+    [:div {:id elem-id} 
       tree
       ;; render tree via jquery plugin
       (javascript-tag 
@@ -129,10 +137,10 @@
 (defpage all-series "/series-of/:id" {id :id}
   (let [c (db/count-all-series-of-plant id)
         names (db/all-series-names-of-plant id)
-        {:keys [min max]} (db/min-max-time-of id (first names))
-        date (.format (dateformat) max)
-        base-url (base-url)]
-        
+        {:keys [min max]} (db/min-max-time-of id (ffirst names))
+        date (.format (util/dateformat) max)
+        base-url (util/base-url)]
+
     (common/layout-with-links
       (toolbar-links id 2)
       ;; sidebar
@@ -162,7 +170,7 @@
          [:span "X"] 
          [:input#chart-height.input-mini {:value "700" :type "number"}]
          [:span "px"]]
-        [:button.btn-primary.btn-large {:href "" :onclick (render-javascript-template "templates/load-chart.js" base-url id)} 
+        [:button.btn-primary.btn-large {:href "" :onclick (util/render-javascript-template "templates/load-chart.js" base-url id)} 
          [:i.icon-picture.icon-white]
          " Anzeigen"]
         ]
@@ -171,7 +179,7 @@
          [:h4 "Report Wirkungsgrad"]
          [:span.help-inline "Bitte wählen Sie den Monat aus, für den ein Report erstellt werden soll:"]
          (text-field {:placeholder "Monat für Report" :class "input-small"} "report-date" date)
-         [:button.btn {:href "#" :onclick (render-javascript-template "templates/show-report.js" base-url id)} 
+         [:button.btn {:href "#" :onclick (util/render-javascript-template "templates/show-report.js" base-url id)} 
           [:i.icon-list-alt]
           " Erstellen"]]]]
       ;; main content
@@ -180,9 +188,9 @@
        [:div#current-chart "Bitte wählen Sie links die zu visualisierenden Daten und ein Zeitinterval aus."
         [:img#chart-image {:src ""}]]]
       ;; render calendar input via jquery plugin
-      (javascript-tag (render-javascript-template "templates/date-selector.js" "#start-date" date min max))
-      (javascript-tag (render-javascript-template "templates/date-selector.js" "#end-date" date min max))
-      (javascript-tag (render-javascript-template "templates/date-selector.js" "#report-date" date min max)))))
+      (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#start-date" date min max))
+      (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#end-date" date min max))
+      (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#report-date" date min max)))))
 
 (defn toolbar-links 
   "Links for the toolbar, see common/eumonis-topbar or common/layout-with-links for details"
