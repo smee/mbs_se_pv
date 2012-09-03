@@ -203,21 +203,20 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
   "Create a new time series chart and add all series."
   ([names series] (create-time-series-chart names series get-series-label))
   ([names series label-fn]
-    (println names)
-  (let [[name1 & names] names
-        [val1 & series] series 
-        chart (ch/time-series-plot 
-                (map :timestamp val1) 
-                (map :value val1)
-                :legend true
-                :series-label (label-fn name1))]
-    ;; plot each time series to chart
-    (doseq [[name series] (map list names series)]
+    (let [[name1 & names] names
+          [val1 & series] series 
+          chart (ch/time-series-plot 
+                  (map :timestamp val1) 
+                  (map :value val1)
+                  :legend true
+                  :series-label (label-fn name1))]
+      ;; plot each time series to chart
+      (doseq [[name series] (map list names series)]
         (ch/add-lines chart 
                       (map :timestamp series) 
                       (map :value series)
                       :series-label (label-fn name)))
-    chart)))
+      chart)))
 
 
 ;;;;;;;;;;;;;;;; Chart generation pages ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -395,18 +394,21 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
           ymin (apply min (map :value v))
           ymax (apply max (map :value v))
           y-range (- ymax ymin)
-          num-tiles (long (Math/pow 2 zoom))
-          tile-x-len (long (/ x-range num-tiles))
-          tile-y-len (long (/ y-range num-tiles))
+          num-tiles (bit-shift-left 1 zoom)
+          tile-x-len (long (/ x-range num-tiles)) ;x are timestamps in milliseconds, always a long
+          tile-y-len (/ y-range num-tiles) ; y are floating point values, seldom a long (so do not cast!)
           tile-xmin (+ xmin (* x tile-x-len))
           tile-xmax (+ xmin (* (inc x) tile-x-len))
           tile-ymin (- ymax (* (inc y) tile-y-len))
           tile-ymax (- ymax (* y tile-y-len))]
-      ;(println tile-xmin tile-xmax tile-ymin tile-ymax)
+      ;(println x y zoom)
+      ;(printf "tile-x: [%d; %d], tile-y: [%.2f; %.2f]\n" tile-xmin tile-xmax tile-ymin tile-ymax)
+      ;(printf "tile-x-len=%d, tile-y-len=%.2f\n" tile-x-len tile-y-len)
+      ;(println (apply str (repeat 50 "-")))
       ;; draw square / grid
       ;(render-grid 256 x y zoom)
       (noir.response/set-headers 
-        {"Cache-Control" "public, max-age=60, s-maxage=60"}
+        {}; {"Cache-Control" "public, max-age=60, s-maxage=60"}
         (-> chart
           ;(enhance-chart names)
           (ch/set-x-range (as-date tile-xmin) (as-date tile-xmax))
