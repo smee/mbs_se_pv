@@ -5,8 +5,8 @@
         [noir.response :only (json)]
         [hiccup 
          [core :only (html)]
-         [element :only (link-to)]
-         [util :only (url-encode)]]
+         [element :only (link-to)]]
+        [ring.util.codec :only [url-encode]]
         [org.clojars.smee.util :only (s2i)]))
 
 (defn- search-for 
