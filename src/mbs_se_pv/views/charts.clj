@@ -1,7 +1,9 @@
 (ns mbs-se-pv.views.charts
   (:require 
     [clojure.string :as string]
-    [mbs-se-pv.views.common :as common]
+    [mbs-se-pv.views 
+     [common :as common]
+     [util :as util]]
     [mbs-db.core :as db]
     [incanter.core :as ic]
     [incanter.charts :as ch]

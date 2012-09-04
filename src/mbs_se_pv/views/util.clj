@@ -4,9 +4,18 @@
         [clojure.string :only (join)])
   (:require [noir.options]))
 
-(def timeformat (per-thread-singleton #(java.text.SimpleDateFormat. "yyyy-MM-dd HH:mm:ss")))
-(def dateformat (per-thread-singleton #(java.text.SimpleDateFormat. "dd.MM.yyyy")))
-(def dateformatrev (per-thread-singleton #(java.text.SimpleDateFormat. "yyyyMMdd")))
+(defn- create-date-format 
+  "Without an explicit time zone we get the local one. In our case this means we are one
+or two hours off from the expected time.
+For example, parsing with format `yyyMMdd` in time zone 'Europe/Berlin' and input string
+'20120904' results in a date of '2012-09-03T22:00:00' *puzzled*"
+  [format-string]
+  (doto (java.text.SimpleDateFormat. format-string)
+    (.setTimeZone (java.util.TimeZone/getTimeZone "GMT"))))
+
+(def timeformat (per-thread-singleton #(create-date-format "yyyy-MM-dd HH:mm:ss")))
+(def dateformat (per-thread-singleton #(create-date-format "dd.MM.yyyy")))
+(def dateformatrev (per-thread-singleton #(create-date-format "yyyyMMdd")))
 
 (def ^:const ONE-DAY (* 24 60 60 1000))
 
