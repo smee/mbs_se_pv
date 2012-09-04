@@ -122,7 +122,7 @@
            ::TotVAr.mag.f ::pac
            ::TotW.mag.f ::pac
            ::TotWh.actVal ::gain
-           ::TTMP.TmpSv.instMag ::temp
+           ::TmpSv.instMag ::temp
            ::Vol.mag.f ::udc
            ::Watt.mag.f ::pac}  
        m2 {::pac        {:color (Color. 0xC10020) :unit "W" :label "Leistung"} 
