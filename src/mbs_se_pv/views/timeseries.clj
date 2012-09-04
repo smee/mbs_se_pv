@@ -117,7 +117,7 @@
 
 (defpartial series-tree [id names elem-id]
   (let [tree (->> names
-               (restore-physical-hierarchy)
+               restore-physical-hierarchy
                (map-values #(vec %))
                (clojure.walk/postwalk #(if (map? %) (into (sorted-map) %) %))
                make-nested-list)]
@@ -162,7 +162,8 @@
          [:div.controls
           [:label.radio (radio-button "chart-type" true "chart") "Zeitreihe"]
           [:label.radio (radio-button "chart-type" false "heat-map") "Heatmap"]
-          [:label.radio (radio-button "chart-type" false "discord") "Ungewöhnlicher Tag"]]
+          [:label.radio (radio-button "chart-type" false "discord") "Ungewöhnlicher Tag"]
+          [:label.radio (radio-button "chart-type" false "interactive-map") "Interaktive Ansicht"]]
          ]
         [:div
          [:h4 "Größe:"]
@@ -186,11 +187,15 @@
       [:div.span9        
        [:h2 "Chart"]
        [:div#current-chart "Bitte wählen Sie links die zu visualisierenden Daten und ein Zeitinterval aus."
-        [:img#chart-image {:src ""}]]]
+        [:img#chart-image {:src ""}]
+        [:div#interactive-map]]]
       ;; render calendar input via jquery plugin
       (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#start-date" date min max))
       (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#end-date" date min max))
-      (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#report-date" date min max)))))
+      (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#report-date" date min max))
+      ;;render interactive "maps"
+      (hiccup.page/include-css "http://cdn.leafletjs.com/leaflet-0.4/leaflet.css")
+      (hiccup.page/include-js "http://cdn.leafletjs.com/leaflet-0.4/leaflet.js"))))
 
 (defn toolbar-links 
   "Links for the toolbar, see common/eumonis-topbar or common/layout-with-links for details"

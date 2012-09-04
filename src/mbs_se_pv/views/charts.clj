@@ -364,6 +364,10 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
     (javax.imageio.ImageIO/write bi "png" baos)
     (content-type "image/png" (ByteArrayInputStream. (.toByteArray baos)))))
 
+(defn- hide-legend [chart]
+  (.removeLegend chart)
+  chart)
+
 (defn- hide-axis [chart]
   (dotimes [i (.. chart getPlot getRangeAxisCount)] 
     (doto (.. chart getPlot (getRangeAxis i))
@@ -376,7 +380,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
     (.setUpperMargin 0))  
   (doto chart 
     (.setBorderVisible false)
-    (.removeLegend)
+    hide-legend
     (.setTitle nil)
     (.. getPlot (setOutlineVisible false))
     (.. getPlot (setInsets org.jfree.ui.RectangleInsets/ZERO_INSETS))
@@ -391,12 +395,11 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
           chart (create-time-series-chart names values)
           x (s2i x), y (s2i y), zoom (s2i zoom)
           ;TODO find true maximum y for all series!
-          v (first values)
-          xmin (apply min (map :timestamp v))
-          xmax (apply max (map :timestamp v))
+          xmin (apply min (map :timestamp (first values)))
+          xmax (apply max (map :timestamp (first values)))
           x-range (- xmax xmin)
-          ymin (apply min (map :value v))
-          ymax (apply max (map :value v))
+          ymin (reduce min (mapcat (partial map :value) values))
+          ymax (reduce max (mapcat (partial map :value) values))
           y-range (- ymax ymin)
           num-tiles (bit-shift-left 1 zoom)
           tile-x-len (long (/ x-range num-tiles)) ;x are timestamps in milliseconds, always a long
@@ -417,6 +420,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
           ;(enhance-chart names)
           (ch/set-x-range (as-date tile-xmin) (as-date tile-xmax))
           (cjf/set-y-ranges tile-ymin tile-ymax)
+          ;hide-legend
           hide-axis
           return-image)))
     {:status 400
@@ -429,7 +433,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
     [:div#map {:style "height: 800px;"}]
     (hiccup.element/javascript-tag
       (str 
-        "var map = L.map('map').setView([51.505, -0.09], 2);
+        "var map = L.map('map').setView([51.505, -0.09], 1);
        L.tileLayer('" (util/base-url) "/tiles/Ourique%20PV-Anlage/INVU1/MMDC0.Watt.mag.f/20110822-20110825/{x}/{y}/{z}', {
     attribution: 'done by me :)',
     noWrap: true,

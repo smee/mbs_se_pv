@@ -6,6 +6,9 @@
 #current-chart {
     min-height: 500px;
 }
+#current-chart #interactive-map {
+	height: 800px;
+}
 .glasspane {
 	width:200px;
 	height:200px;
