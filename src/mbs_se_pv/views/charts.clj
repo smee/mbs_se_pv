@@ -426,10 +426,10 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
     (hiccup.page/include-js "http://cdn.leafletjs.com/leaflet-0.4/leaflet.js")
     [:div#map {:style "height: 800px;"}]
     (hiccup.element/javascript-tag
-      "var map = L.map('map').setView([51.505, -0.09], 2);
-
-L.tileLayer('http://localhost:8080/tiles/Ourique%20PV-Anlage/INVU1/MMDC0.Watt.mag.f/20110822-20110825/{x}/{y}/{z}', {
+      (str 
+        "var map = L.map('map').setView([51.505, -0.09], 2);
+       L.tileLayer('" (util/base-url) "/tiles/Ourique%20PV-Anlage/INVU1/MMDC0.Watt.mag.f/20110822-20110825/{x}/{y}/{z}', {
     attribution: 'done by me :)',
     noWrap: true,
     maxZoom: 10
-}).addTo(map);")))
+}).addTo(map);"))))
