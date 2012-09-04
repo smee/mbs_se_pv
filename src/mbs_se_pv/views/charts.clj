@@ -138,13 +138,15 @@
            ::efficiency {:color (Color. 0x817066) :unit "%" :label "Wirkungsgrad" :min 0 :max 99.999}}]
     (-> val m1 m2)))
 
-(defn- get-series-label 
+(defn- get-series-label-solarlog 
   "Unique human readable label."
   [s]
   (let [[_ wr-id] (re-find #".*\.wr\.(\d+)\..*" s )
         type (get-series-type s)]
-    (format "%s von WR %s" (-> s get-series-type unit-properties :label) wr-id)))
+    (format "%s von%s" (-> s get-series-type unit-properties :label) wr-id)))
 
+(defn- get-series-label-iec61850 [s]
+  (format "%s von %s" (-> s get-series-type unit-properties :label) s))
 
 (defn- get-series-values 
   "Call appropriate database queries according to (get-series-type series-name). Returns
@@ -203,7 +205,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 
 (defn- create-time-series-chart 
   "Create a new time series chart and add all series."
-  ([names series] (create-time-series-chart names series get-series-label))
+  ([names series] (create-time-series-chart names series get-series-label-iec61850))
   ([names series label-fn]
     (let [[name1 & names] names
           [val1 & series] series 
