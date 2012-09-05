@@ -341,8 +341,8 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
   (if-let [[s e] (parse-times times)]
     (let [names (distinct (re-seq #"[^-]+" *)) ;; split at any slash
           values (map (partial map (juxt :timestamp :value)) (map #(get-series-values id % s e) names))]
-      (json
-        {:title (str "Betriebsdaten im Zeitraum " times)
+      (json (map #(hash-map :name %1 :data (map (fn [[timestamp value]] {:x (long (/ timestamp 1000)), :y value}) %2)) names values)
+        #_{:title (str "Betriebsdaten im Zeitraum " times)
          :x-label "Zeit"
          :series (map #(let [type (get-series-type %)
                              v %2
@@ -378,12 +378,18 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
     (.setVisible false)
     (.setLowerMargin 0)
     (.setUpperMargin 0))  
+  (doto (.getPlot chart)
+    (.setDomainGridlinesVisible false)
+    (.setRangeGridlinesVisible false)
+    (.setRangeMinorGridlinesVisible false)
+    (.setOutlineVisible false)
+    (.setInsets org.jfree.ui.RectangleInsets/ZERO_INSETS)
+    (.setRangeTickBandPaint nil)
+    (.setDomainZeroBaselineVisible false))
   (doto chart 
     (.setBorderVisible false)
     hide-legend
     (.setTitle nil)
-    (.. getPlot (setOutlineVisible false))
-    (.. getPlot (setInsets org.jfree.ui.RectangleInsets/ZERO_INSETS))
     (.setPadding org.jfree.ui.RectangleInsets/ZERO_INSETS))  
   
   chart)
@@ -415,7 +421,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
       ;; draw square / grid
       ;(render-grid 256 x y zoom)
       (noir.response/set-headers 
-        {}; {"Cache-Control" "public, max-age=60, s-maxage=60"}
+        {"Cache-Control" "public, max-age=60, s-maxage=60"}
         (-> chart
           ;(enhance-chart names)
           (ch/set-x-range (as-date tile-xmin) (as-date tile-xmax))
@@ -437,5 +443,6 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
        L.tileLayer('" (util/base-url) "/tiles/Ourique%20PV-Anlage/INVU1/MMDC0.Watt.mag.f/20110822-20110825/{x}/{y}/{z}', {
     attribution: 'done by me :)',
     noWrap: true,
+    tileSize: 256,
     maxZoom: 10
 }).addTo(map);"))))
