@@ -40,8 +40,8 @@ return (function(baseUrl, id){
     	    
 	    	var ajaxGraph = new Rickshaw.Graph.Ajax( {	
 	    		element: document.getElementById("chart"),
-	    		width: 700,
-	    		height: 400,
+	    		width: $('#chart-width').val(),
+	    		height: $('#chart-height').val(),
 	    		renderer: 'line',
 	    		dataURL: baseUrl+'/series-of/'+id+'/'+selectedSeries.join('-')+'/'+interval+'/data.json',
 	    		onData: function(d) { return d },

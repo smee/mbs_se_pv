@@ -161,10 +161,10 @@
         [:div
          [:h4 "Art der Anzeige:"]
          [:div.controls
-          [:label.radio (radio-button "chart-type" true "chart") "Zeitreihe"]
+          [:label.radio (radio-button "chart-type" false "chart") "Zeitreihe"]
           [:label.radio (radio-button "chart-type" false "heat-map") "Heatmap"]
           [:label.radio (radio-button "chart-type" false "discord") "Ungewöhnlicher Tag"]
-          [:label.radio (radio-button "chart-type" false "interactive-client") "Interaktive Ansicht"]
+          [:label.radio (radio-button "chart-type" true "interactive-client") "Interaktive Ansicht"]
           [:label.radio (radio-button "chart-type" false "interactive-map") "Interaktiver Zoom"]]
          ]
         [:div
