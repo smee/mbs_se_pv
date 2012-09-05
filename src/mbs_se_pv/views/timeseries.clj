@@ -102,11 +102,12 @@
 (defn- restore-physical-hierarchy [names]
   (->> names
     (map split-iec-name)
-    util/restore-hierarchy)
-  #_(util/restore-hierarchy (into {} (map (fn [[k v]] [v k]) names))))
+    util/restore-hierarchy))
 
 (defn- cluster-by-type [names]
-  {})
+  (->> names
+    (map split-iec-name)
+    util/restore-hierarchy))
 
 (defn- make-nested-list [nested]
   [:ul 
@@ -116,12 +117,12 @@
        [:li {:class "folder"} k (make-nested-list vs)]))])
 
 (defpartial series-tree [id names elem-id]
+  (def n names) 
   (let [tree (->> names
                restore-physical-hierarchy
                (map-values #(vec %))
                (clojure.walk/postwalk #(if (map? %) (into (sorted-map) %) %))
                make-nested-list)]
-    (def n names) 
     [:div {:id elem-id} 
       tree
       ;; render tree via jquery plugin
@@ -177,7 +178,7 @@
          " Anzeigen"]
         ]
       [:form.form-vertical 
-       [:div.well
+       #_[:div.well
          [:h4 "Report Wirkungsgrad"]
          [:span.help-inline "Bitte wählen Sie den Monat aus, für den ein Report erstellt werden soll:"]
          (text-field {:placeholder "Monat für Report" :class "input-small"} "report-date" date)
@@ -192,7 +193,7 @@
       ;; render calendar input via jquery plugin
       (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#start-date" date min max))
       (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#end-date" date min max))
-      (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#report-date" date min max))
+      #_(javascript-tag (util/render-javascript-template "templates/date-selector.js" "#report-date" date min max))
       ;;render interactive "maps"
       (hiccup.page/include-css "http://cdn.leafletjs.com/leaflet-0.4/leaflet.css")
       (hiccup.page/include-js "http://cdn.leafletjs.com/leaflet-0.4/leaflet.js")
