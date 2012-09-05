@@ -163,7 +163,8 @@
           [:label.radio (radio-button "chart-type" true "chart") "Zeitreihe"]
           [:label.radio (radio-button "chart-type" false "heat-map") "Heatmap"]
           [:label.radio (radio-button "chart-type" false "discord") "Ungewöhnlicher Tag"]
-          [:label.radio (radio-button "chart-type" false "interactive-map") "Interaktive Ansicht"]]
+          [:label.radio (radio-button "chart-type" false "interactive-client") "Interaktive Ansicht"]
+          [:label.radio (radio-button "chart-type" false "interactive-map") "Interaktiver Zoom"]]
          ]
         [:div
          [:h4 "Größe:"]
@@ -187,15 +188,19 @@
       [:div.span9        
        [:h2 "Chart"]
        [:div#current-chart "Bitte wählen Sie links die zu visualisierenden Daten und ein Zeitinterval aus."
-        [:img#chart-image {:src ""}]
-        [:div#interactive-map]]]
+        ]]
       ;; render calendar input via jquery plugin
       (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#start-date" date min max))
       (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#end-date" date min max))
       (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#report-date" date min max))
       ;;render interactive "maps"
       (hiccup.page/include-css "http://cdn.leafletjs.com/leaflet-0.4/leaflet.css")
-      (hiccup.page/include-js "http://cdn.leafletjs.com/leaflet-0.4/leaflet.js"))))
+      (hiccup.page/include-js "http://cdn.leafletjs.com/leaflet-0.4/leaflet.js")
+      ;;render interactive client side charts
+      (hiccup.page/include-css "/css/chart/rickshaw.min.css")
+      (hiccup.page/include-js "/js/chart/d3.min.js")
+      (hiccup.page/include-js "/js/chart/d3.layout.min.js")
+      (hiccup.page/include-js "/js/chart/rickshaw.min.js"))))
 
 (defn toolbar-links 
   "Links for the toolbar, see common/eumonis-topbar or common/layout-with-links for details"

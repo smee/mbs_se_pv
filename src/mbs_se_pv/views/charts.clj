@@ -351,7 +351,13 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                       names values)}))
     {:status 400
      :body "Wrong dates!"}))
-
+;;;;;;;;;;;; render dynamic client side chart ;;;;;;;;;;;;;;;;;;;;
+(hiccup.core/html
+        [:div#chart_container
+         [:div#y_axis]
+         [:div#chart]]
+        [:div#legend]
+        ) 
 ;;;;;;;;;;;; render a tiling map of a chart ;;;;;;;;;;;;;;;;;;;;;;
 (defn- render-grid [len x y zoom]
   (let [bi (java.awt.image.BufferedImage. len len java.awt.image.BufferedImage/TYPE_INT_ARGB)

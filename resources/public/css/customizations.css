@@ -9,6 +9,27 @@
 #current-chart #interactive-map {
 	height: 800px;
 }
+
+#current-chart #chart_container {
+        position: relative;
+        float:left;
+}
+#current-chart #chart {
+        position: inline-block;
+        margin-left: 40px;
+}
+#current-chart #y_axis {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 40px;
+}
+#current-chart #legend {
+        display: inline-block;
+        vertical-align: top;
+        margin: 0 0 0 10px;
+}
+
 .glasspane {
 	width:200px;
 	height:200px;
