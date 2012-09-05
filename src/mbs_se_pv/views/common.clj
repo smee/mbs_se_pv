@@ -2,8 +2,8 @@
   (:use noir.core
         [hiccup core
          [element]
-         [page :only (html5 include-css include-js)]]
-        ))
+         [page :only (html5 include-css include-js)]])
+  (:require [mbs-se-pv.views.util :as util]))
 
 (defpartial eumonis-header []
   [:head 
@@ -34,7 +34,7 @@
   [:div.navbar
    [:div.navbar-inner
     [:div.container
-     [:a.brand {:href "http://rz.eumonis.org"} "EUMONIS-Lab"]
+     [:a.brand {:href "http://labs.eumonis.org"} "EUMONIS-Lab"]
      [:ul.nav
       (map-indexed #(if (= % active-idx) 
                       [:li.active %2] 
@@ -50,7 +50,7 @@
 			30.06.2014."]]
     [:div.span2
      (link-to "http://www.bmbf.de/" 
-              [:img {:src "img/bmbf-ohne-rand.gif" 
+              [:img {:src (str (util/base-url) "/img/bmbf-ohne-rand.gif") 
                      :alt "gef&#246;rdert durch das Bundesministerium f&#252;r Bildung und Forschung"
                      :width "150px"}])]])
 
