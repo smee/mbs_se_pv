@@ -94,15 +94,16 @@
         [ln-name-rev prefix-rev] (split-at 4 rev)]
     (map #(apply str (reverse %)) [prefix-rev ln-name-rev digits-rev])))
 
-(defn- split-iec-name [[n label]]
+(defn- split-iec-name [n]
   (let [[ld-name ln-name & _] (string/split n #"/|\.")
         [prefix ln-name id] (extract-ln-name ln-name)]
-    (remove empty? [ld-name ln-name prefix id label n])))
+    (remove empty? [ld-name ln-name prefix id])))
 
 (defn- restore-physical-hierarchy [names]
-  (->> names
-    (map split-iec-name)
-    util/restore-hierarchy))
+  (let [iec (keys names)
+        splitted (map split-iec-name iec)
+        labels-and-names (map #(vector (get names %) %) iec)] 
+    (util/restore-hierarchy (map #(into (vec %1) %2) splitted labels-and-names))))
 
 (defn- cluster-by-type [names]
   (->> names

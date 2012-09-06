@@ -38,7 +38,7 @@ return (function(baseUrl, id){
     	 	var series=[];
     	    for(idx in selectedSeries) series.push({name: selectedSeries[idx], color:palette.color()});
     	    
-	    	var ajaxGraph = new Rickshaw.Graph.Ajax( {	
+	    	 ajaxGraph = new Rickshaw.Graph.Ajax( {	
 	    		element: document.getElementById("chart"),
 	    		width: $('#chart-width').val(),
 	    		height: $('#chart-height').val(),
