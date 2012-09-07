@@ -38,7 +38,9 @@
 (defn- return-image [chart & opts]
   (let [baos (ByteArrayOutputStream.)]
     (apply ic/save chart baos opts)
-    (content-type "image/png" (ByteArrayInputStream. (.toByteArray baos)))))
+    (noir.response/set-headers 
+        {"Cache-Control" "public, max-age=31536000, s-maxage=31536000"}
+        (content-type "image/png" (ByteArrayInputStream. (.toByteArray baos))))))
 
 (defn- parse-times 
   "Parse strings of shape 'yyyyMMdd-yyyyMMdd'."
@@ -165,7 +167,8 @@ sequence of value sequences (seq. of maps with keys :timestamp and :value)."
   "Ensure there is an axis for this physical type (power, voltage etc.). Sets a unique color per unit. 
 Distributes all axis so there is a roughly equal number of axes on each side of the chart."
   [chart series-name series-idx]
-  (let [props (unit-properties (get-series-type series-name))
+  (let [font (java.awt.Font. "SansSerif" 0 10)
+        props (unit-properties (get-series-type series-name))
         axis-label (:label props)
         c (:color props)
         p (.. chart getPlot)
@@ -176,10 +179,12 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                                 (range axis-count)))
                        [axis-count (org.jfree.chart.axis.NumberAxis. axis-label)])]
     (doto axis
+      (.setLabelFont font) 
+      (.setTickLabelFont font) 
       (.setLabelPaint c)
       (.setAxisLinePaint c)
       (.setTickLabelPaint c)
-      (.setNumberFormatOverride (create-si-prefix-formatter "#.## "  (:unit props))))
+      (.setNumberFormatOverride (create-si-prefix-formatter "#.##"  (:unit props))))
     (when (not= axis (.getRangeAxis p idx)) 
       (.setRangeAxis p idx axis))
     (.mapDatasetToRangeAxis p series-idx idx)
@@ -201,6 +206,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
           ;; set colors
           (.setSeriesPaint r 0 (-> n get-series-type unit-properties :color))))
       names))
+  (.. chart getLegend (setItemFont (java.awt.Font. "Courier" java.awt.Font/PLAIN 7))) 
   chart)
 
 (defn- create-time-series-chart 
@@ -228,6 +234,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 (defpage "/series-of/:id/*/:times/chart.png" {:keys [id * times width height]}
   (if-let [[s e] (parse-times times)]
     (let [names (distinct (re-seq #"[^-]+" *)) ;; split at any minus
+          ;names (sort (map first (db/all-series-names-of-plant id))) ; render all available series :)
           values (pmap #(get-series-values id % s e) names)]
       
       (-> (create-time-series-chart names values)
