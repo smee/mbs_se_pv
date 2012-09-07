@@ -44,7 +44,7 @@ return (function(baseUrl, id){
 	    		height: $('#chart-height').val(),
 	    		renderer: 'line',
 	    		dataURL: baseUrl+'/series-of/'+id+'/'+selectedSeries.join('-')+'/'+interval+'/data.json',
-	    		onData: function(d) { return d },
+	    		onData: function(d) { Rickshaw.Series.zeroFill(d); return d },
 	    		series: series,
 	    		onComplete: function(ajaxGraph){
 	    			var graph = ajaxGraph.graph;
