@@ -5,7 +5,8 @@
        [common :as common]
        [charts :as ch]
        [reports :as report]
-       [util :as util]]
+       [util :as util]
+       [psm-names :as names]]
       [mbs-db.core :as db])
     (:use [noir 
            core
@@ -105,10 +106,16 @@
         labels-and-names (map #(vector (get names %) %) iec)] 
     (util/restore-hierarchy (map #(into (vec %1) %2) splitted labels-and-names))))
 
+(defn- split-iec-name-typed [n]
+  (let [[ld-name ln-name type & _] (string/split n #"/|\.")
+        [prefix ln-name id] (extract-ln-name ln-name)]
+    (remove empty? [(names/type-names type type) ld-name ln-name prefix id])))
+
 (defn- cluster-by-type [names]
-  (->> names
-    (map split-iec-name)
-    util/restore-hierarchy))
+  (let [iec (keys names)
+        splitted (map split-iec-name-typed iec)
+        labels-and-names (map #(vector (get names %) %) iec)] 
+    (util/restore-hierarchy (map #(into (vec %1) %2) splitted labels-and-names))))
 
 (defn- make-nested-list [nested]
   [:ul 
@@ -119,9 +126,10 @@
 
 (defpartial series-tree [id names elem-id]
   (def n names) 
-  (let [tree (->> names
-               restore-physical-hierarchy
-               (map-values #(vec %))
+  (let [by-phys {"nach Bauteil" (restore-physical-hierarchy names)}
+        by-type {"nach Datenart" (cluster-by-type names)}
+        tree (->> by-phys
+               (merge by-type)               
                (clojure.walk/postwalk #(if (map? %) (into (sorted-map) %) %))
                make-nested-list)]
     [:div {:id elem-id} 
