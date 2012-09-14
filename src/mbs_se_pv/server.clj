@@ -1,12 +1,20 @@
 (ns mbs-se-pv.server
   (:require 
     [noir.server :as server]
+    [mbs-db.core :as db]
     ;; view namespaces need to be required explicitely for tomcat
-    [mbs-se-pv.views common charts timeseries welcome metadata reports maps]
-    [mbs-se-pv.middleware :as m])
+    [mbs-se-pv.views common charts timeseries welcome metadata reports maps])
   (:gen-class))
 
-(server/add-middleware m/wrap-db-url)
+;; initialize database settings
+(let [url  (get (System/getenv) "DB-URL" "localhost:5029/siemens")
+      user (get (System/getenv) "DB-USER" "root")
+      pw (get (System/getenv) "DB-PW" "")] 
+  (db/use-db-settings {:classname   "com.mysql.jdbc.Driver"
+                       :subprotocol "mysql"
+                       :user         user
+                       :password     pw
+                       :subname      (str "//" url)}))
 
 (defn -main [& m]
   (let [mode (keyword (or (first m) :dev))
@@ -22,7 +30,7 @@
 
 (def handler (server/gen-handler {:mode :prod
                   :ns 'mbs-se-pv
-                  :base-url "/eumonis-mbs-se-pv"}))
+                  :base-url "/eumonis-mbs-se-pv-psm"}))
 
 (comment
   (-main)
