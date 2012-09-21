@@ -7,7 +7,9 @@
     [mbs-db.core :as db]
     [incanter.core :as ic]
     [incanter.charts :as ch]
-    [timeseries.discord :as discord]
+    [timeseries 
+     [discord :as discord]
+     [correlations :as tc]]
     [chart-utils.jfreechart :as cjf])
   (:use  
     timeseries.align
@@ -27,6 +29,15 @@
     org.jfree.util.UnitType
     java.text.SimpleDateFormat
     java.awt.Color))
+
+;; implement incanter.core/save for BufferedImages
+(defmethod ic/save java.awt.image.BufferedImage
+  ([img filename-or-stream & options]
+    ;; if filename is not a string, treat it as java.io.OutputStream
+    (if (string? filename-or-stream)
+      (org.jfree.chart.ChartUtilities/writeBufferedImageAsPNG (java.io.File. filename-or-stream) img)
+      (javax.imageio.ImageIO/write img "png" filename-or-stream))
+    nil))
 
 (defn- create-renderer
   "do not plot a line when at least 3 values are missing (for example during the night)" 
@@ -457,3 +468,16 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
     tileSize: 256,
     maxZoom: 10
 }).addTo(map);"))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;; render a correlation matrix plot ;;;;;;;;;;;;;;;;
+(defpage "/series-of/:id/*/:times/correlation.png" {:keys [id * times]}
+  (if-let [[s e] (parse-times times)]
+    (let [names (distinct (re-seq #"[^-]+" *)) ;; split at any slash
+          values (for [name names] (map :value (get-series-values id name s (+ e ONE-DAY)))) 
+          img (-> values 
+                tc/calculate-correlation-matrix 
+                (tc/render-frame names (.format (dateformat) s)))]
+      (return-image img))
+    {:status 400
+     :body "Wrong dates!"}))

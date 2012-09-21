@@ -125,7 +125,6 @@
        [:li {:class "folder"} k (make-nested-list vs)]))])
 
 (defpartial series-tree [id names elem-id]
-  (def n names) 
   (let [by-phys {"nach Bauteil" (restore-physical-hierarchy names)}
         by-type {"nach Datenart" (cluster-by-type names)}
         tree (->> by-phys
@@ -174,7 +173,8 @@
           [:label.radio (radio-button "chart-type" false "heat-map") "Heatmap"]
           [:label.radio (radio-button "chart-type" false "discord") "Ungewöhnlicher Tag"]
           [:label.radio (radio-button "chart-type" true "interactive-client") "Interaktive Ansicht"]
-          [:label.radio (radio-button "chart-type" false "interactive-map") "Interaktiver Zoom"]]
+          [:label.radio (radio-button "chart-type" false "interactive-map") "Interaktiver Zoom"]
+          [:label.radio (radio-button "chart-type" false "correlation") "Korrelationen"]]
          ]
         [:div
          [:h4 "Größe:"]
