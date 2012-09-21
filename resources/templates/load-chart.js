@@ -43,6 +43,7 @@ return (function(baseUrl, id){
 	    		width: $('#chart-width').val(),
 	    		height: $('#chart-height').val(),
 	    		renderer: 'line',
+	    		min: 'auto',
 	    		dataURL: baseUrl+'/series-of/'+id+'/'+selectedSeries.join('-')+'/'+interval+'/data.json',
 	    		onData: function(d) { Rickshaw.Series.zeroFill(d); return d },
 	    		series: series,
