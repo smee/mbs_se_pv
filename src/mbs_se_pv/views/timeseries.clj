@@ -4,7 +4,6 @@
       [mbs-se-pv.views 
        [common :as common]
        [charts :as ch]
-       [reports :as report]
        [util :as util]
        [psm-names :as names]]
       [mbs-db.core :as db])
@@ -58,9 +57,10 @@
 
 
 (defpartial render-gain-image [name last-month today w h type]
-  [:img.loading-bg {:src (resolve-url (format "/gains/%s/%s-%s/chart.png?unit=%s&width=%d&height=%d" name last-month today type w h))
-                    :width w
-                    :height h}])
+  [:div.loading-bg{:style (format "width:%dpx;height:%dpx;" w h)}
+   [:img {:src (resolve-url (format "/gains/%s/%s-%s/chart.png?unit=%s&width=%d&height=%d" name last-month today type w h))
+          :width w
+          :height h}]])
 
 (defpage metadata-page "/details/:id" {plant :id}
   (let [{:keys [min max]} (db/min-max-time-of plant (-> plant db/all-series-names-of-plant ffirst))
