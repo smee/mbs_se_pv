@@ -16,6 +16,7 @@
     [noir.response :only (content-type json)]
     [mbs-se-pv.views.util :only (dateformatrev dateformat ONE-DAY convert-si-unit create-si-prefix-formatter)]
     [org.clojars.smee 
+     [map :only (mapp)] 
      [time :only (as-sql-timestamp as-date)]
      [util :only (s2i)]])
   (:import 
@@ -347,8 +348,11 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 (defpage "/series-of/:id/*/:times/data.json" {:keys [id * times]}
   (if-let [[s e] (parse-times times)]
     (let [names (distinct (re-seq #"[^-]+" *)) ;; split at any slash
-          values (map (partial map (juxt :timestamp :value)) (map #(get-series-values id % s e) names))]
-      (json (map #(hash-map :name %1 :data (map (fn [[timestamp value]] {:x (long (/ timestamp 1000)), :y value}) %2)) names values)
+          values (->> names
+                   (map #(get-series-values id % s e))
+                   (map (mapp (juxt :timestamp :value)))
+                   (map (mapp (fn [[timestamp value]] {:x (long (/ timestamp 1000)), :y value}))))]
+      (json (map #(hash-map :name %1 :data %2) names values)
         #_{:title (str "Betriebsdaten im Zeitraum " times)
          :x-label "Zeit"
          :series (map #(let [type (get-series-type %)
