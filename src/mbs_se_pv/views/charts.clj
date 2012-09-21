@@ -132,7 +132,7 @@
            ::temp       {:color (Color. 0xFF6800) :unit "°C" :label "Temperatur"}
            ::udc        {:color (Color. 0xA6BDD7) :unit "V" :label "Spannung"}
            ::res        {:color (Color. 0x0000a0) :unit "Ohm" :label "Widerstand"}
-           ::ins        {:color Color/YELLOW      :unit "W/m²" :label "Einstrahlung"}
+           ::ins        {:color (Color. 0xAAAA00) :unit "W/m²" :label "Einstrahlung"}
            ::freq       {:color (Color. 0x111111) :unit "Hz" :label "Frequenz"}
            ::curr       {:color Color/RED         :unit "A" :label "Stromstärke"}
            ::gain       {:color (Color. 0x803E75) :unit "Wh" :label "Ertrag"} 
