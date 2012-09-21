@@ -9,7 +9,7 @@
                            [chart-utils "1.0.2-SNAPSHOT"]
                            [incanter/incanter-core "1.3.0"]
                            [incanter/incanter-charts "1.3.0"]
-                           [de.uol.birt.api/maven-birt-integration "1.0.0-SNAPSHOT"]]
+                           ]
             :main mbs-se-pv.server
             :ring {:handler mbs-se-pv.server/handler})
 
