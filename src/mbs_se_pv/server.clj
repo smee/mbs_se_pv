@@ -3,11 +3,12 @@
     [noir.server :as server]
     [mbs-db.core :as db]
     ;; view namespaces need to be required explicitely for tomcat
-    [mbs-se-pv.views common charts timeseries welcome metadata reports maps])
-  (:gen-class))
+    [mbs-se-pv.views common charts timeseries welcome metadata maps])
+  ;(:gen-class)
+  )
 
 ;; initialize database settings
-(let [url  (get (System/getenv) "DB-URL" "localhost:5029/siemens")
+(let [url  (get (System/getenv) "DB-URL" "localhost:5029/psm")
       user (get (System/getenv) "DB-USER" "root")
       pw (get (System/getenv) "DB-PW" "")] 
   (db/use-db-settings {:classname   "com.mysql.jdbc.Driver"
