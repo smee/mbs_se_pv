@@ -19,7 +19,7 @@
     [mbs-se-pv.views.util :only (dateformatrev dateformat ONE-DAY convert-si-unit create-si-prefix-formatter)]
     [org.clojars.smee 
      [map :only (mapp)] 
-     [time :only (as-sql-timestamp as-date)]
+     [time :only (as-sql-timestamp as-date as-unix-timestamp)]
      [util :only (s2i)]])
   (:import 
     [java.io ByteArrayOutputStream ByteArrayInputStream]
@@ -58,8 +58,8 @@
   "Parse strings of shape 'yyyyMMdd-yyyyMMdd'."
   [times]
   (when-let [[_ start-time end-time] (re-find #"(\d{8})-(\d{8})" times)]
-    (let [s (.getTime (.parse (dateformatrev) start-time))
-          e (.getTime (.parse (dateformatrev) end-time))]
+    (let [s (as-unix-timestamp (.parse (dateformatrev) start-time))
+          e (as-unix-timestamp (.parse (dateformatrev) end-time))]
       [(min s e) (max s e)])))
 
 (defn- start-of-day [millis]
@@ -269,7 +269,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
           name *
           data (get-series-values id name s e)
           days (partition-by day-number data)
-          discords (discord/find-multiple-discords-daily (map (partial map :value) days) num)
+          discords (discord/find-discords-in-seqs (map (partial map :value) days) num)
           discord-days (->> discords
                          (map #(nth days (first %)))
                          (map vec)
@@ -481,3 +481,17 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
       (return-image img))
     {:status 400
      :body "Wrong dates!"}))
+
+
+
+(comment 
+  (def vs (get-series-values "Ourique PV-Anlage" "INVU1/MMET1.HorInsol.mag.f" (as-unix-timestamp #inst "2012-07-15") (as-unix-timestamp #inst "2012-07-23")))
+  (def days (->> vs (partition-by #(int (/ (:timestamp %) (* 1000 60 60 24)))) (map #(map :value %))))
+  (def diffs (map (fn [vs] (map (fn [[a b]] (- b a)) (partition 2 1 vs))) days))
+  (let [m (apply max (map count diffs))
+      c (ch/xy-plot (range m) (repeat 0))] 
+  
+  (doseq [day diffs #_(take 5 (map #(drop-while (partial > 30) %) diffs))] 
+    (ch/add-lines c (range (count day)) (timeseries.functions/ema 0.05 day)))
+  (ic/view c))
+  )

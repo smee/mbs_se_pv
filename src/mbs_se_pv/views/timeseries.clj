@@ -1,6 +1,8 @@
 (ns mbs-se-pv.views.timeseries
     (:require 
-      [clojure.string :as string]
+      [clojure 
+       [string :as string]
+       [set :as set]]
       [mbs-se-pv.views 
        [common :as common]
        [charts :as ch]
@@ -14,6 +16,7 @@
           [ring.util.codec :only (url-encode)]
           [org.clojars.smee 
            [map :only (map-values)]
+           [time :only (dates-seq as-date)] 
            [util :only (s2i)]]))
 
 (declare toolbar-links)
@@ -41,7 +44,7 @@
 
 (defn ^:private metadata-value [k v]
   (case k
-    :anlagenkwp (.format (util/create-si-prefix-formatter "###.##" " Wh") v)
+    :anlagenkwp (.format (util/create-si-prefix-formatter "###.##" "Wh") v)
     :verguetung (format "%.2f €" (float (/ v 100)))
     v))
 
@@ -78,7 +81,9 @@
         (metadata-table metadata installation-labels)
         [:h3 "Betreiber"]
         (metadata-table metadata personal-labels)
-        [:a.btn.btn-large.btn-success {:href (resolve-url (url-for all-series {:id plant}))} "Messwerte"]]
+        [:a.btn.btn-large.btn-success {:href (resolve-url (url-for all-series {:id plant}))} "Messwerte"]
+        [:h3 "Vorhandene Daten pro Tag"]
+        [:div#calendar.span9]]
        [:div.span6
         [:h3 "Erträge im letzten Jahr"]
         [:h4 "Gesamtertrag pro Tag"]
@@ -86,7 +91,10 @@
         [:h4 "Gesamtertrag pro Woche"]
         (render-gain-image plant last-month today w h "week")
         [:h4 "Gesamtertrag pro Monat"]
-        (render-gain-image plant last-month today w h "month")])))
+        (render-gain-image plant last-month today w h "month")]
+       (hiccup.page/include-css "/css/colorbrewer.css")
+       (hiccup.page/include-js "/js/chart/d3.v2.min.js")
+       (javascript-tag (util/render-javascript-template "templates/calendar.js" "#calendar" (str (util/base-url) "/missing-data.csv"))))))
 
 ;;;;;;;;;;;;;; show all available time series info per pv installation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- extract-ln-name [name]
@@ -208,7 +216,7 @@
       (hiccup.page/include-js "http://cdn.leafletjs.com/leaflet-0.4/leaflet.js")
       ;;render interactive client side charts
       (hiccup.page/include-css "/css/chart/rickshaw.min.css")
-      (hiccup.page/include-js "/js/chart/d3.min.js")
+      (hiccup.page/include-js "/js/chart/d3.v2.min.js")
       (hiccup.page/include-js "/js/chart/d3.layout.min.js")
       (hiccup.page/include-js "/js/chart/rickshaw.min.js"))))
 
@@ -221,3 +229,18 @@
    (link-to (url-for all-series {:id (url-encode id)}) "Messwerte")]
   )
 
+
+(defpage "/missing-data.csv" []
+  (let [avail (db/available-data "Ourique PV-Anlage")
+        avail (map #(update-in % [:date] as-date) avail)
+        avail-dates (map (comp as-date :date) avail)
+        _ (println (first avail-dates) (last avail-dates))
+        all-dates (dates-seq (first avail-dates) (last avail-dates))
+        missing (sort (set/difference (set all-dates) (set avail-dates)))
+        missing (map #(hash-map :date % :num 0) missing)
+        _ (println (count all-dates) (count avail-dates) (count missing))
+        data (sort-by :date (concat avail missing))] 
+    (->> data
+      (map (fn [{:keys [date num]}] (str (.format (util/dateformat) date) "," num)))
+      (concat ["date,num"])
+      (string/join "\n"))))

@@ -9,3 +9,4 @@ pom.xml
 /bin/
 *war
 target/
+checkouts/

@@ -99,27 +99,7 @@
 
 (defpage maps "/maps" {}
   (common/layout
-    (render-maps "RdBu") 
-     #_[:div.row-fluid
-      [:div.span6 
-       [:h3 "Installierte Leistung (in kW)"]
-       [:div#chart]]
-      [:div.span6
-       [:h3 "Anzahl installierter PV-Anlagen"]
-       [:div#chart2]]]
-     #_[:div.row-fluid
-      [:div.span6
-       [:h3 "Durchschnittliche Einspeisevergütung (in cent)"]
-       [:div#chart3]]
-      [:div.span6
-       [:h3 "Anzahl installierter Wechselrichter"]
-       [:div#chart4]]] 
-      (map-includes)
-     ;(javascript-tag (render-plz-map "chart" "Reds" (resolve-url "/data/powerdistribution.json") 300))
-     ;(javascript-tag (render-plz-map "chart2" "Blues" (resolve-url "/data/installationcounts.json") 10))
-     ;(javascript-tag (render-plz-map "chart3" "Greens" (resolve-url "/data/averagefee.json") 50))
-     ;(javascript-tag (render-plz-map "chart4" "Oranges" (resolve-url "/data/invertercount.json") 100))
-     ))
+    (render-maps "RdBu")))
 
 (defpage "/plz/:plz" {plz :plz}
   (let [ids (->> (db/get-metadata) vals (filter #(= plz (:hppostleitzahl %))) (map :id) sort)]

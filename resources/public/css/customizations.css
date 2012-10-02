@@ -88,3 +88,19 @@ table {
     margin-bottom: 6px !important;
     clear: both;
 }
+/* calendar visualization */
+#calendar {
+  font: 10px sans-serif;
+  shape-rendering: crispEdges;
+}
+
+.day {
+  fill: #fff;
+  stroke: #ccc;
+}
+
+.month {
+  fill: none;
+  stroke: #000;
+  stroke-width: 2px;
+}
