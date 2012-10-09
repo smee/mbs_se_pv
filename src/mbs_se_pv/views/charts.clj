@@ -362,8 +362,9 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
           values (->> names
                    (map #(get-series-values id % s e width))
                    (map (mapp (juxt :timestamp :value)))
-                   (map (mapp (fn [[timestamp value]] {:x (long (/ timestamp 1000)), :y value}))))]
-      (json (map #(hash-map :name %1 :data %2) names values)
+                   (map (mapp (fn [[timestamp value]] {:x (long (/ timestamp 1000)), :y value}))))
+          all-names (db/all-series-names-of-plant id)]
+      (json (map #(hash-map :name (get all-names %1) :key %1 :data %2) names values)
         #_{:title (str "Betriebsdaten im Zeitraum " times)
          :x-label "Zeit"
          :series (map #(let [type (get-series-type %)

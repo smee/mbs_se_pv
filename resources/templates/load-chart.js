@@ -30,51 +30,79 @@ return (function(baseUrl, id){
     	     maxZoom: 10
     	 }).addTo(map);
     	 $('#current-chart').hideLoading();    	 
-     }else if(visType == 'interactive-client'){
-    	 	chartDiv.append($("<div id='chart_container'><div id='y_axis'/><div id='chart'/></div><div id=\'legend\'/>"));
 
-	    	var palette = new Rickshaw.Color.Palette();
-	    	
-    	 	var series=[];
-    	    for(idx in selectedSeries) series.push({name: selectedSeries[idx], color:palette.color()});
-    	    
-	    	 ajaxGraph = new Rickshaw.Graph.Ajax( {	
-	    		element: document.getElementById("chart"),
-	    		width: $('#chart-width').val(),
-	    		height: $('#chart-height').val(),
-	    		renderer: 'line',
-	    		min: 'auto',
-	    		dataURL: baseUrl+'/series-of/'+id+'/'+selectedSeries.join('-')+'/'+interval+'/data.json?width='+$('#chart-width').val(),
-	    		onData: function(d) { Rickshaw.Series.zeroFill(d); return d },
-	    		series: series,
-	    		onComplete: function(ajaxGraph){
-	    			var graph = ajaxGraph.graph;
-	    			var axes = new Rickshaw.Graph.Axis.Time( { graph: graph } );
-	    			var y_axis = new Rickshaw.Graph.Axis.Y( {
-	    				graph: graph,
-	    				orientation: 'left',
-	    				tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
-	    				element: document.getElementById('y_axis')
-	    			} );
-	    			var legend = new Rickshaw.Graph.Legend( {
-	    				element: document.querySelector('#legend'),
-	    				graph: graph
-	    			} );
-	    			var hover = new Rickshaw.Graph.HoverDetail( { graph: ajaxGraph.graph } ); 
-	    			var shelving = new Rickshaw.Graph.Behavior.Series.Toggle( {
-	    				graph: graph,
-	    				legend: legend
-	    			} );
-	    			var highlighter = new Rickshaw.Graph.Behavior.Series.Highlight( {
-	    				graph: graph,
-	    				legend: legend
-	    			} );
-	
-	    			graph.render();
-	    			$('#current-chart').hideLoading();  
-	    		}
-	    	} );
-     }else{
+	     } else if (visType == 'interactive-client') {
+		chartDiv
+				.append($("<div id='chart_container'><div id='y_axis'/><div id='chart'/></div><div id=\'legend\'/>"));
+		// create map of iec61850 names to human readable labels
+		var seriesLabelsMap = $('#series-tree').dynatree('getSelectedNodes')
+				.reduce(function(m, sel) {
+					var title = sel.data.title;
+					var id = sel.data.series;
+					if(id){
+						var prefix=id.substring(0,id.indexOf('/'));
+						m[id] = prefix+"|"+sel.data.title;
+					};
+					return m;
+				}, new Object());
+
+		var palette = new Rickshaw.Color.Palette();
+
+		var series = [];
+		for (idx in selectedSeries)
+			series.push({
+				key : selectedSeries[idx],
+				name: seriesLabelsMap[selectedSeries[idx]],
+				color : palette.color()
+			});
+
+		ajaxGraph = new Rickshaw.Graph.Ajax({
+			element : document.getElementById("chart"),
+			width : $('#chart-width').val(),
+			height : $('#chart-height').val(),
+			renderer : 'line',
+			min : 'auto',
+			dataURL : baseUrl + '/series-of/' + id + '/'
+					+ selectedSeries.join('-') + '/' + interval
+					+ '/data.json?width=' + $('#chart-width').val(),
+			onData : function(d) {
+				Rickshaw.Series.zeroFill(d);
+				return d
+			},
+			series : series,
+			onComplete : function(ajaxGraph) {
+				var graph = ajaxGraph.graph;
+				var axes = new Rickshaw.Graph.Axis.Time({
+					graph : graph
+				});
+				var y_axis = new Rickshaw.Graph.Axis.Y({
+					graph : graph,
+					orientation : 'left',
+					tickFormat : Rickshaw.Fixtures.Number.formatKMBT,
+					element : document.getElementById('y_axis')
+				});
+				var legend = new Rickshaw.Graph.Legend({
+					element : document.querySelector('#legend'),
+					graph : graph
+				});
+				var hover = new Rickshaw.Graph.HoverDetail({
+					graph : ajaxGraph.graph
+				});
+				var shelving = new Rickshaw.Graph.Behavior.Series.Toggle({
+					graph : graph,
+					legend : legend
+				});
+				var highlighter = new Rickshaw.Graph.Behavior.Series.Highlight(
+						{
+							graph : graph,
+							legend : legend
+						});
+
+				graph.render();
+				$('#current-chart').hideLoading();
+			}
+		});
+	}else{
     	 chartDiv.append($("<img id='chart-image' src=''/>"));
     	// create link
     	 var link=baseUrl+'/series-of/'+ id+'/'+selectedSeries.join('-')+'/'+interval+'/'+visType+'.png?width='+$('#chart-width').val()+'&height='+$('#chart-height').val();
