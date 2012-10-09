@@ -40,11 +40,11 @@ return (function(baseUrl, id){
     	    
 	    	 ajaxGraph = new Rickshaw.Graph.Ajax( {	
 	    		element: document.getElementById("chart"),
-	    		width: $('#chart-width').val(),
+	    		width: 850,//$('#chart-width').val(),
 	    		height: $('#chart-height').val(),
 	    		renderer: 'line',
 	    		min: 'auto',
-	    		dataURL: baseUrl+'/series-of/'+id+'/'+selectedSeries.join('-')+'/'+interval+'/data.json',
+	    		dataURL: baseUrl+'/series-of/'+id+'/'+selectedSeries.join('-')+'/'+interval+'/data.json?width='+$('#chart-width').val(),
 	    		onData: function(d) { Rickshaw.Series.zeroFill(d); return d },
 	    		series: series,
 	    		onComplete: function(ajaxGraph){

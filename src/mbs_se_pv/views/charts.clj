@@ -165,14 +165,13 @@
 (defn- get-series-values 
   "Call appropriate database queries according to (get-series-type series-name). Returns
 sequence of value sequences (seq. of maps with keys :timestamp and :value)."
-  [plant-name series-id start-time end-time]
-  (let [s (as-sql-timestamp start-time) 
-        e (as-sql-timestamp (+ end-time ONE-DAY))]
-    (def x [plant-name series-id s e])
-    (case (get-series-type series-id) 
-      ::efficiency (map (fn [m] (update-in m [:value] min 100)) (db/get-efficiency series-id s e))
-      ::daily-gain (db/sum-per-day series-id s e)
-      (db/all-values-in-time-range plant-name series-id s e))))
+  ([plant-name series-id start-time end-time] (get-series-values plant-name series-id start-time end-time nil))
+  ([plant-name series-id start-time end-time width]
+    (let [s (as-sql-timestamp start-time) 
+          e (as-sql-timestamp (+ end-time ONE-DAY))]
+      (if width
+        (db/rolled-up-values-in-time-range plant-name series-id s e width)
+        (db/all-values-in-time-range plant-name series-id s e)))))
 
 ;;;;;;;;;;;;;;;; Functions for rendering nice physical time series data ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- set-axis 
@@ -356,11 +355,12 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
     {:status 400
      :body "Wrong dates!"}))
 
-(defpage "/series-of/:id/*/:times/data.json" {:keys [id * times]}
+(defpage "/series-of/:id/*/:times/data.json" {:keys [id * times width]}
   (if-let [[s e] (parse-times times)]
     (let [names (distinct (re-seq #"[^-]+" *)) ;; split at any slash
+          width (s2i width nil)
           values (->> names
-                   (map #(get-series-values id % s e))
+                   (map #(get-series-values id % s e width))
                    (map (mapp (juxt :timestamp :value)))
                    (map (mapp (fn [[timestamp value]] {:x (long (/ timestamp 1000)), :y value}))))]
       (json (map #(hash-map :name %1 :data %2) names values)

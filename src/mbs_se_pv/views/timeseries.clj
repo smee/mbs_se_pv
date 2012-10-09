@@ -59,9 +59,9 @@
        [:tr [:th.span4 label] [:td (metadata-value k value)]])]))
 
 
-(defpartial render-gain-image [name last-month today w h type]
+(defpartial render-gain-image [name time-ago today w h type]
   [:div.loading-bg{:style (format "width:%dpx;height:%dpx;" w h)}
-   [:img {:src (resolve-url (format "/gains/%s/%s-%s/chart.png?unit=%s&width=%d&height=%d" name last-month today type w h))
+   [:img {:src (resolve-url (format "/gains/%s/%s-%s/chart.png?unit=%s&width=%d&height=%d" name time-ago today type w h))
           :width w
           :height h}]])
 
@@ -70,7 +70,7 @@
         metadata (-> plant db/get-metadata first second (assoc :first-date (.format (util/dateformat) min)) (assoc :last-date (.format (util/dateformat) max)))
         now (System/currentTimeMillis)
         today (.format (util/dateformatrev) now)
-        last-month (.format (util/dateformatrev) (- now (* 365 util/ONE-DAY)))
+        one-year-ago (.format (util/dateformatrev) (- now (* 365 util/ONE-DAY)))
         w 400
         h 250]
     (common/layout-with-links 
@@ -87,11 +87,11 @@
        [:div.span6
         [:h3 "Erträge im letzten Jahr"]
         [:h4 "Gesamtertrag pro Tag"]
-        (render-gain-image plant last-month today w h "day")
+        (render-gain-image plant one-year-ago today w h "day")
         [:h4 "Gesamtertrag pro Woche"]
-        (render-gain-image plant last-month today w h "week")
+        (render-gain-image plant one-year-ago today w h "week")
         [:h4 "Gesamtertrag pro Monat"]
-        (render-gain-image plant last-month today w h "month")]
+        (render-gain-image plant one-year-ago today w h "month")]
        (hiccup.page/include-css "/css/colorbrewer.css")
        (hiccup.page/include-js "/js/chart/d3.v2.min.js")
        (javascript-tag (util/render-javascript-template "templates/calendar.js" "#calendar" (str (util/base-url) "/missing-data.csv"))))))
@@ -216,9 +216,7 @@
       (hiccup.page/include-js "http://cdn.leafletjs.com/leaflet-0.4/leaflet.js")
       ;;render interactive client side charts
       (hiccup.page/include-css "/css/chart/rickshaw.min.css")
-      (hiccup.page/include-js "/js/chart/d3.v2.min.js")
-      (hiccup.page/include-js "/js/chart/d3.layout.min.js")
-      (hiccup.page/include-js "/js/chart/rickshaw.min.js"))))
+      (hiccup.page/include-js "/js/chart/d3.v2.min.js" "/js/chart/d3.layout.min.js" "/js/chart/rickshaw.min.js"))))
 
 (defn toolbar-links 
   "Links for the toolbar, see common/eumonis-topbar or common/layout-with-links for details"
