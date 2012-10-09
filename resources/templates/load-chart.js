@@ -40,7 +40,7 @@ return (function(baseUrl, id){
     	    
 	    	 ajaxGraph = new Rickshaw.Graph.Ajax( {	
 	    		element: document.getElementById("chart"),
-	    		width: 850,//$('#chart-width').val(),
+	    		width: $('#chart-width').val(),
 	    		height: $('#chart-height').val(),
 	    		renderer: 'line',
 	    		min: 'auto',
