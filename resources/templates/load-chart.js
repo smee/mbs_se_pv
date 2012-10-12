@@ -14,7 +14,7 @@ return (function(baseUrl, id){
 // do not fetch a chart without any selected series
     if(selectedSeries.length < 1) return false;
 // find selected chart type
-    var visType=$('input[name=chart-type]:checked').val();
+    var visType=$("#chart-type").val();
 // remove old contents
 	 var chartDiv=$('#current-chart');
 	 chartDiv.empty();

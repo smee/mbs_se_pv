@@ -94,7 +94,7 @@
         (render-gain-image plant one-year-ago today w h "month")]
        (hiccup.page/include-css "/css/colorbrewer.css")
        (hiccup.page/include-js "/js/chart/d3.v2.min.js")
-       (javascript-tag (util/render-javascript-template "templates/calendar.js" "#calendar" (str (util/base-url) "/missing-data.csv"))))))
+       (javascript-tag (util/render-javascript-template "templates/calendar.js" "#calendar" (str (util/base-url) "/missing-data.csv?id=" (url-encode plant)))))))
 
 ;;;;;;;;;;;;;; show all available time series info per pv installation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- extract-ln-name [name]
@@ -148,7 +148,7 @@
            checkbox:true,
            selectMode: 3,          
            persist: false,
-           minExpandLevel: 2});"
+           minExpandLevel: 1});"
           elem-id))]))
 
 (defpage all-series "/series-of/:id" {id :id}
@@ -177,13 +177,13 @@
         [:div
          [:h4 "Art der Anzeige:"]
          [:div.controls
-          [:label.radio (radio-button "chart-type" false "chart") "Zeitreihe"]
-          [:label.radio (radio-button "chart-type" false "heat-map") "Heatmap"]
-          [:label.radio (radio-button "chart-type" false "discord") "Ungewöhnlicher Tag"]
-          [:label.radio (radio-button "chart-type" true "interactive-client") "Interaktive Ansicht"]
-          [:label.radio (radio-button "chart-type" false "interactive-map") "Interaktiver Zoom"]
-          [:label.radio (radio-button "chart-type" false "correlation") "Korrelationen"]]
-         ]
+          (drop-down "chart-type" [["Interaktive Ansicht" "interactive-client"]
+                                   ["Statische Ansicht" "chart"]
+                                   ["Heatmap" "heat-map"]
+                                   ["Ungewöhnlicher Tag" "discord"]
+                                   ["Interaktiver Zoom" "interactive-map"]
+                                   ["Korrelationen" "correlation"]]
+                     "interactive-client")]]
         [:div
          [:h4 "Größe:"]
          [:input#chart-width.input-mini {:value "850" :type "number"}] 
@@ -228,8 +228,8 @@
   )
 
 
-(defpage "/missing-data.csv" []
-  (let [avail (db/available-data "Ourique PV-Anlage")
+(defpage "/missing-data.csv" {plant :id}
+  (let [avail (db/available-data plant)
         avail (map #(update-in % [:date] as-date) avail)
         avail-dates (map (comp as-date :date) avail)
         _ (println (first avail-dates) (last avail-dates))
