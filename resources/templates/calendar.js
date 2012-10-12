@@ -51,15 +51,18 @@ d3.csv(dataUrl, function(csv) {
       .key(function(d) { return d.date; })
 	  .rollup(function(d){ return d[0].num; })
       .map(csv);
-	  
+  
+  var minmax = d3.extent(d3.values(data));
+  mydata=data;
+  mymm=minmax;
   var color = d3.scale.quantize()
-    .domain([0, 240*1440])
+    .domain(minmax)
     .range(d3.range(9));
 	
   rect.filter(function(d) { return d in data; })
       .attr("class", function(d) { return "day q"+color(data[d])+"-9"; })
     .select("title")
-      .text(function(d) { return d + ": " + percent(data[d]/(240*1440)); });
+      .text(function(d) { return d + ": " + percent(data[d]/minmax[1]); });
 });
 
 function monthPath(t0) {
