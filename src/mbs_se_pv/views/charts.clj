@@ -132,13 +132,15 @@
            ::PhV.phsB.cVal ::udc
            ::PhV.phsC.cVal ::udc
            ::Ris.mag.f ::res
+           ::RotSpd.mag.f ::rpm
            ::TotVA.mag.f ::pac
            ::TotVAr.mag.f ::pac
            ::TotW.mag.f ::pac
            ::TotWh.actVal ::gain
            ::TmpSv.instMag ::temp
            ::Vol.mag.f ::udc
-           ::Watt.mag.f ::pac}  
+           ::Watt.mag.f ::pac
+           ::W.net.instCVal.mag.f ::pac}  
        m2 {::pac        {:color (Color. 0xC10020) :unit "W" :label "Leistung"} 
            ::pdc        {:color (Color. 0xC10020) :unit "W" :label "Leistung"}
            ::temp       {:color (Color. 0xFF6800) :unit "°C" :label "Temperatur"}
@@ -149,8 +151,9 @@
            ::curr       {:color Color/RED         :unit "A" :label "Stromstärke"}
            ::gain       {:color (Color. 0x803E75) :unit "Wh" :label "Ertrag"} 
            ::daily-gain {:color (Color. 0x803E75) :unit "Wh" :label "Ertrag"}
+           ::rpm        {:color (Color/BLUE)      :unit "rpm" :label "Umdrehungen"} 
            ::efficiency {:color (Color. 0x817066) :unit "%" :label "Wirkungsgrad" :min 0 :max 99.999}}]
-    (-> val m1 m2)))
+    (m2 (m1 val) {:color (Color/BLACK) :unit "???" :label "unbekannte Größe"})))
 
 (defn- get-series-label-solarlog 
   "Unique human readable label."
