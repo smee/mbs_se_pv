@@ -18,5 +18,26 @@
 			}
 		}
 	});
+	shiftTime = function(days, months, years){
+		var sf = $('#start-date');
+		var ef = $('#end-date');
+		
+		var startdate = sf.DatePickerGetDate(false);
+		var enddate = ef.DatePickerGetDate(false);
+		
+		startdate.addDays(days);
+		startdate.addMonths(months);
+		startdate.addYears(years);
+		enddate.addDays(days);
+		enddate.addMonths(months);
+		enddate.addYears(years);
+		
+		sf.DatePickerSetDate(startdate,true);
+		sf.val(sf.DatePickerGetDate(true));
+		ef.DatePickerSetDate(enddate,true);
+		ef.val(ef.DatePickerGetDate(true));
+		
+		return false;
+	}
 	
 })("%s","%s",%s, %s);

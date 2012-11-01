@@ -170,7 +170,15 @@
           (text-field {:placeholder "Startdatum" :class "input-small"} "start-date" date)]
          [:div.input-prepend
           [:span.add-on "bis: "]
-          (text-field {:placeholder "Enddatum" :class "input-small"} "end-date" date)]]
+          (text-field {:placeholder "Enddatum" :class "input-small"} "end-date" date)]
+         [:div 
+          [:a.btn.btn-mini {:href "#" :onclick "shiftTime(0,0,-1)"} "< Jahr"]
+          [:a.btn.btn-mini {:href "#" :onclick "shiftTime(0,-1,0)"} "< Monat"]
+          [:a.btn.btn-mini {:href "#" :onclick "shiftTime(-1,0,0)"} "< Tag"]
+          [:a.btn.btn-mini {:href "#" :onclick "shiftTime(1,0,0)"} "Tag >"]
+          [:a.btn.btn-mini {:href "#" :onclick "shiftTime(0,1,0)"} "Monat >"]
+          [:a.btn.btn-mini {:href "#" :onclick "shiftTime(0,0,1)"} "Jahr >"]
+          #_[:label.checkbox (check-box "rerender" true) "automatisch neu zeichnen"]]]
         [:div
          [:h4 "Datenreihen"]
          (series-tree id names "series-tree")]

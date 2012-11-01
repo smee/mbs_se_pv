@@ -9,7 +9,7 @@
                            [chart-utils "1.0.2-SNAPSHOT"]
                            [incanter/incanter-core "1.3.0"]
                            [incanter/incanter-charts "1.3.0"]
-                           [clj-pdf "0.9.9-SNAPSHOT"] 
+                           ;[clj-pdf "0.9.9-SNAPSHOT"] 
                            ]
             :main mbs-se-pv.server
             :ring {:handler mbs-se-pv.server/handler})
