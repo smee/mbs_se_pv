@@ -18,7 +18,9 @@
 			}
 		}
 	});
+	// FIXME no namespace!
 	shiftTime = function(days, months, years){
+		// FIXME hard coded selectors
 		var sf = $('#start-date');
 		var ef = $('#end-date');
 		
@@ -36,6 +38,10 @@
 		sf.val(sf.DatePickerGetDate(true));
 		ef.DatePickerSetDate(enddate,true);
 		ef.val(ef.DatePickerGetDate(true));
+		// FIXME hard coded selectors		
+		if($('#rerender').attr('checked')){
+			$('#render-chart').trigger('click');
+		}
 		
 		return false;
 	}

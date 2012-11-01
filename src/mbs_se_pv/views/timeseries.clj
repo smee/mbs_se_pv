@@ -178,7 +178,7 @@
           [:a.btn.btn-mini {:href "#" :onclick "shiftTime(1,0,0)"} "Tag >"]
           [:a.btn.btn-mini {:href "#" :onclick "shiftTime(0,1,0)"} "Monat >"]
           [:a.btn.btn-mini {:href "#" :onclick "shiftTime(0,0,1)"} "Jahr >"]
-          #_[:label.checkbox (check-box "rerender" true) "automatisch neu zeichnen"]]]
+          [:label.checkbox (check-box "rerender" true) "automatisch neu zeichnen"]]]
         [:div
          [:h4 "Datenreihen"]
          (series-tree id names "series-tree")]
@@ -198,7 +198,7 @@
          [:span "X"] 
          [:input#chart-height.input-mini {:value "700" :type "number"}]
          [:span "px"]]
-        [:button.btn-primary.btn-large {:href "" :onclick (util/render-javascript-template "templates/load-chart.js" base-url id)} 
+        [:button#render-chart.btn-primary.btn-large 
          [:i.icon-picture.icon-white]
          " Anzeigen"]
         ]
@@ -216,6 +216,7 @@
        [:div#current-chart "Bitte wählen Sie links die zu visualisierenden Daten und ein Zeitinterval aus."
         ]]
       ;; render calendar input via jquery plugin
+      (javascript-tag (util/render-javascript-template "templates/load-chart.js" "#render-chart" base-url id)) 
       (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#start-date" date min max))
       (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#end-date" date min max))
       #_(javascript-tag (util/render-javascript-template "templates/date-selector.js" "#report-date" date min max))

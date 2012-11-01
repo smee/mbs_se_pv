@@ -1,4 +1,6 @@
-return (function(baseUrl, id){
+$('%s').click(function(event){
+(function(baseUrl, id){
+	event.preventDefault();
 // create selected date interval: yyyyMMdd-yyyyMMdd
 	var start = $('#start-date').DatePickerGetDate(false);
     var end = $('#end-date').DatePickerGetDate(false);
@@ -115,4 +117,5 @@ return (function(baseUrl, id){
     return false;
 })("%s", "%s");
 
+});
                         
