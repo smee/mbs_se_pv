@@ -1,4 +1,4 @@
-(function (selector,dataUrl){
+(function (selector,dataUrl,linkTemplate){
 
 var margin = {top: 10, right: 10, bottom: 10, left: 10},
     width = 460 - margin.right - margin.left, // width
@@ -10,7 +10,8 @@ var day = function(d){
 },
     week = d3.time.format("%%W"),
     percent = d3.format(".1%%"),
-    format = d3.time.format("%%d.%%m.%%Y");
+    format = d3.time.format("%%d.%%m.%%Y"),
+    revdate = d3.time.format("%%Y%%m%%d");
 
 var svg = d3.select(selector).selectAll("svg")
     .data(d3.range(2007, 2013))
@@ -18,6 +19,7 @@ var svg = d3.select(selector).selectAll("svg")
     .attr("width", width + margin.right + margin.left)
     .attr("height", height + margin.top + margin.bottom)
     .attr("class", "RdYlGn")
+    //.attr("year",function(d,i){return d;})
   .append("g")
     .attr("transform", "translate(" + (margin.left + (width - cellSize * 53) / 2) + "," + (margin.top + (height - cellSize * 7) / 2) + ")");
 
@@ -34,6 +36,7 @@ var rect = svg.selectAll("rect.day")
     .attr("height", cellSize)
     .attr("x", function(d) { return week(d) * cellSize; })
     .attr("y", function(d) { return day(d) * cellSize; })
+    .attr("date",function(d){ return revdate(d); })
     .datum(format);
 
 rect.append("title")
@@ -73,4 +76,12 @@ function monthPath(t0) {
       + "H" + (w1 + 1) * cellSize + "V" + 0
       + "H" + (w0 + 1) * cellSize + "Z";
 }
-})("%s", "%s")
+
+ $('svg').on('click',function(e){
+ var elem = e.target;
+ if(elem.nodeName='rect' && elem.hasAttribute('date')){
+	 window.location=linkTemplate+'?selected-date='+elem.getAttribute('date');
+ }
+ });
+ 
+})("%s", "%s", "%s")

@@ -21,6 +21,19 @@
 
 (declare toolbar-links)
 
+(defpage missing-data "/data/:id/missing.csv" {plant :id}
+  (let [avail (db/available-data plant)
+        avail (map #(update-in % [:date] as-date) avail)
+        avail-dates (map (comp as-date :date) avail)
+        all-dates (dates-seq (first avail-dates) (last avail-dates))
+        missing (sort (set/difference (set all-dates) (set avail-dates)))
+        missing (map #(hash-map :date % :num 0) missing)
+        data (sort-by :date (concat avail missing))] 
+    (->> data
+      (map (fn [{:keys [date num]}] (str (.format (util/dateformat) date) "," num)))
+      (concat ["date,num"])
+      (string/join "\n"))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;; show metadata as table ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def ^:private installation-labels
   [:first-date "Erster Messwert am"
@@ -94,7 +107,11 @@
         (render-gain-image plant one-year-ago today w h "month")]
        (hiccup.page/include-css "/css/colorbrewer.css")
        (hiccup.page/include-js "/js/chart/d3.v2.min.js")
-       (javascript-tag (util/render-javascript-template "templates/calendar.js" "#calendar" (str (util/base-url) "/missing-data.csv?id=" (url-encode plant)))))))
+       (javascript-tag (util/render-javascript-template 
+                         "templates/calendar.js" 
+                         "#calendar" 
+                         (url-for missing-data {:id (url-encode plant)})
+                         (url-for all-series {:id (url-encode plant)}))))))
 
 ;;;;;;;;;;;;;; show all available time series info per pv installation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- extract-ln-name [name]
@@ -151,11 +168,12 @@
            minExpandLevel: 1});"
           elem-id))]))
 
-(defpage all-series "/series-of/:id" {id :id}
+(defpage all-series "/series-of/:id" {:keys [id selected-date]}
   (let [c (db/count-all-series-of-plant id)
         names (db/all-series-names-of-plant id)
         {:keys [min max]} (db/min-max-time-of id (ffirst names))
-        date (.format (util/dateformat) max)
+        selected-date (when selected-date (as-date (.parse (util/dateformatrev) selected-date))) 
+        date (.format (util/dateformat) (or selected-date max))
         base-url (util/base-url)]
 
     (common/layout-with-links
@@ -237,17 +255,3 @@
   )
 
 
-(defpage "/missing-data.csv" {plant :id}
-  (let [avail (db/available-data plant)
-        avail (map #(update-in % [:date] as-date) avail)
-        avail-dates (map (comp as-date :date) avail)
-        _ (println (first avail-dates) (last avail-dates))
-        all-dates (dates-seq (first avail-dates) (last avail-dates))
-        missing (sort (set/difference (set all-dates) (set avail-dates)))
-        missing (map #(hash-map :date % :num 0) missing)
-        _ (println (count all-dates) (count avail-dates) (count missing))
-        data (sort-by :date (concat avail missing))] 
-    (->> data
-      (map (fn [{:keys [date num]}] (str (.format (util/dateformat) date) "," num)))
-      (concat ["date,num"])
-      (string/join "\n"))))
