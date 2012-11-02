@@ -49,12 +49,10 @@ svg.selectAll("path.month")
 d3.csv(dataUrl, function(csv) {
   var data = d3.nest()
       .key(function(d) { return d.date; })
-	  .rollup(function(d){ return d[0].num; })
+	  .rollup(function(d){ return parseInt(d[0].num); })
       .map(csv);
   
   var minmax = d3.extent(d3.values(data));
-  mydata=data;
-  mymm=minmax;
   var color = d3.scale.quantize()
     .domain(minmax)
     .range(d3.range(9));
