@@ -110,8 +110,8 @@
        (javascript-tag (util/render-javascript-template 
                          "templates/calendar.js" 
                          "#calendar" 
-                         (url-for missing-data {:id (url-encode plant)})
-                         (url-for all-series {:id (url-encode plant)}))))))
+                         (resolve-url (url-for missing-data {:id (url-encode plant)}))
+                         (resolve-url (url-for all-series {:id (url-encode plant)})))))))
 
 ;;;;;;;;;;;;;; show all available time series info per pv installation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- extract-ln-name [name]

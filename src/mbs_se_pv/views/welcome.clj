@@ -40,5 +40,5 @@
     (javascript-tag (render-javascript-template "templates/render-datatable.js" (base-url)))))
 
 (defpage "/" []
-  (redirect (url-for start-page)))
+  (redirect (resolve-url (url-for start-page))))
 
