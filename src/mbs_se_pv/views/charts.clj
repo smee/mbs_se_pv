@@ -16,7 +16,7 @@
     [clojure.string :only (split)]
     [noir.core :only (defpage)]
     [noir.response :only (content-type json)]
-    [mbs-se-pv.views.util :only (dateformatrev dateformat ONE-DAY convert-si-unit create-si-prefix-formatter)]
+    [mbs-se-pv.views.util :only (dateformatrev dateformatrev-detailed dateformat ONE-DAY convert-si-unit create-si-prefix-formatter)]
     [org.clojars.smee 
      [map :only (mapp)] 
      [time :only (as-sql-timestamp as-date as-unix-timestamp)]
@@ -57,9 +57,10 @@
 (defn- parse-times 
   "Parse strings of shape 'yyyyMMdd-yyyyMMdd'."
   [times]
-  (when-let [[_ start-time end-time] (re-find #"(\d{8})-(\d{8})" times)]
-    (let [s (as-unix-timestamp (.parse (dateformatrev) start-time))
-          e (as-unix-timestamp (.parse (dateformatrev) end-time))]
+  (when-let [[_ start-time end-time] (re-find #"(\d{8,12})-(\d{8,12})" times)]
+    (let [format (if (= 8 (count start-time)) (dateformatrev) (dateformatrev-detailed))
+          s (as-unix-timestamp (.parse format start-time))
+          e (as-unix-timestamp (.parse format end-time))]
       [(min s e) (max s e)])))
 
 (defn- start-of-day [millis]
@@ -170,8 +171,9 @@
 sequence of value sequences (seq. of maps with keys :timestamp and :value)."
   ([plant-name series-id start-time end-time] (get-series-values plant-name series-id start-time end-time nil))
   ([plant-name series-id start-time end-time width]
-    (let [s (as-sql-timestamp start-time) 
-          e (as-sql-timestamp (+ end-time ONE-DAY))]
+    (let [end-time (if (= end-time start-time) (+ end-time ONE-DAY) end-time)
+          s (as-sql-timestamp start-time) 
+          e (as-sql-timestamp end-time)]
       (if width
         (db/rolled-up-values-in-time-range plant-name series-id s e width)
         (db/all-values-in-time-range plant-name series-id s e)))))
@@ -327,8 +329,8 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
     (let [name (first (distinct (re-seq #"[^-]+" *))) ;; split at any slash
           values (get-series-values id name s e)
           days (->> values (partition-by day-number) (insert-missing-days s e)) 
-          daily-start (hm 6 0)
-          daily-end (hm 22 0)
+          daily-start (hm 0 0)
+          daily-end (hm 23 59)
           five-min (hm (s2i hours 0) (s2i minutes 5))
           gridded (map #(smooth (into-time-grid (map (juxt :timestamp :value) %) daily-start daily-end five-min)) days)
           days (vec (map #(vec (map second %)) gridded))

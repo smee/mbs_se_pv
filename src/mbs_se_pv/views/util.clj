@@ -16,6 +16,7 @@ For example, parsing with format `yyyMMdd` in time zone 'Europe/Berlin' and inpu
 (def timeformat (per-thread-singleton #(create-date-format "yyyy-MM-dd HH:mm:ss")))
 (def dateformat (per-thread-singleton #(create-date-format "dd.MM.yyyy")))
 (def dateformatrev (per-thread-singleton #(create-date-format "yyyyMMdd")))
+(def dateformatrev-detailed (per-thread-singleton #(create-date-format "yyyyMMddHHmm")))
 
 (def ^:const ONE-DAY (* 24 60 60 1000))
 
