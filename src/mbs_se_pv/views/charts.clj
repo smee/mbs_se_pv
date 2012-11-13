@@ -247,49 +247,47 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 
 ;;;;;;;;;;;;;;;; Chart generation pages ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defpage "/series-of/:id/*/:times/chart.png" {:keys [id * times width height]}
-  (if-let [[s e] (parse-times times)]
-    (let [names (distinct (re-seq #"[^-]+" *)) ;; split at any minus
-          ;names (sort (map first (db/all-series-names-of-plant id))) ; render all available series :)
-          values (pmap #(get-series-values id % s e) names)]
-      
-      (-> (create-time-series-chart names values)
-        (ch/set-x-label "Zeit")
-        (ch/set-y-label (-> names first get-series-type unit-properties :label))
-        (ch/set-title (str "Chart für den Zeitraum " (.format (dateformat) s) " bis " (.format (dateformat) e)))
-        (enhance-chart names)
-        (return-image :height (s2i height 500) :width (s2i width 600))))
-    ;; else the dates format was invalid
-    {:status 400
-     :body "Wrong dates!"}))
+(defmacro def-chart-page [file-name additional-keys & body]
+  `(defpage ~(format "/series-of/:id/*/:times/%s" file-name) {:keys [~'id ~'* ~'times ~'width ~'height ~@additional-keys]}
+     (if-let [[~'s ~'e] (parse-times ~'times)]
+       (let [~'names (distinct (re-seq #"[^-]+" ~'*)) ;; split at any minus
+             ~'* clojure.core/*]
+         ~@body)
+       {:status 400
+        :body "Wrong dates!"})))
+
+(def-chart-page "chart.png" [] 
+  (let [values (pmap #(get-series-values id % s e) names)]      
+    (-> (create-time-series-chart names values)
+      (ch/set-x-label "Zeit")
+      (ch/set-y-label (-> names first get-series-type unit-properties :label))
+      (ch/set-title (str "Chart für den Zeitraum " (.format (dateformat) s) " bis " (.format (dateformat) e)))
+      (enhance-chart names)
+        (return-image :height (s2i height 500) :width (s2i width 600)))))
 
 (defn- day-number [{millis :timestamp}]
   (int (/ millis (* 1000 60 60 24))))
 
 ;; show day that represents the biggest discord of a given series.
-(defpage "/series-of/:id/*/:times/discord.png" {:keys [id * times width height num]}
-  (if-let [[s e] (parse-times times)]
-    (let [num (s2i num 1)
-          name *
-          data (get-series-values id name s e)
-          days (partition-by day-number data)
-          discords (discord/find-discords-in-seqs (map (partial map :value) days) num)
-          discord-days (->> discords
-                         (map #(nth days (first %)))
-                         (map vec)
-                         (map (fn [day] (map #(update-in % [:timestamp] mod ONE-DAY) day))))]
-      (-> (create-time-series-chart 
-            (for [[idx v] discords] (format "Discord am %s: %f" (.format (dateformat) (-> days (nth idx) first :timestamp)) v)) 
-            discord-days 
-            str)
-        (ch/set-x-label "Zeit")
-        (ch/set-y-label (-> name get-series-type unit-properties :label))
-        (ch/set-title (str "Die ungewöhnlichsten Tage"))
-        (enhance-chart [name])
-        (return-image :height (s2i height 500) :width (s2i width 600))))
-    ;; else the dates format was invalid
-  {:status 400
-   :body "Wrong dates!"}))
+(def-chart-page "discord.png" [num]
+  (let [num (s2i num 1)
+        name (first names) 
+        data (get-series-values id name s e)
+        days (partition-by day-number data)
+        discords (discord/find-discords-in-seqs (map (partial map :value) days) num)
+        discord-days (->> discords
+                       (map #(nth days (first %)))
+                       (map vec)
+                       (map (fn [day] (map #(update-in % [:timestamp] mod ONE-DAY) day))))]
+    (-> (create-time-series-chart 
+          (for [[idx v] discords] (format "Discord am %s: %f" (.format (dateformat) (-> days (nth idx) first :timestamp)) v)) 
+          discord-days 
+          str)
+      (ch/set-x-label "Zeit")
+      (ch/set-y-label (-> name get-series-type unit-properties :label))
+      (ch/set-title (str "Die ungewöhnlichsten Tage"))
+      (enhance-chart [name])
+      (return-image :height (s2i height 500) :width (s2i width 600)))))
 
 ;; show summed gain as bar charts for days, weeks, months, years
 (defpage gain-chart "/gains/:id/:times/chart.png" {:keys [id times width height unit]}
@@ -324,61 +322,55 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
         m (reduce #(assoc % (day-number (first %2)) %2) m days)]
     (vals m)))
 
-(defpage "/series-of/:id/*/:times/heat-map.png" {:keys [id * times width height hours minutes]}
-  (if-let [[s e] (parse-times times)]
-    (let [name (first (distinct (re-seq #"[^-]+" *))) ;; split at any slash
-          values (get-series-values id name s e)
-          days (->> values (partition-by day-number) (insert-missing-days s e)) 
-          daily-start (hm 0 0)
-          daily-end (hm 23 59)
-          five-min (hm (s2i hours 0) (s2i minutes 5))
-          gridded (map #(smooth (into-time-grid (map (juxt :timestamp :value) %) daily-start daily-end five-min)) days)
-          days (vec (map #(vec (map second %)) gridded))
-          x-max (count days )
-          y-max (apply max (map count days))
-          f (fn [x y] 
-              (if-let [v (get-in days [(int (/ (- x s) ONE-DAY)) (int (/ (- y daily-start) five-min))])]
-                v
-                0))
-          chart (doto (cjf/heat-map f s (+ s (clojure.core/* ONE-DAY x-max)) daily-start daily-end 
-                                    :color? true
-                                    :title (format "Tagesverläufe von %s im Zeitraum %s" name times)
-                                    :x-label "Tag"
-                                    :y-label "Werte"
-                                    :z-label (-> name get-series-type unit-properties :label) 
-                                    :x-step (count days)
-                                    :y-step y-max
-                                    :z-min (-> name get-series-type unit-properties :min)
-                                    :z-max (-> name get-series-type unit-properties :max)
-                                    :colors (when (= ::efficiency (get-series-type name)) efficiency-colors)
-                                    :color? true)
-                  (.. getPlot getRenderer (setBlockWidth ONE-DAY))
-                  (.. getPlot getRenderer (setBlockHeight five-min)))]
-      (.. chart getPlot (setDomainAxis (org.jfree.chart.axis.DateAxis.)))
-      (.. chart getPlot (setRangeAxis (org.jfree.chart.axis.DateAxis.)))
-      (return-image chart :height (s2i height 500) :width (s2i width 600)))
-    {:status 400
-     :body "Wrong dates!"}))
 
-(defpage "/series-of/:id/*/:times/data.json" {:keys [id * times width]}
-  (if-let [[s e] (parse-times times)]
-    (let [names (distinct (re-seq #"[^-]+" *)) ;; split at any slash
-          width (s2i width nil)
-          values (->> names
-                   (map #(get-series-values id % s e width))
-                   (map (mapp (juxt :timestamp :value)))
-                   (map (mapp (fn [[timestamp value]] {:x (long (/ timestamp 1000)), :y value}))))
-          all-names (db/all-series-names-of-plant id)]
-      (json (map #(hash-map :name (get all-names %1) :key %1 :data %2) names values)
-        #_{:title (str "Betriebsdaten im Zeitraum " times)
-         :x-label "Zeit"
-         :series (map #(let [type (get-series-type %)
-                             v %2
-                             {:keys [unit label]} (get unit-properties type)] 
-                         (hash-map :name %, :unit unit, :label label, :type type, :data %2)) 
-                      names values)}))
-    {:status 400
-     :body "Wrong dates!"}))
+(def-chart-page "heat-map.png" [hours minutes]
+  (let [name (first names)
+        values (get-series-values id name s e)
+        days (->> values (partition-by day-number) (insert-missing-days s e)) 
+        daily-start (hm 0 0)
+        daily-end (hm 23 59)
+        five-min (hm (s2i hours 0) (s2i minutes 5))
+        gridded (map #(smooth (into-time-grid (map (juxt :timestamp :value) %) daily-start daily-end five-min)) days)
+        days (vec (map #(vec (map second %)) gridded))
+        x-max (count days )
+        y-max (apply max (map count days))
+        f (fn [x y] 
+            (if-let [v (get-in days [(int (/ (- x s) ONE-DAY)) (int (/ (- y daily-start) five-min))])]
+              v
+              0))
+        chart (doto (cjf/heat-map f s (+ s (clojure.core/* ONE-DAY x-max)) daily-start daily-end 
+                                  :color? true
+                                  :title (format "Tagesverläufe von %s im Zeitraum %s" name times)
+                                  :x-label "Tag"
+                                  :y-label "Werte"
+                                  :z-label (-> name get-series-type unit-properties :label) 
+                                  :x-step (count days)
+                                  :y-step y-max
+                                  :z-min (-> name get-series-type unit-properties :min)
+                                  :z-max (-> name get-series-type unit-properties :max)
+                                  :colors (when (= ::efficiency (get-series-type name)) efficiency-colors)
+                                  :color? true)
+                (.. getPlot getRenderer (setBlockWidth ONE-DAY))
+                (.. getPlot getRenderer (setBlockHeight five-min)))]
+    (.. chart getPlot (setDomainAxis (org.jfree.chart.axis.DateAxis.)))
+    (.. chart getPlot (setRangeAxis (org.jfree.chart.axis.DateAxis.)))
+    (return-image chart :height (s2i height 500) :width (s2i width 600))))
+
+(def-chart-page "data.json" []
+  (let [width (s2i width nil)
+        values (->> names
+                 (map #(get-series-values id % s e width))
+                 (map (mapp (juxt :timestamp :value)))
+                 (map (mapp (fn [[timestamp value]] {:x (long (/ timestamp 1000)), :y value}))))
+        all-names (db/all-series-names-of-plant id)]
+    (json (map #(hash-map :name (get all-names %1) :key %1 :data %2) names values)
+          #_{:title (str "Betriebsdaten im Zeitraum " times)
+             :x-label "Zeit"
+             :series (map #(let [type (get-series-type %)
+                                 v %2
+                                 {:keys [unit label]} (get unit-properties type)] 
+                             (hash-map :name %, :unit unit, :label label, :type type, :data %2)) 
+                          names values)})))
 
 ;;;;;;;;;;;; render a tiling map of a chart ;;;;;;;;;;;;;;;;;;;;;;
 (defn- render-grid [len x y zoom]
@@ -477,17 +469,12 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; render a correlation matrix plot ;;;;;;;;;;;;;;;;
-(defpage "/series-of/:id/*/:times/correlation.png" {:keys [id * times]}
-  (if-let [[s e] (parse-times times)]
-    (let [names (distinct (re-seq #"[^-]+" *)) ;; split at any slash
-          values (for [name names] (map :value (get-series-values id name s (+ e ONE-DAY)))) 
-          img (-> values 
-                tc/calculate-correlation-matrix 
-                (tc/render-frame names (.format (dateformat) s)))]
-      (return-image img))
-    {:status 400
-     :body "Wrong dates!"}))
-
+(def-chart-page "correlation.png" [] 
+  (let [values (for [name names] (map :value (get-series-values id name s e))) 
+        img (-> values 
+              tc/calculate-correlation-matrix 
+              (tc/render-frame names (.format (dateformat) s)))]
+    (return-image img)))
 
 
 (comment 
