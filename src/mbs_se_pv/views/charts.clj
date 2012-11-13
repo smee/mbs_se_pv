@@ -125,6 +125,7 @@
            ::A.phsB.cVal ::curr
            ::A.phsC.cVal ::curr
            ::Amp.mag.f ::curr
+           ::ConfEfc.mag.f ::efficiency
            ::EnclTmp.mag.f ::temp
            ::EnvTmp.mag.f ::temp
            ::HeatSinkTmp.mag.f ::temp
