@@ -504,6 +504,21 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
               (tc/render-frame names (.format (dateformat) s)))]
     (return-image img)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;; render change points in a chart
+(def-chart-page "changepoints.png" [] 
+  (let [names (take 1 names)
+        ;width (s2i width nil)
+        values [(get-series-values id (first names) s e)] 
+        chart (create-time-series-chart names values)
+        vs (map :value (first values))
+        ts (map :timestamp (first values))
+          cps (timeseries.functions/rec-change-point vs :min-confidence 1.0 :max-level 3)]
+    (doseq [{:keys [changepoint level confidence mean-change]} cps]
+      (cjf/add-domain-marker chart (nth ts changepoint) (str "level " level "\n,m-c= " mean-change)))
+    (-> chart
+      (enhance-chart names)
+      (ch/set-title "Signifikante Veränderungen im Verlauf")
+      (return-image :height (s2i height 500) :width (s2i width 600)))))
 
 (comment 
   (def vs (get-series-values "Ourique PV-Anlage" "INVU1/MMET1.HorInsol.mag.f" (as-unix-timestamp #inst "2012-07-15") (as-unix-timestamp #inst "2012-07-23")))

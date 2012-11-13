@@ -207,6 +207,7 @@
                                    ["Statische Ansicht" "chart"]
                                    ["Heatmap" "heat-map"]
                                    ["Ungewöhnlicher Tag" "discord"]
+                                   ["Verhaltensänderung" "changepoints"]
                                    ["Interaktiver Zoom" "interactive-map"]
                                    ["Korrelationen" "correlation"]]
                      "interactive-client")]]
