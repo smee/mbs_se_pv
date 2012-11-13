@@ -10,7 +10,8 @@
     [timeseries 
      [discord :as discord]
      [correlations :as tc]]
-    [chart-utils.jfreechart :as cjf])
+    [chart-utils.jfreechart :as cjf]
+    [sun :as sun])
   (:use  
     timeseries.align
     [clojure.string :only (split)]
@@ -18,8 +19,8 @@
     [noir.response :only (content-type json)]
     [mbs-se-pv.views.util :only (dateformatrev dateformatrev-detailed dateformat ONE-DAY convert-si-unit create-si-prefix-formatter)]
     [org.clojars.smee 
-     [map :only (mapp)] 
-     [time :only (as-sql-timestamp as-date as-unix-timestamp)]
+     [map :only (mapp map-values)] 
+     [time :only (as-sql-timestamp as-date as-unix-timestamp as-calendar)]
      [util :only (s2i)]])
   (:import 
     [java.io ByteArrayOutputStream ByteArrayInputStream]
@@ -322,10 +323,37 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
         m (reduce #(assoc % (day-number (first %2)) %2) m days)]
     (vals m)))
 
+(defn- simulate-insolation-values 
+  "Create simulated insolation values for given geographical coordinates."
+  [s e tracker? & opts]
+  (let [opts (if (map? (first opts)) (first opts) (apply hash-map opts))
+        {:keys [latitude longitude height delta-gmt module-tilt module-azimuth] 
+         :or {latitude 12, longitude 50, height 0, delta-gmt 2, module-tilt 45, module-azimuth 180}} opts
+        s (as-calendar s)
+        start-day (-> s (.get java.util.Calendar/DAY_OF_YEAR))
+        end-day (-> e as-calendar (.get java.util.Calendar/DAY_OF_YEAR))
+        h-m (for [hour (range 0 24), minute (range 0 60 10)] [hour minute])]
+    (remove #(Double/isNaN (:value %))
+            (for [day-of-year (range start-day end-day), [h m] h-m
+                  :let [{:keys [sunrise sunset] :as pos} (sun/sun-pos day-of-year h m latitude longitude height delta-gmt)
+                        time (doto ^java.util.Calendar s
+                               (.set java.util.Calendar/DAY_OF_YEAR day-of-year)
+                               (.set java.util.Calendar/HOUR_OF_DAY h)
+                               (.set java.util.Calendar/MINUTE m))
+                        sunrise (doto ^java.util.Calendar (.clone time) 
+                                  (.set java.util.Calendar/HOUR_OF_DAY (unchecked-divide-int sunrise 60))
+                                  (.set java.util.Calendar/MINUTE (mod sunrise 60)))
+                        sunset (doto ^java.util.Calendar (.clone time) 
+                                  (.set java.util.Calendar/HOUR_OF_DAY (unchecked-divide-int sunset 60))
+                                  (.set java.util.Calendar/MINUTE (mod sunset 60)))]
+                  :when (and (.after time sunrise)(.before time sunset))]
+              {:timestamp (.getTimeInMillis time)
+               :value (max 0 (get (sun/module-sun-intensity pos height module-tilt module-azimuth) (if tracker? :s-incident :s-module)))}))))
 
 (def-chart-page "heat-map.png" [hours minutes]
   (let [name (first names)
         values (get-series-values id name s e)
+        ;values (simulate-insolation-values s e false {:latitude 37.606875 :longitude -8.087344}) 
         days (->> values (partition-by day-number) (insert-missing-days s e)) 
         daily-start (hm 0 0)
         daily-end (hm 23 59)
