@@ -9,7 +9,8 @@
     [incanter.charts :as ch]
     [timeseries 
      [discord :as discord]
-     [correlations :as tc]]
+     [correlations :as tc]
+     [changepoints :as cp]]
     [chart-utils.jfreechart :as cjf]
     [sun :as sun])
   (:use  
@@ -517,7 +518,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
         chart (create-time-series-chart names values)
         vs (map :value (first values))
         ts (map :timestamp (first values))
-          cps (timeseries.functions/rec-change-point vs :min-confidence 1.0 :max-level 3)]
+          cps (cp/rec-change-point vs :min-confidence 1.0 :max-level 3)]
     (doseq [{:keys [changepoint level confidence mean-change]} cps]
       (cjf/add-domain-marker chart (nth ts changepoint) (str "level " level "\n,m-c= " mean-change)))
     (-> chart
