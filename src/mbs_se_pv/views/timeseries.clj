@@ -134,7 +134,7 @@
 (defn- split-iec-name-typed [n]
   (let [[ld-name ln-name type & _] (string/split n #"/|\.")
         [prefix ln-name id] (extract-ln-name ln-name)]
-    (remove empty? [(names/type-names type type) ld-name ln-name prefix id])))
+    (remove empty? [(names/type-names type type) ld-name prefix id])))
 
 (defn- cluster-by-type [names]
   (let [iec (keys names)
@@ -152,7 +152,7 @@
 
 (defpartial series-tree [id names elem-id]
   (let [by-phys {"nach Bauteil" (restore-physical-hierarchy names)}
-        by-type {"nach Datenart" (cluster-by-type names)}
+        by-type {"nach Datenart" (cluster-by-type names)} 
         tree (->> by-phys
                (merge by-type)               
                (clojure.walk/postwalk #(if (map? %) (into (sorted-map) %) %))
