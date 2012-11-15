@@ -125,10 +125,10 @@
         [prefix ln-name id] (extract-ln-name ln-name)]
     (remove empty? [ld-name ln-name prefix id])))
 
-(defn- restore-physical-hierarchy [names]
+(defn- restore-physical-hierarchy [names] 
   (let [iec (keys names)
         splitted (map split-iec-name iec)
-        labels-and-names (map #(vector (get names %) %) iec)] 
+        labels-and-names (map #(vector (get-in names [% :name]) %) iec)] 
     (util/restore-hierarchy (map #(into (vec %1) %2) splitted labels-and-names))))
 
 (defn- split-iec-name-typed [n]
@@ -139,7 +139,7 @@
 (defn- cluster-by-type [names]
   (let [iec (keys names)
         splitted (map split-iec-name-typed iec)
-        labels-and-names (map #(vector (get names %) %) iec)] 
+        labels-and-names (map #(vector (get-in names [% :name]) %) iec)] 
     (util/restore-hierarchy (map #(into (vec %1) %2) splitted labels-and-names))))
 
 (defn- make-nested-list [nested]
@@ -147,7 +147,8 @@
    (for [[k vs] nested]
      (if (and (sequential? vs) (= 1 (count vs)))
        [:li {:data (format "{series: '%s'}" (first vs))} k]
-       [:li {:class "folder"} k (make-nested-list vs)]))])
+       (do (def x nested) 
+       [:li {:class "folder"} k (make-nested-list vs)])))])
 
 (defpartial series-tree [id names elem-id]
   (let [by-phys {"nach Bauteil" (restore-physical-hierarchy names)}
