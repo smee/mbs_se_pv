@@ -10,7 +10,8 @@
     [timeseries 
      [discord :as discord]
      [correlations :as tc]
-     [changepoints :as cp]]
+     [changepoints :as cp]
+     [functions :as f]]
     [chart-utils.jfreechart :as cjf]
     [sun :as sun])
   (:use  
@@ -126,7 +127,7 @@
            ::A.phsB.cVal ::curr
            ::A.phsC.cVal ::curr
            ::Amp.mag.f ::curr
-           ::ConfEfc.mag.f ::efficiency
+           ::ConvEfc.mag.f ::efficiency
            ::EnclTmp.mag.f ::temp
            ::EnvTmp.mag.f ::temp
            ::HeatSinkTmp.mag.f ::temp
@@ -368,17 +369,18 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
             (if-let [v (get-in days [(int (/ (- x s) ONE-DAY)) (int (/ (- y daily-start) five-min))])]
               v
               0))
+        props (-> name get-series-type unit-properties) 
         chart (doto (cjf/heat-map f s (+ s (clojure.core/* ONE-DAY x-max)) daily-start daily-end 
                                   :color? true
                                   :title (format "Tagesverläufe von %s im Zeitraum %s" name times)
                                   :x-label "Tag"
                                   :y-label "Werte"
-                                  :z-label (-> name get-series-type unit-properties :label) 
+                                  :z-label (props :label) 
                                   :x-step (count days)
                                   :y-step y-max
-                                  :z-min (-> name get-series-type unit-properties :min)
-                                  :z-max (-> name get-series-type unit-properties :max)
-                                  :colors (when (= ::efficiency (get-series-type name)) efficiency-colors)
+                                  :z-min (props :min)
+                                  :z-max (props :max)
+                                  :colors (when (= props (unit-properties ::ConvEfc.mag.f)) efficiency-colors)
                                   :color? true)
                 (.. getPlot getRenderer (setBlockWidth ONE-DAY))
                 (.. getPlot getRenderer (setBlockHeight five-min)))]
@@ -397,14 +399,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                           :type (get-in all-names [%1 :type])
                           :unit (-> %1 get-series-type unit-properties :unit)
                           :key %1 
-                          :data %2) names values)
-          #_{:title (str "Betriebsdaten im Zeitraum " times)
-             :x-label "Zeit"
-             :series (map #(let [type (get-series-type %)
-                                 v %2
-                                 {:keys [unit label]} (get unit-properties type)] 
-                             (hash-map :name %, :unit unit, :label label, :type type, :data %2)) 
-                          names values)})))
+                          :data %2) names values))))
 
 ;;;;;;;;;;;; render a tiling map of a chart ;;;;;;;;;;;;;;;;;;;;;;
 (defn- render-grid [len x y zoom]
@@ -486,21 +481,6 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
     {:status 400
    :body "Wrong dates!"}))
 
-(defpage "/map" []
-  (hiccup.core/html
-    (hiccup.page/include-css "http://cdn.leafletjs.com/leaflet-0.4/leaflet.css")
-    (hiccup.page/include-js "http://cdn.leafletjs.com/leaflet-0.4/leaflet.js")
-    [:div#map {:style "height: 800px;"}]
-    (hiccup.element/javascript-tag
-      (str 
-        "var map = L.map('map').setView([51.505, -0.09], 1);
-       L.tileLayer('" (util/base-url) "/tiles/Ourique%20PV-Anlage/INVU1/MMDC0.Watt.mag.f/20110822-20110825/{x}/{y}/{z}', {
-    attribution: 'done by me :)',
-    noWrap: true,
-    tileSize: 256,
-    maxZoom: 10
-}).addTo(map);"))))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; render a correlation matrix plot ;;;;;;;;;;;;;;;;
 (def-chart-page "correlation.png" [] 
@@ -512,28 +492,42 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;; render change points in a chart
 (def-chart-page "changepoints.png" [] 
-  (let [names (take 1 names)
+  (let [name (first names)
         ;width (s2i width nil)
-        values [(get-series-values id (first names) s e)] 
-        chart (create-time-series-chart names values)
-        vs (map :value (first values))
-        ts (map :timestamp (first values))
-          cps (cp/rec-change-point vs :min-confidence 1.0 :max-level 3)]
-    (doseq [{:keys [changepoint level confidence mean-change]} cps]
-      (cjf/add-domain-marker chart (nth ts changepoint) (str "level " level "\n,m-c= " mean-change)))
-    (-> chart
-      (enhance-chart names)
-      (ch/set-title "Signifikante Veränderungen im Verlauf")
-      (return-image :height (s2i height 500) :width (s2i width 600)))))
+        values (db/db-max-current-per-insolation name "INVU1/MMET1.HorInsol.mag.f" s e)
+        hours (sort (distinct (map :hour values)))
+        charts (for [hour hours] 
+                 (let [values (filter #(= hour (:hour %)) values)
+                       ;vs (remove #(or (nil? (:value %)) (zero? (:value %))) vs) ;remove all zeroes  
+                       times (map (comp org.clojars.smee.time/as-unix-timestamp :timestamp) values)
+                       values (map (comp #(or % 0) :value) values)
+                       ;values (f/rankify vs)
+                       values (mapv double values) 
+                       ;vs (f/stationarize vs)
+                       t-map (apply hash-map (flatten (map-indexed vector times)))
+                       ;vs (f/ema 0.05 vs)
+                       chart (ch/time-series-plot times values)
+                       cps (cp/rec-change-point values :min-confidence 0.999999 :max-level 3 :bootstrap-size 1000)
+                       ;cps (filter (comp neg? :mean-change) cps)
+                       ]
+                   (ch/set-y-label chart (str hour " Uhr")) 
+                   (.. chart getPlot (setRenderer (doto (org.jfree.chart.renderer.xy.StandardXYItemRenderer.) (.setPlotDiscontinuous true))) )
+                   (ch/add-lines chart times (f/ema 0.05 values))
+                   (when (not-empty cps) 
+                     (doseq [{:keys [changepoint level confidence mean-change]} cps
+                             :let [label (str "level " level "\n,m-c= " mean-change)
+                                   label (format "%.1f%% (lvl. %d)" (* 100.0 mean-change) level)]]
+                       (cjf/add-domain-marker chart (get t-map changepoint) label)))
+                   chart))]
+    (return-image (doto (->> charts
+                          (map (memfn getPlot))
+                          (apply cjf/combined-domain-plot)
+                          (org.jfree.chart.JFreeChart.))
+                    (ch/set-title (format "Signifikante Veränderungen im Verlauf von %s (%s)" (get-in (db/all-series-names-of-plant id) [name :name]) name))
+                    (ch/add-subtitle (str (.format (dateformat) s) " - " (.format (dateformat) e)))
+                    (.removeLegend)
+                    ;(enhance-chart names)
+                    )
+                  :height (s2i height 500) 
+                  :width (s2i width 600))))
 
-(comment 
-  (def vs (get-series-values "Ourique PV-Anlage" "INVU1/MMET1.HorInsol.mag.f" (as-unix-timestamp #inst "2012-07-15") (as-unix-timestamp #inst "2012-07-23")))
-  (def days (->> vs (partition-by #(int (/ (:timestamp %) (* 1000 60 60 24)))) (map #(map :value %))))
-  (def diffs (map (fn [vs] (map (fn [[a b]] (- b a)) (partition 2 1 vs))) days))
-  (let [m (apply max (map count diffs))
-      c (ch/xy-plot (range m) (repeat 0))] 
-  
-  (doseq [day diffs #_(take 5 (map #(drop-while (partial > 30) %) diffs))] 
-    (ch/add-lines c (range (count day)) (timeseries.functions/ema 0.05 day)))
-  (ic/view c))
-  )

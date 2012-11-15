@@ -230,9 +230,9 @@
                               "/js/jquery.dynatree.min.js" 
                               "/js/datepicker.js")
       (hiccup.page/include-css "/css/dynatree/ui.dynatree.css" "/css/datepicker.css") 
-      (javascript-tag (util/render-javascript-template "templates/load-chart.js" "#render-chart" base-url id)) 
       (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#start-date" date min max))
-      (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#end-date" date min max)))))
+      (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#end-date" date min max))
+      (javascript-tag (util/render-javascript-template "templates/load-chart.js" "#render-chart" base-url id)))))
 
 (defn toolbar-links 
   "Links for the toolbar, see common/eumonis-topbar or common/layout-with-links for details"
