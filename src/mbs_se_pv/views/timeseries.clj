@@ -105,8 +105,6 @@
         (render-gain-image plant one-year-ago today w h "week")
         [:h4 "Gesamtertrag pro Monat"]
         (render-gain-image plant one-year-ago today w h "month")]
-       (hiccup.page/include-css "/css/colorbrewer.css")
-       (hiccup.page/include-js "/js/chart/d3.v2.min.js")
        (javascript-tag (util/render-javascript-template 
                          "templates/calendar.js" 
                          "#calendar" 
@@ -143,7 +141,7 @@
     (util/restore-hierarchy (map #(into (vec %1) %2) splitted labels-and-names))))
 
 (defn- make-nested-list [nested]
-  [:ul 
+  [:ul {:style "display:none;"} ; will be replaced by the jquery tree plugin 
    (for [[k vs] nested]
      (if (and (sequential? vs) (= 1 (count vs)))
        [:li {:data (format "{series: '%s'}" (first vs))} k]
@@ -162,11 +160,12 @@
       ;; render tree via jquery plugin
       (javascript-tag 
         (format
-          "$('#%s').dynatree({
+          "$(document).ready(function() { 
+           $('#%s').dynatree({
            checkbox:true,
            selectMode: 3,          
            persist: false,
-           minExpandLevel: 1});"
+           minExpandLevel: 1})});"
           elem-id))]))
 
 (defpage all-series "/series-of/:id" {:keys [id selected-date]}
@@ -221,31 +220,19 @@
         [:button#render-chart.btn-primary.btn-large 
          [:i.icon-picture.icon-white]
          " Anzeigen"]
-        ]
-      [:form.form-vertical 
-       #_[:div.well
-         [:h4 "Report Wirkungsgrad"]
-         [:span.help-inline "Bitte wählen Sie den Monat aus, für den ein Report erstellt werden soll:"]
-         (text-field {:placeholder "Monat für Report" :class "input-small"} "report-date" date)
-         [:button.btn {:href "#" :onclick (util/render-javascript-template "templates/show-report.js" base-url id)} 
-          [:i.icon-list-alt]
-          " Erstellen"]]]]
+        ]]
       ;; main content
       [:div.span9        
        [:h2 "Chart"]
-       [:div#current-chart "Bitte wählen Sie links die zu visualisierenden Daten und ein Zeitinterval aus."
-        ]]
+       [:div#current-chart "Bitte wählen Sie links die zu visualisierenden Daten und ein Zeitinterval aus."]]
       ;; render calendar input via jquery plugin
+      (hiccup.page/include-js "https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js" 
+                              "/js/jquery.dynatree.min.js" 
+                              "/js/datepicker.js")
+      (hiccup.page/include-css "/css/dynatree/ui.dynatree.css" "/css/datepicker.css") 
       (javascript-tag (util/render-javascript-template "templates/load-chart.js" "#render-chart" base-url id)) 
       (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#start-date" date min max))
-      (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#end-date" date min max))
-      #_(javascript-tag (util/render-javascript-template "templates/date-selector.js" "#report-date" date min max))
-      ;;render interactive "maps"
-      (hiccup.page/include-css "http://cdn.leafletjs.com/leaflet-0.4/leaflet.css")
-      (hiccup.page/include-js "http://cdn.leafletjs.com/leaflet-0.4/leaflet.js")
-      ;;render interactive client side charts
-      (hiccup.page/include-css "/css/chart/rickshaw.min.css")
-      (hiccup.page/include-js "/js/chart/d3.v2.min.js" "/js/chart/d3.layout.min.js" "/js/chart/rickshaw.min.js"))))
+      (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#end-date" date min max)))))
 
 (defn toolbar-links 
   "Links for the toolbar, see common/eumonis-topbar or common/layout-with-links for details"
