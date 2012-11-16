@@ -18,6 +18,8 @@
 			}
 		}
 	});
+	// set calendar value from string after manual change.
+	$(dateField).change(function(){df.val($(this).val())});
 	// FIXME no namespace!
 	shiftTime = function(days, months, years){
 		// FIXME hard coded selectors
