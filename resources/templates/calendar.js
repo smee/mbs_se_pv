@@ -89,7 +89,7 @@
 		     .text(function(d) { return d + ": " + percent(data[d]/minmax[1]); });
 		});
 	
-	 $('svg').on('click',function(e){
+	 $(document).on('click','svg', function(e){
 	 var elem = e.target;
 	 if(elem.nodeName='rect' && elem.hasAttribute('date')){
 		 window.location=linkTemplate+'?selected-date='+elem.getAttribute('date');
