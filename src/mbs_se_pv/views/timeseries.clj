@@ -16,23 +16,47 @@
           [ring.util.codec :only (url-encode)]
           [org.clojars.smee 
            [map :only (map-values)]
-           [time :only (dates-seq as-date)] 
-           [util :only (s2i)]]))
+           [time :only (dates-seq as-date as-calendar)] 
+           [util :only (s2i)]])
+    (:import java.util.Calendar))
 
 (declare toolbar-links)
 
-(defpage missing-data "/data/:id/missing.csv" {plant :id}
-  (let [avail (db/available-data plant)
-        avail (map #(update-in % [:date] as-date) avail)
-        avail-dates (map (comp as-date :date) avail)
-        all-dates (dates-seq (first avail-dates) (last avail-dates))
+(defn- insert-missing-dates [template avail]
+  (let [avail-dates (map (comp as-date :date) avail)
+        all-dates (dates-seq (first avail-dates) (last avail-dates)) 
         missing (sort (set/difference (set all-dates) (set avail-dates)))
-        missing (map #(hash-map :date % :num 0) missing)
-        data (sort-by :date (concat avail missing))] 
-    (->> data
-      (map (fn [{:keys [date num]}] (str (.format (util/dateformat) date) "," num)))
-      (concat ["date,num"])
-      (string/join "\n"))))
+        missing (map #(assoc template :date %) missing)]
+    (concat avail missing)))
+
+(defpage missing-data "/data/:id/missing.csv" {plant :id}
+  (->> plant
+    (db/available-data)
+    (map #(update-in % [:date] as-date))
+    (insert-missing-dates {:num 0})
+    (sort-by :date) 
+    (map (fn [{:keys [date num]}] (str (.format (util/dateformat) date) "," num)))
+    (concat ["date,num"])
+    (string/join "\n")))
+
+(defn- date-only [date]
+  (as-date (doto (as-calendar date)
+             (.set Calendar/HOUR_OF_DAY 12)
+             (.set Calendar/MINUTE 0)
+             (.set Calendar/SECOND 0))))
+
+(defpage maintainance-dates "/data/:id/maintainance-dates.csv" {plant :id}
+  (->> plant
+    (db/adhoc "select * from maintainance where plant=?" )
+    (mapcat (juxt :start :end))
+    (map #(hash-map :date % :num 1))
+    (map #(update-in % [:date] date-only))
+    (insert-missing-dates {:num 0})
+    (#(do (def d %) %))
+    (sort-by :date)
+    (map (fn [{:keys [date num]}] (str (.format (util/dateformat) date) "," num)))
+    (concat ["date,num"])
+    (string/join "\n")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;; show metadata as table ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def ^:private installation-labels
@@ -106,9 +130,10 @@
         [:h4 "Gesamtertrag pro Monat"]
         (render-gain-image plant one-year-ago today w h "month")]
        (javascript-tag (util/render-javascript-template 
-                         "templates/calendar.js" 
+                         "templates/calendar.js"
+                         (util/base-url)
                          "#calendar" 
-                         (resolve-url (url-for missing-data {:id (url-encode plant)}))
+                         (resolve-url (url-for missing-data #_maintainance-dates {:id (url-encode plant)}))
                          (resolve-url (url-for all-series {:id (url-encode plant)})))))))
 
 ;;;;;;;;;;;;;; show all available time series info per pv installation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -128,6 +153,10 @@
         splitted (map split-iec-name iec)
         labels-and-names (map #(vector (get-in names [% :name]) %) iec)] 
     (util/restore-hierarchy (map #(into (vec %1) %2) splitted labels-and-names))))
+
+(defn- phys-type-of [name]
+  (let [[_ _ type] (string/split name #"/|\.")]
+    (names/type-names type type)))
 
 (defn- split-iec-name-typed [n]
   (let [[ld-name ln-name type & _] (string/split n #"/|\.")
@@ -189,14 +218,15 @@
          [:div.input-prepend
           [:span.add-on "bis: "]
           (text-field {:placeholder "Enddatum" :class "input-small"} "end-date" date)]
-         [:div 
-          [:a.btn.btn-mini {:href "#" :onclick "shiftTime(0,0,-1)"} "< Jahr"]
-          [:a.btn.btn-mini {:href "#" :onclick "shiftTime(0,-1,0)"} "< Monat"]
+         [:div
           [:a.btn.btn-mini {:href "#" :onclick "shiftTime(-1,0,0)"} "< Tag"]
+          [:a.btn.btn-mini {:href "#" :onclick "shiftTime(0,-1,0)"} "< Monat"]
+          [:a.btn.btn-mini {:href "#" :onclick "shiftTime(0,0,-1)"} "< Jahr"]]
+         [:div
           [:a.btn.btn-mini {:href "#" :onclick "shiftTime(1,0,0)"} "Tag >"]
           [:a.btn.btn-mini {:href "#" :onclick "shiftTime(0,1,0)"} "Monat >"]
-          [:a.btn.btn-mini {:href "#" :onclick "shiftTime(0,0,1)"} "Jahr >"]
-          [:label.checkbox (check-box "rerender" true) "automatisch neu zeichnen"]]]
+          [:a.btn.btn-mini {:href "#" :onclick "shiftTime(0,0,1)"} "Jahr >"]]
+         [:label.checkbox (check-box "rerender" true) "automatisch neu zeichnen"]]
         [:div
          [:h4 "Datenreihen"]
          (series-tree id names "series-tree")]
@@ -211,6 +241,18 @@
                                    ["Interaktiver Zoom" "interactive-map"]
                                    ["Korrelationen" "correlation"]]
                      "interactive-client")]]
+        [:div#changepoint-parameter
+         [:h4 "Weitere Parameter"]
+         [:div.controls
+          [:label.checkbox (check-box :rank false "rank") "Rang statt Rohwerten verwenden"]
+          [:label.checkbox (check-box :zero false "zero") "Nullwerte löschen"]
+          [:label.checkbox (check-box :negative false "neg") "Nur Verschlechterungen anzeigen"]]
+         [:div.input-prepend
+          [:span.add-on "CI: "]
+          (text-field {:placeholder "p-Wert" :class "input-small"} "confidence" 0.9999)]
+         [:div.input-prepend
+          [:span.add-on "lvl: "]
+          (text-field {:placeholder "Max. level" :class "input-small"} "max-level" 2)]] 
         [:div
          [:h4 "Größe:"]
          [:input#chart-width.input-mini {:value "850" :type "number"}] 
@@ -232,7 +274,10 @@
       (hiccup.page/include-css "/css/dynatree/ui.dynatree.css" "/css/datepicker.css") 
       (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#start-date" date min max))
       (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#end-date" date min max))
-      (javascript-tag (util/render-javascript-template "templates/load-chart.js" "#render-chart" base-url id)))))
+      (javascript-tag (util/render-javascript-template "templates/load-chart.js" "#render-chart" base-url id))
+      (javascript-tag "$('#chart-type').change(function(){
+                            var params=$('#changepoint-parameter'); 
+                            if('changepoints'==$(this).val()){ params.slideDown();} else{ params.slideUp();}})"))))
 
 (defn toolbar-links 
   "Links for the toolbar, see common/eumonis-topbar or common/layout-with-links for details"
