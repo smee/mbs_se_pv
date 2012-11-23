@@ -89,8 +89,16 @@
           (drop-down "calendar-data" 
                      [["Fehlende Daten" (resolve-url (url-for cal/missing-data {:id (url-encode plant)}))]
                       ["Wartungsarbeiten" (resolve-url (url-for cal/maintainance-dates {:id (url-encode plant)}))]
-                      ]
-                     "missing-data")]]]
+                      ])
+          (drop-down "color-scale" 
+                     [["Rot-Gelb-Grün" "RdYlGn"]
+                      ["Grün-Gelb-Rot" "GnYlRd"]
+                      ["Gelb-Orange-Braun" "YlOrBr"] 
+                      ["Blau" "Blues"]
+                      ["Grün" "Greens"]
+                      ["Orange" "Oranges"]
+                      ["Grau" "Greys"]
+                      ["???" "Spectral"]])]]]
        [:div.span6
         [:h3 "Erträge im letzten Jahr"]
         [:h4 "Gesamtertrag pro Tag"]
@@ -104,6 +112,7 @@
                          (util/base-url)
                          "#calendar" 
                          "select#calendar-data"                         
+                         "select#color-scale"                         
                          (resolve-url (url-for all-series {:id (url-encode plant)})))))))
 
 ;;;;;;;;;;;;;; show all available time series info per pv installation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

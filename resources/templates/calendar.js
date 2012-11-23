@@ -1,4 +1,4 @@
-(function (baseUrl, selector, cbSelector, linkTemplate){
+(function (baseUrl, selector, cbSelector, colorSelector, linkTemplate){
 
 	ensure({js: baseUrl+"/js/chart/d3.v2.min.js", css: baseUrl+"/css/colorbrewer.css"}, function(){
 		var margin = {top: 10, right: 10, bottom: 10, left: 10},
@@ -100,7 +100,11 @@
 	 cb.change(function(){
 		 loadAndRender(cb.val());
 	 });
+	 var cs=$(colorSelector);
+	 cs.change(function(){
+		 d3.select(selector).selectAll("svg").attr("class",cs.val());
+	 });
 	});
 
  
-})("%s", "%s", "%s", "%s")
+})("%s", "%s", "%s", "%s", "%s")
