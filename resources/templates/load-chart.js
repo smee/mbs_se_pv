@@ -44,8 +44,8 @@ $('%s').click(
 
 				} else if (visType == 'interactive-client') {
 					ensure({
-						js : [ "/js/chart/d3.v2.min.js", "/js/chart/d3.layout.min.js", "/js/chart/rickshaw.min.js" ],
-						css : "/css/chart/rickshaw.min.css"
+						js : [ baseUrl+"/js/chart/d3.v2.min.js", baseUrl+"/js/chart/d3.layout.min.js", baseUrl+"/js/chart/rickshaw.min.js" ],
+						css : baseUrl+"/css/chart/rickshaw.min.css"
 					}, function() {
 						chartDiv.append($("<div id='chart_container'><div id='y_axis'/><div id='chart'/></div><div id=\'legend\'/>"));
 						// create map of iec61850 names to human readable labels
@@ -121,6 +121,13 @@ $('%s').click(
 					// create link
 					var link = baseUrl + '/series-of/' + id + '/' + selectedSeries.join('-') + '/' + interval + '/' + visType + '.png?width='
 							+ $('#chart-width').val() + '&height=' + $('#chart-height').val();
+					if(visType == 'changepoints'){
+						link += '&rank='+$('input#rank').is(':checked')
+						       +'&zero='+$('input#zero').is(':checked')
+						       +'&negative='+$('input#negative').is(':checked')
+						       +'&confidence='+$('input#confidence').val()
+						       +'&max-level='+$('input#max-level').val();
+					}
 					// show chart
 					$('#chart-image').attr('src', link).load(function() {
 						$('#current-chart').hideLoading();

@@ -23,7 +23,7 @@
     [org.clojars.smee 
      [map :only (mapp map-values)] 
      [time :only (as-sql-timestamp as-date as-unix-timestamp as-calendar)]
-     [util :only (s2i)]])
+     [util :only (s2i s2d)]])
   (:import 
     [java.io ByteArrayOutputStream ByteArrayInputStream]
     org.jfree.chart.axis.AxisLocation
@@ -491,24 +491,29 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
     (return-image img)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;; render change points in a chart
-(def-chart-page "changepoints.png" [] 
+(def-chart-page "changepoints.png" [rank negative zero confidence max-level] 
   (let [name (first names)
-        ;width (s2i width nil)
-        values (db/db-max-current-per-insolation name "INVU1/MMET1.HorInsol.mag.f" s e)
+        e (if (= s e) (+ e ONE-DAY) e) 
+        ranks? (Boolean/parseBoolean rank)
+        negative? (Boolean/parseBoolean negative) 
+        zeroes? (Boolean/parseBoolean zero) 
+        confidence (s2d confidence 0.999999) 
+        max-level (s2i max-level 2) 
+        values (db/db-max-current-per-insolation name "PARK/MMET.HorInsol.mag.f" s e) ;todo make configurable
+        ;_ (def vs values)
         hours (sort (distinct (map :hour values)))
         charts (for [hour hours] 
                  (let [values (filter #(= hour (:hour %)) values)
-                       ;vs (remove #(or (nil? (:value %)) (zero? (:value %))) vs) ;remove all zeroes  
+                       values (if zeroes? (remove #(or (nil? (:value %)) (zero? (:value %))) values) values) ;remove all zeroes  
                        times (map (comp org.clojars.smee.time/as-unix-timestamp :timestamp) values)
                        values (map (comp #(or % 0) :value) values)
-                       ;values (f/rankify vs)
+                       values (if ranks? (f/rankify values) values)
                        values (mapv double values) 
                        ;vs (f/stationarize vs)
                        t-map (apply hash-map (flatten (map-indexed vector times)))
-                       ;vs (f/ema 0.05 vs)
                        chart (ch/time-series-plot times values)
-                       cps (cp/rec-change-point values :min-confidence 0.999999 :max-level 3 :bootstrap-size 1000)
-                       ;cps (filter (comp neg? :mean-change) cps)
+                       cps (cp/rec-change-point values :min-confidence confidence :max-level max-level :bootstrap-size 1000)
+                       cps (if negative? (filter (comp neg? :mean-change) cps) cps)
                        ]
                    (ch/set-y-label chart (str hour " Uhr")) 
                    (.. chart getPlot (setRenderer (doto (org.jfree.chart.renderer.xy.StandardXYItemRenderer.) (.setPlotDiscontinuous true))) )
@@ -523,8 +528,9 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                           (map (memfn getPlot))
                           (apply cjf/combined-domain-plot)
                           (org.jfree.chart.JFreeChart.))
-                    (ch/set-title (format "Signifikante Veränderungen im Verlauf von %s (%s)" (get-in (db/all-series-names-of-plant id) [name :name]) name))
+                    (ch/set-title (format "Signifikante Veränderungen im Verlauf von %s\n(%s)" (get-in (db/all-series-names-of-plant id) [name :name]) name))
                     (ch/add-subtitle (str (.format (dateformat) s) " - " (.format (dateformat) e)))
+                    (ch/set-x-label "Datum") 
                     (.removeLegend)
                     ;(enhance-chart names)
                     )

@@ -4,6 +4,7 @@
                  "AlmSt" "Fehler"
                  "Amp" "Stromstärke DC"
                  "ConvEfc" "Wirkungsgrad"
+                 "ConfEfc" "Wirkungsgrad"
                  "EnclTmp" "Temperatur" ;"Gehäusetemperatur"
                  "EnvTmp" "Temperatur" ;"Umgebungstemperatur"
                  "HeatSinkTmp" "Temperatur" ;"Kühlkörpertemperatur"
