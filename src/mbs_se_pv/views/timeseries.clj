@@ -1,13 +1,13 @@
 (ns mbs-se-pv.views.timeseries
     (:require 
       [clojure 
-       [string :as string]
-       [set :as set]]
+       [string :as string]]
       [mbs-se-pv.views 
        [common :as common]
        [charts :as ch]
        [util :as util]
-       [psm-names :as names]]
+       [psm-names :as names]
+       [calendar :as cal]]
       [mbs-db.core :as db])
     (:use [noir 
            core
@@ -15,48 +15,12 @@
           [hiccup core element form]
           [ring.util.codec :only (url-encode)]
           [org.clojars.smee 
-           [map :only (map-values)]
-           [time :only (dates-seq as-date as-calendar)] 
-           [util :only (s2i)]])
-    (:import java.util.Calendar))
+           [time :only (as-date)] 
+           [util :only (s2i)]]))
 
 (declare toolbar-links)
 
-(defn- insert-missing-dates [template avail]
-  (let [avail-dates (map (comp as-date :date) avail)
-        all-dates (dates-seq (first avail-dates) (last avail-dates)) 
-        missing (sort (set/difference (set all-dates) (set avail-dates)))
-        missing (map #(assoc template :date %) missing)]
-    (concat avail missing)))
 
-(defpage missing-data "/data/:id/missing.csv" {plant :id}
-  (->> plant
-    (db/available-data)
-    (map #(update-in % [:date] as-date))
-    (insert-missing-dates {:num 0})
-    (sort-by :date) 
-    (map (fn [{:keys [date num]}] (str (.format (util/dateformat) date) "," num)))
-    (concat ["date,num"])
-    (string/join "\n")))
-
-(defn- date-only [date]
-  (as-date (doto (as-calendar date)
-             (.set Calendar/HOUR_OF_DAY 12)
-             (.set Calendar/MINUTE 0)
-             (.set Calendar/SECOND 0))))
-
-(defpage maintainance-dates "/data/:id/maintainance-dates.csv" {plant :id}
-  (->> plant
-    (db/adhoc "select * from maintainance where plant=?" )
-    (mapcat (juxt :start :end))
-    (map #(hash-map :date % :num 1))
-    (map #(update-in % [:date] date-only))
-    (insert-missing-dates {:num 0})
-    (#(do (def d %) %))
-    (sort-by :date)
-    (map (fn [{:keys [date num]}] (str (.format (util/dateformat) date) "," num)))
-    (concat ["date,num"])
-    (string/join "\n")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;; show metadata as table ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def ^:private installation-labels
@@ -120,7 +84,13 @@
         (metadata-table metadata personal-labels)
         [:a.btn.btn-large.btn-success {:href (resolve-url (url-for all-series {:id plant}))} "Messwerte"]
         [:h3 "Vorhandene Daten pro Tag"]
-        [:div#calendar.span9]]
+        [:div#calendar.span9
+         [:div.controls
+          (drop-down "calendar-data" 
+                     [["Fehlende Daten" (resolve-url (url-for cal/missing-data {:id (url-encode plant)}))]
+                      ["Wartungsarbeiten" (resolve-url (url-for cal/maintainance-dates {:id (url-encode plant)}))]
+                      ]
+                     "missing-data")]]]
        [:div.span6
         [:h3 "Erträge im letzten Jahr"]
         [:h4 "Gesamtertrag pro Tag"]
@@ -133,7 +103,7 @@
                          "templates/calendar.js"
                          (util/base-url)
                          "#calendar" 
-                         (resolve-url (url-for missing-data #_maintainance-dates {:id (url-encode plant)}))
+                         "select#calendar-data"                         
                          (resolve-url (url-for all-series {:id (url-encode plant)})))))))
 
 ;;;;;;;;;;;;;; show all available time series info per pv installation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

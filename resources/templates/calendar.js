@@ -1,4 +1,4 @@
-(function (baseUrl, selector,dataUrl,linkTemplate){
+(function (baseUrl, selector, cbSelector, linkTemplate){
 
 	ensure({js: baseUrl+"/js/chart/d3.v2.min.js", css: baseUrl+"/css/colorbrewer.css"}, function(){
 		var margin = {top: 10, right: 10, bottom: 10, left: 10},
@@ -15,7 +15,6 @@
 	//var svg = d3.select(selector).selectAll("svg");
 	
 	function draw(firstYear, lastYear){		
-		console.log(firstYear, lastYear)
 		var svgs = d3.select(selector).selectAll("svg").data(d3.range(firstYear, lastYear+1),function(d,i) {return ""+d;});		
 		
 		svgs.exit().remove();
@@ -67,8 +66,8 @@
 	      + "H" + (w1 + 1) * cellSize + "V" + 0
 	      + "H" + (w0 + 1) * cellSize + "Z";
 	}
-
-	d3.csv(dataUrl, function(csv) {
+	function loadAndRender(dataUrl){
+		d3.csv(dataUrl, function(csv) {
 		  var data = d3.nest()
 		      .key(function(d) { return d.date; })
 			  .rollup(function(d){ return parseInt(d[0].num); })
@@ -88,12 +87,18 @@
 		   .select("title")
 		     .text(function(d) { return d + ": " + percent(data[d]/minmax[1]); });
 		});
+	}
 	
 	 $(document).on('click','svg', function(e){
 	 var elem = e.target;
 	 if(elem.nodeName='rect' && elem.hasAttribute('date')){
 		 window.location=linkTemplate+'?selected-date='+elem.getAttribute('date');
 	 }
+	 });
+	 var cb=$(cbSelector);
+	 loadAndRender(cb.val());
+	 cb.change(function(){
+		 loadAndRender(cb.val());
 	 });
 	});
 
