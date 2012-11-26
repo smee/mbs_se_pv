@@ -18,11 +18,11 @@
 		var svgs = d3.select(selector).selectAll("svg").data(d3.range(firstYear, lastYear+1),function(d,i) {return ""+d;});		
 		
 		svgs.exit().remove();
-		
+		var colorscheme = cs.val();
 		var svgs=svgs.enter().append("svg")
 		    .attr("width", width + margin.right + margin.left)
 		    .attr("height", height + margin.top + margin.bottom)
-		    .attr("class", "RdYlGn")
+		    .attr("class", colorscheme)
 		  .append("g")
 		    .attr("transform", "translate(" + (margin.left + (width - cellSize * 53) / 2) + "," + (margin.top + (height - cellSize * 7) / 2) + ")");
 		
@@ -31,9 +31,12 @@
 		    .attr("text-anchor", "middle")
 		    .text(String);
 
-		var rect = svgs.selectAll("rect.day")
-		    .data(function(d) { return d3.time.days(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
-		  .enter().append("rect")
+		var rects = svgs.selectAll("rect.day")
+		                .data(function(d) { 
+		                	return d3.time.days(new Date(d, 0, 1), new Date(d + 1, 0, 1)); 
+		                	});
+		var newrect = rects.enter()
+		  .append("rect")
 		    .attr("class", "day")
 		    .attr("width", cellSize)
 		    .attr("height", cellSize)
@@ -42,7 +45,7 @@
 		    .attr("date",function(d){ return revdate(d); })
 		    .datum(format);
 
-		rect.append("title")
+		newrect.append("title")
 		    .text(function(d) { return d; });
 
 		svgs.selectAll("path.month")
@@ -51,9 +54,7 @@
 		    .attr("class", "month")
 		    .attr("d", monthPath);		
 		
-		d3.select(selector).selectAll("svg").sort();
-		
-		return rect;
+		d3.select(selector).selectAll("svg").sort();		
 	}
 	
 	function monthPath(t0) {
@@ -75,20 +76,22 @@
 		  var allDates = d3.keys(data);
 		  var minDate = allDates[0];
 		  var maxDate=allDates[allDates.length - 1];
-		  var rect = draw(format.parse(minDate).getFullYear(),format.parse(maxDate).getFullYear());
+		  
+		  draw(format.parse(minDate).getFullYear(),format.parse(maxDate).getFullYear());
 		  
 		  var minmax = d3.extent(d3.values(data));
 		  var color = d3.scale.quantize()
 		    .domain(minmax)
 		    .range(d3.range(9));		  
 		  
-		  rect.filter(function(d) { return d in data; })
-		     .attr("class", function(d) { return "day q"+color(data[d])+"-9"; })
-		   .select("title")
-		     .text(function(d) { return d + ": " + percent(data[d]/minmax[1]); });
+		  d3.select(selector)
+		    .selectAll("svg")
+		    .selectAll("rect.day")//.filter(function(d) { return d in data; })
+		       .attr("class", function(d) { return "day q"+color(data[d])+"-9"; })
+		       .select("title")
+		          .text(function(d) { return d + ": " + percent(data[d]/minmax[1]); });
 		});
 	}
-	
 	 $(document).on('click','svg', function(e){
 	 var elem = e.target;
 	 if(elem.nodeName='rect' && elem.hasAttribute('date')){
