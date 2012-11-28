@@ -223,9 +223,10 @@
         [:div#changepoint-parameter
          [:h4 "Weitere Parameter"]
          [:div.controls
-          [:label.checkbox (check-box :rank false "rank") "Rang statt Rohwerten verwenden"]
-          [:label.checkbox (check-box :zero false "zero") "Nullwerte löschen"]
-          [:label.checkbox (check-box :negative false "neg") "Nur Verschlechterungen anzeigen"]]
+          [:label.checkbox (check-box :rank false) "Rang statt Rohwerten verwenden"]
+          [:label.checkbox (check-box :zero false) "Nullwerte löschen"]
+          [:label.checkbox (check-box :negative false) "Nur Verschlechterungen anzeigen"]
+          [:label.checkbox (check-box :maintainance true) "Wartungstage ignorieren"]]
          [:div.input-prepend
           [:span.add-on "CI: "]
           (text-field {:placeholder "p-Wert" :class "input-small"} "confidence" 0.9999)]

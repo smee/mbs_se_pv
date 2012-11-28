@@ -491,20 +491,23 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
     (return-image img)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;; render change points in a chart
-(def-chart-page "changepoints.png" [rank negative zero confidence max-level] 
+(def-chart-page "changepoints.png" [rank negative zero confidence max-level maintainance] 
   (let [name (first names)
         e (if (= s e) (+ e ONE-DAY) e) 
         ranks? (Boolean/parseBoolean rank)
         negative? (Boolean/parseBoolean negative) 
-        zeroes? (Boolean/parseBoolean zero) 
+        zeroes? (Boolean/parseBoolean zero)
+        maintainance? (Boolean/parseBoolean maintainance)
+        maintainance-dates (db/maintainance-intervals id) _ (def m maintainance-dates)
+        maintainance-date? (fn [t] (some #(and (>= t (:start %)) (<= t (:end %))) maintainance-dates))
         confidence (s2d confidence 0.999999) 
         max-level (s2i max-level 2) 
-        values (db/db-max-current-per-insolation name "PARK/MMET.HorInsol.mag.f" s e) ;todo make configurable
-        ;_ (def vs values)
+        values (db/db-max-current-per-insolation name "INVU1/MMET1.HorInsol.mag.f" s e) ;todo make configurable
         hours (sort (distinct (map :hour values)))
         charts (for [hour hours] 
                  (let [values (filter #(= hour (:hour %)) values)
                        values (if zeroes? (remove #(or (nil? (:value %)) (zero? (:value %))) values) values) ;remove all zeroes  
+                       _ (def v values) values (if maintainance? (remove #(maintainance-date? (:timestamp %)) values) values) 
                        times (map (comp org.clojars.smee.time/as-unix-timestamp :timestamp) values)
                        values (map (comp #(or % 0) :value) values)
                        values (if ranks? (f/rankify values) values)

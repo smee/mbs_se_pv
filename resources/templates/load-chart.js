@@ -126,7 +126,8 @@ $('%s').click(
 						       +'&zero='+$('input#zero').is(':checked')
 						       +'&negative='+$('input#negative').is(':checked')
 						       +'&confidence='+$('input#confidence').val()
-						       +'&max-level='+$('input#max-level').val();
+						       +'&max-level='+$('input#max-level').val()
+						       +'&maintainance='+$('input#maintainance').is(':checked');
 					}
 					// show chart
 					$('#chart-image').attr('src', link).load(function() {
