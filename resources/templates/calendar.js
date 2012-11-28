@@ -80,6 +80,8 @@
 		  draw(format.parse(minDate).getFullYear(),format.parse(maxDate).getFullYear());
 		  
 		  var minmax = d3.extent(d3.values(data));
+		  if(minmax[0]==minmax[1])
+			  minmax[0]=0;
 		  var color = d3.scale.quantize()
 		    .domain(minmax)
 		    .range(d3.range(9));		  
@@ -89,7 +91,9 @@
 		    .selectAll("rect.day")//.filter(function(d) { return d in data; })
 		       .attr("class", function(d) { return "day q"+color(data[d])+"-9"; })
 		       .select("title")
-		          .text(function(d) { return d + ": " + percent(data[d]/minmax[1]); });
+		          .text(function(d) { 
+		        	  if(data[d]) return d + ": " + percent(data[d]/minmax[1]);
+		        	  else return "";});
 		});
 	}
 	 $(document).on('click','svg', function(e){

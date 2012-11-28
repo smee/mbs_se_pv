@@ -34,11 +34,11 @@
 
 (defpage maintainance-dates "/data/:id/maintainance-dates.csv" {plant :id}
   (->> plant
-    (db/adhoc "select * from maintainance where plant=?" )
+    (db/maintainance-intervals)
     (mapcat (juxt :start :end))
     (map #(hash-map :date % :num 1))
     (map #(update-in % [:date] date-only))
-    (insert-missing-dates {:num 0})
+    ;(insert-missing-dates {:num 0})
     (#(do (def d %) %))
     (sort-by :date)
     (map (fn [{:keys [date num]}] (str (.format (util/dateformat) date) "," num)))
