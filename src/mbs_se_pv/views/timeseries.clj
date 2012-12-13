@@ -12,6 +12,7 @@
     (:use [noir 
            core
            [options :only (resolve-url)]]
+          [cheshire.core :as json] 
           [hiccup core element form]
           [ring.util.codec :only (url-encode)]
           [org.clojars.smee 
@@ -154,7 +155,7 @@
      (if (and (sequential? vs) (= 1 (count vs)))
        [:li {:data (format "{series: '%s'}" (first vs))} k]
        (do (def x nested) 
-       [:li {:class "folder"} k (make-nested-list vs)])))])
+       [:li.folder k (make-nested-list vs)])))])
 
 (defpartial series-tree [id names elem-id]
   (let [by-phys {"nach Bauteil" (restore-physical-hierarchy names)}
@@ -185,7 +186,7 @@
         base-url (util/base-url)]
 
     (common/layout-with-links
-      (toolbar-links id 2)
+      (toolbar-links id 3)
       ;; sidebar
       [:div.span3
        [:form.form-vertical.well 
@@ -259,12 +260,62 @@
                             var params=$('#changepoint-parameter'); 
                             if('changepoints'==$(this).val()){ params.slideDown();} else{ params.slideUp();}})"))))
 
+;;;;;;;;;;;;;;;;;; components of a plant ;;;;;;;;;;;;;;;;;;;;;;
+(defn- convert-node [node]
+  (let [name (get-in node [:attrs :name])
+        type (get-in node [:attrs :type])
+        data {:data (json/generate-string {:attr (or (:attrs node) {})
+                                           :type type
+                                           :name name})}]
+    (if (:content node)
+      [:li.folder data (str type " - " name)]
+      [:li data (str type" - " name)])))
+
+(defn- convert-structure-node [node]
+  (cond 
+    (:content node) (conj (convert-node node ) (apply vector :ul (:content node)))
+    (and (-> node :attrs :name) (-> node :attrs :type)) (convert-node node) 
+    :else node))
+
+(defn- render-components-tree [structure]
+  [:ul {:style "display:none;"} 
+   (clojure.walk/postwalk convert-structure-node structure)])
+
+(defpage structure-page "/structure/:id" {:keys [id]}
+  (let [structure (db/structure-of id)]
+    (common/layout-with-links
+      (toolbar-links id 2)
+      [:div.span3
+       [:h4 "Komponentenstammbaum"]
+       [:div#components-tree
+        (render-components-tree structure)
+        ]]
+      [:div.span9
+       [:h4 "Detailangaben"]
+       [:table#details]]
+      (hiccup.page/include-js "https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js" "/js/jquery.dynatree.min.js")
+      (hiccup.page/include-css "/css/dynatree/ui.dynatree.css")
+      (javascript-tag  
+        "$(document).ready(function() { 
+           $('#components-tree').dynatree({
+           checkbox:false,
+           selectMode: 3,          
+           persist: false,
+           onActivate: function(node) { n=node;
+              var s='<table id=\"details\" class=\" table table-striped table-condensed\">';
+              for(p in node.data.attr) s+='<tr><td>'+p+'</td><td>'+node.data.attr[p]+'</td></tr>';
+              s+='</table>';
+              $('#details').replaceWith(s);
+           },
+           minExpandLevel: 1})});"))))
+
 (defn toolbar-links 
   "Links for the toolbar, see common/eumonis-topbar or common/layout-with-links for details"
   [id active-idx]
   [active-idx
    (link-to "/" "&Uuml;bersicht")
    (link-to (url-for metadata-page {:id (url-encode id)}) "Allgemeines")
+   (link-to (url-for structure-page {:id (url-encode id)}) "Komponenten")
    (link-to (url-for all-series {:id (url-encode id)}) "Messwerte")]
   )
 
