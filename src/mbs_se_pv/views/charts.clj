@@ -502,31 +502,30 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
         maintainance-date? (fn [t] (some #(and (>= t (:start %)) (<= t (:end %))) maintainance-dates))
         confidence (s2d confidence 0.999999) 
         max-level (s2i max-level 2) 
-        values (db/db-max-current-per-insolation name "INVU1/MMET1.HorInsol.mag.f" s e) ;todo make configurable
+        values (db/db-max-current-per-insolation id name "INVU1/MMET1.HorInsol.mag.f" s e) ;todo make configurable
         hours (sort (distinct (map :hour values)))
         charts (for [hour hours] 
                  (let [values (filter #(= hour (:hour %)) values)
                        values (if zeroes? (remove #(or (nil? (:value %)) (zero? (:value %))) values) values) ;remove all zeroes  
                        _ (def v values) values (if maintainance? (remove #(maintainance-date? (:timestamp %)) values) values) 
-                       times (map (comp org.clojars.smee.time/as-unix-timestamp :timestamp) values)
+                       times (map (comp as-unix-timestamp :timestamp) values)
                        values (map (comp #(or % 0) :value) values)
                        values (if ranks? (f/rankify values) values)
                        values (mapv double values) 
-                       ;vs (f/stationarize vs)
                        t-map (apply hash-map (flatten (map-indexed vector times)))
                        chart (ch/time-series-plot times values)
                        cps (cp/rec-change-point values :min-confidence confidence :max-level max-level :bootstrap-size 1000)
                        cps (if negative? (filter (comp neg? :mean-change) cps) cps)
                        ]
                    (ch/set-y-label chart (str hour " Uhr")) 
-                   (.. chart getPlot (setRenderer (doto (org.jfree.chart.renderer.xy.StandardXYItemRenderer.) (.setPlotDiscontinuous true))) )
+                   (cjf/set-discontinuous chart)
                    (ch/add-lines chart times (f/ema 0.05 values))
                    (when (not-empty cps) 
                      (doseq [{:keys [changepoint level confidence mean-change]} cps
                              :let [label (str "level " level "\n,m-c= " mean-change)
                                    label (format "%.1f%% (lvl. %d)" (* 100.0 mean-change) level)]]
                        (cjf/add-domain-marker chart (get t-map changepoint) label)))
-                   chart))]
+                   chart))] 
     (return-image (doto (->> charts
                           (map (memfn getPlot))
                           (apply cjf/combined-domain-plot)
