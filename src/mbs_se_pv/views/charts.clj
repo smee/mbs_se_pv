@@ -501,8 +501,9 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
         maintainance-dates (db/maintainance-intervals id) _ (def m maintainance-dates)
         maintainance-date? (fn [t] (some #(and (>= t (:start %)) (<= t (:end %))) maintainance-dates))
         confidence (s2d confidence 0.999999) 
-        max-level (s2i max-level 2) 
-        values (db/db-max-current-per-insolation id name "INVU1/MMET1.HorInsol.mag.f" s e) ;todo make configurable
+        max-level (s2i max-level 2)
+        insol-name (if (re-matches #"INVU1.*" name) "INVU1/MMET1.HorInsol.mag.f" "INVU2/MMET1.HorInsol.mag.f")
+        values (db/db-max-current-per-insolation id name insol-name s e) ;todo make configurable
         hours (sort (distinct (map :hour values)))
         charts (for [hour hours] 
                  (let [values (filter #(= hour (:hour %)) values)
