@@ -8,7 +8,7 @@
 	if(maxValue)
 		scale=scale.domain([1,maxValue]);
 	
-	var path = d3.geo.path().projection(d3.geo.albers().origin([11,53]).translate([200,100]).scale(3000));
+	var path = d3.geo.path().projection(d3.geo.albers().origin([11,53]).translate([200,100]).scale(5000));
 
 	var mainsvg = d3.select(chartSelector).append("svg");
 	
@@ -73,12 +73,16 @@
 		d3.json(dataUrl, function(json) {
 			// console.log("got new data from "+dataUrl)
 			if(typeof newMax == "undefined"){
-				// use maximum value for scaling the legend
-				maxValue = -1;
-				for(var i in json){
-					if(isNumeric(i) && json[i]>maxValue) 
-						maxValue=json[i];
-				}				
+				if(json['max']){
+					maxValue=json['max'];
+				}else{
+				  // use maximum value for scaling the legend
+				  maxValue = -1;
+				  for(var i in json){
+					  if(isNumeric(i) && json[i]>maxValue) 
+						  maxValue=json[i];
+				  }		
+				}
 			}else
 				maxValue = newMax;
 			scale=scale.domain([1,maxValue]);

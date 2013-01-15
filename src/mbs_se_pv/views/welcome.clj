@@ -2,7 +2,7 @@
   (:require 
     [mbs-se-pv.views 
      [common :as common]
-     [maps :as maps]]
+     #_[maps :as maps]]
     [mbs-db.core :as db]
     [mbs-se-pv.views.timeseries :as ts])
   (:use [noir 
@@ -20,7 +20,7 @@
   (common/layout-with-links
     [0
      (link-to (url-for start-page) "&Uuml;bersicht")
-     (link-to (url-for maps/maps) "Karten")]
+     #_(link-to (url-for maps/maps) "Karten")]
     nil  
     [:div.span12
      [:h1 "Anlagenübersicht"]
