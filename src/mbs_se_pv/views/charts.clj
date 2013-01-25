@@ -152,12 +152,13 @@
            ::udc        {:color (Color. 0xA6BDD7) :unit "V" :label "Spannung"}
            ::res        {:color (Color. 0x0000a0) :unit "Ohm" :label "Widerstand"}
            ::ins        {:color (Color. 0xAAAA00) :unit "W/m²" :label "Einstrahlung"}
-           ::freq       {:color (Color. 0x111111) :unit "Hz" :label "Frequenz"}
+           ::freq       {:color (Color. 0x111111) :unit "Hz" :label "Frequenz" :min 49.9 :max 50.1 
+                         :color-scale (cjf/fixed-color-scale (cjf/create-color-scale [49.9 [0 0 255]] [50 [0 255 0]] [50.05 [255 255 0]] [50.1 [255 0 0]]) (range 49.9 51.1 (/ 0.2 30)))}
            ::curr       {:color Color/RED         :unit "A" :label "Stromstärke"}
            ::gain       {:color (Color. 0x803E75) :unit "Wh" :label "Ertrag"} 
            ::daily-gain {:color (Color. 0x803E75) :unit "Wh" :label "Ertrag"}
            ::rpm        {:color (Color/BLUE)      :unit "rpm" :label "Umdrehungen"} 
-           ::efficiency {:color (Color. 0x817066) :unit "%" :label "Wirkungsgrad" :min 0 :max 99.999}}]
+           ::efficiency {:color (Color. 0x817066) :unit "%" :label "Wirkungsgrad" :min 0 :max 99.999 :color-scale efficiency-colors}}]
     (m2 (m1 val) {:color (Color/BLACK) :unit "???" :label "unbekannte Größe"})))
 
 (defn- get-series-label-solarlog 
@@ -255,7 +256,9 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
   `(defpage ~(format "/series-of/:id/*/:times/%s" file-name) {:keys [~'id ~'* ~'times ~'width ~'height ~@additional-keys]}
      (if-let [[~'s ~'e] (parse-times ~'times)]
        (let [~'names (distinct (re-seq #"[^-]+" ~'*)) ;; split at any minus
-             ~'* clojure.core/*]
+             ~'* clojure.core/*
+             ~'height (s2i ~'height 850)
+             ~'width (s2i ~'width 700)]
          ~@body)
        {:status 400
         :body "Wrong dates!"})))
@@ -267,7 +270,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
       (ch/set-y-label (-> names first get-series-type unit-properties :label))
       (ch/set-title (str "Chart für den Zeitraum " (.format (dateformat) s) " bis " (.format (dateformat) e)))
       (enhance-chart names)
-        (return-image :height (s2i height 500) :width (s2i width 600)))))
+        (return-image :height height :width (s2i width 600)))))
 
 (defn- day-number [{millis :timestamp}]
   (int (/ millis (* 1000 60 60 24))))
@@ -291,7 +294,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
       (ch/set-y-label (-> name get-series-type unit-properties :label))
       (ch/set-title (str "Die ungewöhnlichsten Tage"))
       (enhance-chart [name])
-      (return-image :height (s2i height 500) :width (s2i width 600)))))
+      (return-image :height height :width width))))
 
 ;; show summed gain as bar charts for days, weeks, months, years
 (defpage gain-chart "/gains/:id/:times/chart.png" {:keys [id times width height unit]}
@@ -311,7 +314,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                         :y-label "Ertrag in kWh"))] 
       (doto (.. chart getPlot getDomainAxis)
         (.setCategoryLabelPositions org.jfree.chart.axis.CategoryLabelPositions/UP_90))
-      (return-image chart :height (s2i height 500) :width (s2i width 600)))
+      (return-image chart :height height :width width))
     ;; else the dates format was invalid
     {:status 400
      :body "Wrong dates!"}))
@@ -359,8 +362,8 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
         ;values (simulate-insolation-values s e false {:latitude 37.606875 :longitude -8.087344}) 
         days (->> values (partition-by day-number) (insert-missing-days s e)) 
         daily-start (hm 0 0)
-        daily-end (hm 23 59)
-        five-min (hm (s2i hours 0) (s2i minutes 5))
+        daily-end (hm 24 00)
+        five-min (hm (s2i hours 0) (s2i minutes 1))
         gridded (map #(smooth (into-time-grid (map (juxt :timestamp :value) %) daily-start daily-end five-min)) days)
         days (vec (map #(vec (map second %)) gridded))
         x-max (count days )
@@ -380,13 +383,13 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                                   :y-step y-max
                                   :z-min (props :min)
                                   :z-max (props :max)
-                                  :colors (when (= props (unit-properties ::ConvEfc.mag.f)) efficiency-colors)
+                                  :colors (props :color-scale)
                                   :color? true)
                 (.. getPlot getRenderer (setBlockWidth ONE-DAY))
                 (.. getPlot getRenderer (setBlockHeight five-min)))]
     (.. chart getPlot (setDomainAxis (org.jfree.chart.axis.DateAxis.)))
     (.. chart getPlot (setRangeAxis (org.jfree.chart.axis.DateAxis.)))
-    (return-image chart :height (s2i height 500) :width (s2i width 600))))
+    (return-image chart :height height :width width)))
 
 (def-chart-page "data.json" []
   (let [width (s2i width nil)
@@ -537,6 +540,6 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                     (.removeLegend)
                     ;(enhance-chart names)
                     )
-                  :height (s2i height 500) 
-                  :width (s2i width 600))))
+                  :height height 
+                  :width width)))
 
