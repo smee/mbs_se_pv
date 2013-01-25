@@ -83,34 +83,7 @@
         weight-b (+ 2 (/ (- 255 rmean) 256))]
     (Math/sqrt (+ (* weight-r r r) (* weight-g g g) (* weight-b b b)))))
 
-(def efficiency-colors
-  [[0 (java.awt.Color. 0xff1e00)]
-   [15 (java.awt.Color. 0xff3c00)]
-   [30 (java.awt.Color. 0xff5a00)]
-   [40 (java.awt.Color. 0xff7800)]
-   [50 (java.awt.Color. 0xff9600)]
-   [60 (java.awt.Color. 0xffb400)]
-   [70 (java.awt.Color. 0xffd200)]
-   [80 (java.awt.Color. 0xfff000)]
-   [81 (java.awt.Color. 0xfff300)]
-   [82 (java.awt.Color. 0xfff600)]
-   [83 (java.awt.Color. 0xfff900)]
-   [84 (java.awt.Color. 0xfffc00)]
-   [85 (java.awt.Color. 0xffff00)]
-   [86 (java.awt.Color. 0xeef700)]
-   [87 (java.awt.Color. 0xddee00)]
-   [88 (java.awt.Color. 0xcce600)]
-   [89 (java.awt.Color. 0xbbdd00)]
-   [90 (java.awt.Color. 0xaad500)]
-   [91 (java.awt.Color. 0x99cc00)]
-   [92 (java.awt.Color. 0x88c400)]
-   [93 (java.awt.Color. 0x77bb00)]
-   [94 (java.awt.Color. 0x66b300)]
-   [95 (java.awt.Color. 0x55aa00)]
-   [96 (java.awt.Color. 0x44a200)]
-   [97 (java.awt.Color. 0x339900)]
-   [98 (java.awt.Color. 0x229100)]
-   [99 (java.awt.Color. 0x118800)]])
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- get-series-type [s]
   (let [parts (->> s
@@ -136,6 +109,7 @@
            ::PhV.phsA.cVal ::udc
            ::PhV.phsB.cVal ::udc
            ::PhV.phsC.cVal ::udc
+           ::PowRat.mag.f ::efficiency
            ::Ris.mag.f ::res
            ::RotSpd.mag.f ::rpm
            ::TotVA.mag.f ::pac
@@ -158,7 +132,9 @@
            ::gain       {:color (Color. 0x803E75) :unit "Wh" :label "Ertrag"} 
            ::daily-gain {:color (Color. 0x803E75) :unit "Wh" :label "Ertrag"}
            ::rpm        {:color (Color/BLUE)      :unit "rpm" :label "Umdrehungen"} 
-           ::efficiency {:color (Color. 0x817066) :unit "%" :label "Wirkungsgrad" :min 0 :max 99.999 :color-scale efficiency-colors}}]
+           ::efficiency {:color (Color. 0x817066) :unit "%" :label "Wirkungsgrad" :min 0 :max 99.999 
+                         :color-scale (concat (cjf/fixed-color-scale (cjf/create-color-scale [0 [100 0 0]] [80 [255 0 0]] [90 [255 255 0]]) (range 0 90 10))
+                                              (cjf/fixed-color-scale (cjf/create-color-scale [90 [255 255 0]] [101 [0 255 0]]) (range 90 101 0.1)))}}]
     (m2 (m1 val) {:color (Color/BLACK) :unit "???" :label "unbekannte Größe"})))
 
 (defn- get-series-label-solarlog 
