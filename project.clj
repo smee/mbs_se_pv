@@ -20,8 +20,12 @@
                        :target-path "target/classes"
                        :includes [ #".*" ]
                        :excludes [ #".*~" ]
-                       :extra-values {:db-url ~(get (System/getenv) "DBURL" "localhost:5029/psm")
-                                      :db-user ~(get (System/getenv) "DBUSER" "root")
+                       ; um die Datenbankoptionen zu aendern
+                       ; empfiehlt sich, beim Bauen des Warfiles die entsprechenden
+                       ; Systemproperties zu setzen
+                       :extra-values {:db-url      ~(get (System/getenv) "DBURL" "localhost:5029/psm")
+                                      :db-user     ~(get (System/getenv) "DBUSER" "root")
                                       :db-password ~(get (System/getenv) "DBPW" "")
-                                      :base-url "/eumonis-mbs-se-pv-psm"}})
+                                      :db-name     ~(get (System/getenv) "DBNAME" "default")
+                                      :base-url    ~(get (System/getenv) "BASE_URL" "/eumonis-mbs-se-pv-psm")}})
 

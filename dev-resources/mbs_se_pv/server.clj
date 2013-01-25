@@ -12,7 +12,8 @@
                        :subprotocol "mysql"
                        :user         "{{db-user}}"
                        :password     "{{db-password}}"
-                       :subname      (str "//{{db-url}}")})
+                       :subname      (str "//{{db-url}}")
+                       :connection-name "{{db-name}}"})
 
 (defn -main [& m]
   (let [mode (keyword (or (first m) :dev))

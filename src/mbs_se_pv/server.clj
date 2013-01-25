@@ -10,12 +10,14 @@
 ;; initialize database settings
 (let [url  (get (System/getenv) "DB-URL" "localhost:5029/psm")
       user (get (System/getenv) "DB-USER" "root")
-      pw (get (System/getenv) "DB-PW" "")] 
+      pw (get (System/getenv) "DB-PW" "")
+      name (get (System/getenv) "DB-NAME" "default")] 
   (db/use-db-settings {:classname   "com.mysql.jdbc.Driver"
                        :subprotocol "mysql"
                        :user         user
                        :password     pw
-                       :subname      (str "//" url)}))
+                       :subname      (str "//" url)
+                       :connection-name name}))
 
 (defn -main [& m]
   (let [mode (keyword (or (first m) :dev))
