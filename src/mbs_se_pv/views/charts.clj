@@ -339,16 +339,17 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
         days (->> values (partition-by day-number) (insert-missing-days s e)) 
         daily-start (hm 0 0)
         daily-end (hm 24 00)
-        five-min (hm (s2i hours 0) (s2i minutes 1))
-        gridded (map #(smooth (into-time-grid (map (juxt :timestamp :value) %) daily-start daily-end five-min)) days)
+        block-time-len (hm (s2i hours 0) (s2i minutes 5))
+        gridded (map #(smooth (into-time-grid (map (juxt :timestamp :value) %) daily-start daily-end block-time-len)) days)
         days (vec (map #(vec (map second %)) gridded))
-        x-max (count days )
+        x-max (count days)
         y-max (apply max (map count days))
         f (fn [x y] 
-            (if-let [v (get-in days [(int (/ (- x s) ONE-DAY)) (int (/ (- y daily-start) five-min))])]
+            (if-let [v (get-in days [(int (/ (- x s) ONE-DAY)) (int (/ (- y daily-start) block-time-len))])]
               v
               0))
         props (-> name get-series-type unit-properties) 
+        time-axis (doto (org.jfree.chart.axis.DateAxis.) (.setTimeZone (java.util.TimeZone/getTimeZone "UTC"))) 
         chart (doto (cjf/heat-map f s (+ s (clojure.core/* ONE-DAY x-max)) daily-start daily-end 
                                   :color? true
                                   :title (format "Tagesverläufe von %s im Zeitraum %s" name times)
@@ -362,9 +363,9 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                                   :colors (props :color-scale)
                                   :color? true)
                 (.. getPlot getRenderer (setBlockWidth ONE-DAY))
-                (.. getPlot getRenderer (setBlockHeight five-min)))]
+                (.. getPlot getRenderer (setBlockHeight block-time-len)))] 
     (.. chart getPlot (setDomainAxis (org.jfree.chart.axis.DateAxis.)))
-    (.. chart getPlot (setRangeAxis (org.jfree.chart.axis.DateAxis.)))
+    (.. chart getPlot (setRangeAxis time-axis))
     (return-image chart :height height :width width)))
 
 (def-chart-page "data.json" []
