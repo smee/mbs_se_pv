@@ -214,6 +214,7 @@
          [:h4 "Art der Anzeige:"]
          [:div.controls
           (drop-down "chart-type" [["Interaktive Ansicht" "interactive-client"]
+                                   ["Dygraph", "dygraph"] 
                                    ["Statische Ansicht" "chart"]
                                    ["Heatmap" "heat-map"]
                                    ["Ungewöhnlicher Tag" "discord"]
@@ -247,7 +248,7 @@
       ;; main content
       [:div.span9        
        [:h2 "Chart"]
-       [:div#current-chart "Bitte wählen Sie links die zu visualisierenden Daten und ein Zeitinterval aus."]]
+       [:div#current-chart {:style "width:800px; height:500px;"} "Bitte wählen Sie links die zu visualisierenden Daten und ein Zeitinterval aus."]]
       ;; render calendar input via jquery plugin
       (hiccup.page/include-js "https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js" 
                               "/js/jquery.dynatree.min.js" 

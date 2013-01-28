@@ -50,7 +50,7 @@
     (.setGapThresholdType UnitType/RELATIVE)
     (.setGapThreshold 3.0)))
 
-(defn- return-image [chart & opts]
+(defn- return-image [chart & opts] 
   (let [baos (ByteArrayOutputStream.)]
     (apply ic/save chart baos opts)
     (noir.response/set-headers 
@@ -246,7 +246,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
       (ch/set-y-label (-> names first get-series-type unit-properties :label))
       (ch/set-title (str "Chart für den Zeitraum " (.format (dateformat) s) " bis " (.format (dateformat) e)))
       (enhance-chart names)
-        (return-image :height height :width (s2i width 600)))))
+        (return-image :height height :width width))))
 
 (defn- day-number [{millis :timestamp}]
   (int (/ millis (* 1000 60 60 24))))
@@ -290,7 +290,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                         :y-label "Ertrag in kWh"))] 
       (doto (.. chart getPlot getDomainAxis)
         (.setCategoryLabelPositions org.jfree.chart.axis.CategoryLabelPositions/UP_90))
-      (return-image chart :height height :width width))
+      (return-image chart :height (s2i height 250) :width (s2i width 400)))
     ;; else the dates format was invalid
     {:status 400
      :body "Wrong dates!"}))
@@ -380,6 +380,21 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                           :unit (-> %1 get-series-type unit-properties :unit)
                           :key %1 
                           :data %2) names values))))
+
+(def-chart-page "data-dyson.csv" []
+  (let [values (->> names
+                 (map #(get-series-values id % s e width))
+                 (map (mapp (juxt :timestamp :min :value :max)))
+                 (map (mapp (fn [[timestamp & data]] (list (.format (util/dateformat-dyson) timestamp) (string/join ";" data))))))
+        by-time (sort-by first (map #(apply list (ffirst %) (mapcat next %)) (vals (group-by first (apply concat values)))))
+        _ (def b by-time)
+        _ (def v values) 
+        all-names (db/all-series-names-of-plant id)
+        _ (def n all-names)
+        all-names (map #(get-in all-names [%1 :name]) names)]
+    (string/join "\n" (cons (str "X," (string/join "," all-names))
+                            
+                            (map #(string/join "," %) by-time)))))
 
 ;;;;;;;;;;;; render a tiling map of a chart ;;;;;;;;;;;;;;;;;;;;;;
 (defn- render-grid [len x y zoom]

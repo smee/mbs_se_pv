@@ -116,6 +116,22 @@ $('%s').click(
 						});
 					});
 
+				}else if (visType == 'dygraph'){
+					ensure({
+						js : [ baseUrl+"/js/chart/dygraph-combined.js"],
+						css : []
+					}, function() {
+						g = new Dygraph(
+							    // containing div
+								chartDiv[0],
+								baseUrl + '/series-of/' + id + '/' + selectedSeries.join('-') + '/' + interval + '/data-dyson.csv?width=' + $('#chart-width').val(),
+							    //"http://localhost:8080/series-of/Ourique PV-Anlage/INVU1/MMET1.HorInsol.mag.f-INVU1/MMET2.HorInsol.mag.f/20120930-20120930/data-dyson.csv?width=5",
+							    { customBars: true,
+								  showRoller: true,
+								  labelsKMB :true,
+								  drawCallback: function(graph,isInitial){ if(isInitial) $('#current-chart').hideLoading();}
+								});
+					});
 				} else { //static image
 					chartDiv.append($("<img id='chart-image' src=''/>"));
 					// create link
