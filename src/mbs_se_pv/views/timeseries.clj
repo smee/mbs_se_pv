@@ -213,15 +213,15 @@
         [:div
          [:h4 "Art der Anzeige:"]
          [:div.controls
-          (drop-down "chart-type" [["Interaktive Ansicht" "interactive-client"]
-                                   ["Dygraph", "dygraph"] 
+          (drop-down "chart-type" [["Interaktive Ansicht (alt)" "interactive-client"]
+                                   ["Interaktive Ansicht", "dygraph"] 
                                    ["Statische Ansicht" "chart"]
                                    ["Heatmap" "heat-map"]
                                    ["Ungewöhnlicher Tag" "discord"]
                                    ["Verhaltensänderung" "changepoints"]
                                    ["Interaktiver Zoom" "interactive-map"]
                                    ["Korrelationen" "correlation"]]
-                     "interactive-client")]]
+                     "dygraph")]]
         [:div#changepoint-parameter
          [:h4 "Weitere Parameter"]
          [:div.controls
@@ -237,9 +237,9 @@
           (text-field {:placeholder "Max. level" :class "input-small"} "max-level" 2)]] 
         [:div
          [:h4 "Größe:"]
-         [:input#chart-width.input-mini {:value "850" :type "number"}] 
+         [:input#chart-width.input-mini {:value "950" :type "number"}] 
          [:span "X"] 
-         [:input#chart-height.input-mini {:value "700" :type "number"}]
+         [:input#chart-height.input-mini {:value "600" :type "number"}]
          [:span "px"]]
         [:button#render-chart.btn-primary.btn-large 
          [:i.icon-picture.icon-white]
@@ -248,9 +248,9 @@
       ;; main content
       [:div.span9        
        [:h2 "Chart"]
-       [:div#current-chart {:style "width:800px; height:500px;"} "Bitte wählen Sie links die zu visualisierenden Daten und ein Zeitinterval aus."]]
+       [:div#current-chart "Bitte wählen Sie links die zu visualisierenden Daten und ein Zeitinterval aus."]]
       ;; render calendar input via jquery plugin
-      (hiccup.page/include-js "https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js" 
+      (hiccup.page/include-js "/js/jquery-ui.min.js" 
                               "/js/jquery.dynatree.min.js" 
                               "/js/datepicker.js")
       (hiccup.page/include-css "/css/dynatree/ui.dynatree.css" "/css/datepicker.css") 
@@ -294,7 +294,7 @@
       [:div.span9
        [:h4 "Detailangaben"]
        [:table#details]]
-      (hiccup.page/include-js "https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js" "/js/jquery.dynatree.min.js")
+      (hiccup.page/include-js "/js/jquery-ui.min.js" "/js/jquery.dynatree.min.js")
       (hiccup.page/include-css "/css/dynatree/ui.dynatree.css")
       (javascript-tag  
         "$(document).ready(function() { 

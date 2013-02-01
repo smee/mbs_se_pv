@@ -23,14 +23,16 @@ $('%s').click(
 				var visType = $("#chart-type").val();
 				// remove old contents
 				var chartDiv = $('#current-chart');
+				var width = $('#chart-width').val();
+				var height = $('#chart-height').val();
 				chartDiv.empty();
 
 				$('#current-chart').showLoading();
 
 				if (visType == 'interactive-map') {
 					ensure({
-						js : "http://cdn.leafletjs.com/leaflet-0.4/leaflet.js",
-						css : "http://cdn.leafletjs.com/leaflet-0.4/leaflet.css"
+						js : "/js/chart/leaflet.js",
+						css : "/css/chart/leaflet.css"
 					}, function() {
 						chartDiv.append($("<div id='interactive-map'/>"));
 						var map = L.map('interactive-map').setView([ 51.505, -0.09 ], 2);
@@ -72,18 +74,18 @@ $('%s').click(
 
 						ajaxGraph = new Rickshaw.Graph.Ajax({
 							element : document.getElementById("chart"),
-							width : $('#chart-width').val(),
-							height : $('#chart-height').val(),
+							width : width,
+							height : height,
 							renderer : 'line',
 							min : 'auto',
-							dataURL : baseUrl + '/series-of/' + id + '/' + selectedSeries.join('-') + '/' + interval + '/data.json?width='
-									+ $('#chart-width').val(),
+							dataURL : baseUrl + '/series-of/' + id + '/' + selectedSeries.join('-') + '/' + interval + '/data.json?width=' + width,
 							onData : function(d) {
 								Rickshaw.Series.zeroFill(d);
 								return d
 							},
 							series : series,
 							onComplete : function(ajaxGraph) {
+								$('#current-chart').hideLoading();
 								var graph = ajaxGraph.graph;
 								var axes = new Rickshaw.Graph.Axis.Time({
 									graph : graph
@@ -111,7 +113,6 @@ $('%s').click(
 								});
 
 								graph.render();
-								$('#current-chart').hideLoading();
 							}
 						});
 					});
@@ -121,14 +122,22 @@ $('%s').click(
 						js : [ baseUrl+"/js/chart/dygraph-combined.js"],
 						css : []
 					}, function() {
+						chartDiv.append($("<div id='dygraph-chart'/>"));
 						g = new Dygraph(
 							    // containing div
-								chartDiv[0],
-								baseUrl + '/series-of/' + id + '/' + selectedSeries.join('-') + '/' + interval + '/data-dyson.csv?width=' + $('#chart-width').val(),
-							    //"http://localhost:8080/series-of/Ourique PV-Anlage/INVU1/MMET1.HorInsol.mag.f-INVU1/MMET2.HorInsol.mag.f/20120930-20120930/data-dyson.csv?width=5",
-							    { customBars: true,
+								$('#dygraph-chart')[0],
+								baseUrl + '/series-of/' + id + '/' + selectedSeries.join('-') + '/' + interval + '/data-dyson.csv?width=' + width,
+							    { width: width,
+								  height: height,
+								  customBars: true,
 								  showRoller: true,
 								  labelsKMB :true,
+								  labelsSeparateLines: true,
+							        highlightSeriesOpts: {
+							            strokeWidth: 3,
+							            strokeBorderWidth: 1,
+							            highlightCircleSize: 5,
+							          },
 								  drawCallback: function(graph,isInitial){ if(isInitial) $('#current-chart').hideLoading();}
 								});
 					});
@@ -136,7 +145,7 @@ $('%s').click(
 					chartDiv.append($("<img id='chart-image' src=''/>"));
 					// create link
 					var link = baseUrl + '/series-of/' + id + '/' + selectedSeries.join('-') + '/' + interval + '/' + visType + '.png?width='
-							+ $('#chart-width').val() + '&height=' + $('#chart-height').val();
+							+ width + '&height=' + height;
 					if(visType == 'changepoints'){
 						link += '&rank='+$('input#rank').is(':checked')
 						       +'&zero='+$('input#zero').is(':checked')

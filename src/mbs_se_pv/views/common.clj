@@ -11,7 +11,7 @@
    (include-css "/css/bootstrap.min.css"
                 "/css/showLoading.css"
                 "/css/customizations.css")
-   (include-js "http://ajax.googleapis.com/ajax/libs/jquery/1.7.0/jquery.min.js"
+   (include-js "/js/jquery.min.js"
                "/js/ensure.js" 
                "/js/jquery.cookie.js"
                "/js/jquery.showLoading.min.js")

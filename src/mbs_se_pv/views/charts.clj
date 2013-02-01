@@ -387,10 +387,10 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                  (map (mapp (juxt :timestamp :min :value :max)))
                  (map (mapp (fn [[timestamp & data]] (list (.format (util/dateformat-dyson) timestamp) (string/join ";" data))))))
         by-time (sort-by first (map #(apply list (ffirst %) (mapcat next %)) (vals (group-by first (apply concat values)))))
+        _ (def n names)
         _ (def b by-time)
         _ (def v values) 
         all-names (db/all-series-names-of-plant id)
-        _ (def n all-names)
         all-names (map #(get-in all-names [%1 :name]) names)]
     (string/join "\n" (cons (str "X," (string/join "," all-names))
                             
@@ -479,7 +479,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; render a correlation matrix plot ;;;;;;;;;;;;;;;;
 (def-chart-page "correlation.png" [] 
-  (let [values (for [name names] (map :value (get-series-values id name s e))) 
+  (let [values (for [name names] (map :value (get-series-values id name s (+ s util/ONE-DAY)))) 
         img (-> values 
               tc/calculate-correlation-matrix 
               (tc/render-frame names (.format (dateformat) s)))]
