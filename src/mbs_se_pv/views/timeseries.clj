@@ -199,11 +199,13 @@
           [:span.add-on "bis: "]
           (text-field {:placeholder "Enddatum" :class "input-small"} "end-date" date)]
          [:div
-          [:a.btn.btn-mini {:href "#" :onclick "shiftTime(-1,0,0)"} "< Tag"]
+          [:a.btn.btn-mini {:href "#" :onclick "shiftTime(-1,0,0,0)"} "< Tag"]
+          [:a.btn.btn-mini {:href "#" :onclick "shiftTime(-7,0,0)"} "< Woche"]
           [:a.btn.btn-mini {:href "#" :onclick "shiftTime(0,-1,0)"} "< Monat"]
           [:a.btn.btn-mini {:href "#" :onclick "shiftTime(0,0,-1)"} "< Jahr"]]
          [:div
-          [:a.btn.btn-mini {:href "#" :onclick "shiftTime(1,0,0)"} "Tag >"]
+          [:a.btn.btn-mini {:href "#" :onclick "shiftTime(1,0,0,0)"} "Tag >"]
+          [:a.btn.btn-mini {:href "#" :onclick "shiftTime(7,0,0)"} "Woche >"]
           [:a.btn.btn-mini {:href "#" :onclick "shiftTime(0,1,0)"} "Monat >"]
           [:a.btn.btn-mini {:href "#" :onclick "shiftTime(0,0,1)"} "Jahr >"]]
          [:label.checkbox (check-box "rerender" true) "automatisch neu zeichnen"]]
