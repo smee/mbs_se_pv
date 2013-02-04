@@ -5,14 +5,22 @@
          [page :only (html5 include-css include-js)]])
   (:require [mbs-se-pv.views.util :as util]))
 
+(defpartial include-js-with-fallback 
+  "Include a javascript file from a content delivery network (CDN). Tests if `dom-element` is available after loading the url.
+If not, it loads a copy of the js file from a local uri."
+  [url dom-element local-path]
+  (list 
+    (include-js url)
+    (javascript-tag (format "%s || document.write('<script src=\"%s\"><\\/script>')" dom-element local-path))))
+
 (defpartial eumonis-header []
   [:head 
    [:title "MBS_SE_PV"]
    (include-css "/css/bootstrap.min.css"
                 "/css/showLoading.css"
                 "/css/customizations.css")
-   (include-js "/js/jquery.min.js"
-               "/js/ensure.js" 
+   (include-js-with-fallback "//ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js" "window.jQuery" "/js/jquery.min.js")
+   (include-js "/js/ensure.js" 
                "/js/jquery.cookie.js"
                "/js/jquery.showLoading.min.js")
    
