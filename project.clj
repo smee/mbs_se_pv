@@ -16,7 +16,7 @@
             :main mbs-se-pv.server
             :ring {:handler mbs-se-pv.server/handler}
             :resource {
-                       :resource-paths ["dev-resources"]
+                       :resource-paths ["templates"]
                        :target-path "target/classes"
                        :includes [ #".*" ]
                        :excludes [ #".*~" ]

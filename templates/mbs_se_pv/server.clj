@@ -12,7 +12,7 @@
                        :subprotocol "mysql"
                        :user         "{{db-user}}"
                        :password     "{{db-password}}"
-                       :subname      (str "//{{db-url}}")
+                       :subname      "//{{db-url}}"
                        :connection-name "{{db-name}}"})
 
 (defn -main [& m]
@@ -20,7 +20,7 @@
         port (Integer. (get (System/getenv) "PORT" "8080"))]
     (server/start port {:mode mode
                         :ns 'mbs-se-pv
-                        ;:base-url "/eumonis-mbs-se-pv"
+                        :base-url "{{base-url}}" 
                         })))
 
 
