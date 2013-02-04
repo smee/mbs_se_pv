@@ -1,4 +1,4 @@
-(ns mbs-se-pv.server
+(ns mbs-se-pv.server-dev
   (:require 
     [noir.server :as server]
     [mbs-db.core :as db]
