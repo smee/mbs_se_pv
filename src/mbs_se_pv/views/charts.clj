@@ -42,13 +42,6 @@
       (javax.imageio.ImageIO/write img "png" filename-or-stream))
     nil))
 
-(defn- create-renderer
-  "do not plot a line when at least 3 values are missing (for example during the night)" 
-  []
-  (doto (StandardXYItemRenderer.)
-    (.setPlotDiscontinuous true)
-    (.setGapThresholdType UnitType/RELATIVE)
-    (.setGapThreshold 3.0)))
 
 (defn- return-image [chart & opts] 
   (let [baos (ByteArrayOutputStream.)]
@@ -198,7 +191,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
   (dorun
     (map-indexed
       (fn [i n] 
-        (let [r (create-renderer)] 
+        (let [r (cjf/create-renderer)] 
           (.. chart getPlot (setRenderer i r))
           ;; set colors
           (.setSeriesPaint r 0 (-> n get-series-type unit-properties :color))))
