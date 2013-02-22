@@ -19,7 +19,7 @@ If not, it loads a copy of the js file from a local uri."
    (include-css "/css/bootstrap.min.css"
                 "/css/showLoading.css"
                 "/css/customizations.css")
-   (include-js-with-fallback "//ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js" "window.jQuery" "/js/jquery.min.js")
+   (include-js-with-fallback "http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js" "window.jQuery" "/js/jquery.min.js")
    (include-js "/js/ensure.js" 
                "/js/jquery.cookie.js"
                "/js/jquery.showLoading.min.js")
