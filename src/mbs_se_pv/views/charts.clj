@@ -542,10 +542,10 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
             y (map (h/cdf hist) x)]
         [(butlast x) (map #(- (second %) (first %)) (partition 2 1 y))])))
 
-(def-chart-page "entropy.png" [n bins min-hist max-hist denominator]
+(def-chart-page "entropy.png" [days bins min-hist max-hist denominator]
   (let [name (first names) 
         e (if (= s e) (+ e ONE-DAY) e)
-        n (s2i n 30) 
+        n (s2i days 30) 
         bins (s2i bins 500)
         min-hist (s2d min-hist 0.05) 
         max-hist (s2d max-hist 0.2)

@@ -134,7 +134,7 @@ $('%s').click(
 								  labelsKMB :true,
 								  labelsSeparateLines: true,
 							        highlightSeriesOpts: {
-							            strokeWidth: 3,
+							            strokeWidth: 2,
 							            strokeBorderWidth: 1,
 							            highlightCircleSize: 5,
 							          },
@@ -153,6 +153,11 @@ $('%s').click(
 						       +'&confidence='+$('input#confidence').val()
 						       +'&max-level='+$('input#max-level').val()
 						       +'&maintainance='+$('input#maintainance').is(':checked');
+					}else if (visType == 'entropy'){
+						link += '&bins=' + $('input#bins').val()
+						     +  '&min-hist=' + $('input#min-hist').val()
+						     +  '&max-hist=' + $('input#max-hist').val()
+						     +  '&days=' + $('input#days').val();
 					}
 					// show chart
 					$('#chart-image').attr('src', link).load(function() {

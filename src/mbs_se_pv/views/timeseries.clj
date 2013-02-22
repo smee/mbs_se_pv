@@ -221,6 +221,7 @@
                                    ["Heatmap" "heat-map"]
                                    ["Ungewöhnlicher Tag" "discord"]
                                    ["Verhaltensänderung" "changepoints"]
+                                   ["Entropieänderung" "entropy"]
                                    ["Interaktiver Zoom" "interactive-map"]
                                    ["Korrelationen" "correlation"]]
                      "dygraph")]]
@@ -236,7 +237,21 @@
           (text-field {:placeholder "p-Wert" :class "input-small"} "confidence" 0.9999)]
          [:div.input-prepend
           [:span.add-on "lvl: "]
-          (text-field {:placeholder "Max. level" :class "input-small"} "max-level" 2)]] 
+          (text-field {:placeholder "Max. level" :class "input-small"} "max-level" 2)]]
+        [:div#entropy-parameter
+         [:h4 "Weitere Parameter"]
+         [:div.input-prepend
+          [:span.add-on "min: "]
+          (text-field {:class "input-small"} "min-hist" 0.05)]
+         [:div.input-prepend
+          [:span.add-on "max: "]
+          (text-field {:class "input-small"} "max-hist" 0.2)]
+         [:div.input-prepend
+          [:span.add-on "bins: "]
+          (text-field {:class "input-small"} "bins" 500)]
+         [:div.input-prepend
+          [:span.add-on "Tage: "]
+          (text-field {:class "input-small"} "days" 30)]] 
         [:div
          [:h4 "Größe:"]
          [:input#chart-width.input-mini {:value "950" :type "number"}] 
@@ -261,7 +276,10 @@
       (javascript-tag (util/render-javascript-template "templates/load-chart.js" "#render-chart" base-url id))
       (javascript-tag "$('#chart-type').change(function(){
                             var params=$('#changepoint-parameter'); 
-                            if('changepoints'==$(this).val()){ params.slideDown();} else{ params.slideUp();}})"))))
+                            if('changepoints'==$(this).val()){ params.slideDown();} else{ params.slideUp();}})")
+      (javascript-tag "$('#chart-type').change(function(){
+                            var params=$('#entropy-parameter'); 
+                            if('entropy'==$(this).val()){ params.slideDown();} else{ params.slideUp();}})"))))
 
 ;;;;;;;;;;;;;;;;;; components of a plant ;;;;;;;;;;;;;;;;;;;;;;
 (defn- convert-node [node]
