@@ -235,7 +235,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
         :body "Wrong dates!"})))
 
 (def-chart-page "chart.png" [] 
-  (let [values (pmap #(get-series-values id % s e) names)]      
+  (let [values (pmap #(get-series-values id % s e width) names)]      
     (-> (create-time-series-chart names values)
       (ch/set-x-label "Zeit")
       (ch/set-y-label (-> names first get-series-type unit-properties :label))
@@ -329,12 +329,12 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 
 (def-chart-page "heat-map.png" [hours minutes]
   (let [name (first names)
-        values (get-series-values id name s e)
+        block-time-len (hm (s2i hours 0) (s2i minutes 5))
+        values (get-series-values id name s e (/ (- e s) block-time-len))
         ;values (simulate-insolation-values s e false {:latitude 37.606875 :longitude -8.087344}) 
         days (->> values (partition-by day-number) (insert-missing-days s e)) 
         daily-start (hm 0 0)
         daily-end (hm 24 00)
-        block-time-len (hm (s2i hours 0) (s2i minutes 5))
         gridded (map #(smooth (into-time-grid (map (juxt :timestamp :value) %) daily-start daily-end block-time-len)) days)
         days (vec (map #(vec (map second %)) gridded))
         x-max (count days)
@@ -378,18 +378,16 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 
 (def-chart-page "data-dyson.csv" []
   (let [values (->> names
-                 (map #(get-series-values id % s e width))
+                 (pmap #(get-series-values id % s e width))
                  (map (mapp (juxt :timestamp :min :value :max)))
-                 (map (mapp (fn [[timestamp & data]] (list (.format (util/dateformat-dyson) timestamp) (string/join ";" data))))))
+                 (map (mapp (fn [[timestamp & data]] (list (.format (util/dateformat-dyson) timestamp) (string/join ";" data)))))) 
         by-time (sort-by first (map #(apply list (ffirst %) (mapcat next %)) (vals (group-by first (apply concat values)))))
-        _ (def n names)
-        _ (def b by-time)
-        _ (def v values) 
-        all-names (db/all-series-names-of-plant id)
-        all-names (map #(get-in all-names [%1 :name]) names)]
-    (string/join "\n" (cons (str "X," (string/join "," all-names))
-                            
-                            (map #(string/join "," %) by-time)))))
+        ; problem: not all lines have the same number of values
+        all-names (db/all-series-names-of-plant id) 
+        all-names (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) names)]
+    (string/join "\n" 
+                 (cons (string/join "," (cons "X" all-names)) ;header
+                       (map #(string/join "," %) by-time))))) ;values
 
 ;;;;;;;;;;;; render a tiling map of a chart ;;;;;;;;;;;;;;;;;;;;;;
 (defn- render-grid [len x y zoom]
@@ -488,7 +486,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
         negative? (Boolean/parseBoolean negative) 
         zeroes? (Boolean/parseBoolean zero)
         maintainance? (Boolean/parseBoolean maintainance)
-        maintainance-dates (db/maintainance-intervals id) _ (def m maintainance-dates)
+        maintainance-dates (db/maintainance-intervals id)
         maintainance-date? (fn [t] (some #(and (>= t (:start %)) (<= t (:end %))) maintainance-dates))
         confidence (s2d confidence 0.999999) 
         max-level (s2i max-level 2)
@@ -498,7 +496,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
         charts (for [hour hours] 
                  (let [values (filter #(= hour (:hour %)) values)
                        values (if zeroes? (remove #(or (nil? (:value %)) (zero? (:value %))) values) values) ;remove all zeroes  
-                       _ (def v values) values (if maintainance? (remove #(maintainance-date? (:timestamp %)) values) values) 
+                       values (if maintainance? (remove #(maintainance-date? (:timestamp %)) values) values) 
                        times (map (comp as-unix-timestamp :timestamp) values)
                        values (map (comp #(or % 0) :value) values)
                        values (if ranks? (f/rankify values) values)
