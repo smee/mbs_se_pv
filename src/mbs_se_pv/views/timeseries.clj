@@ -215,8 +215,7 @@
         [:div
          [:h4 "Art der Anzeige:"]
          [:div.controls
-          (drop-down "chart-type" [["Interaktive Ansicht (alt)" "interactive-client"]
-                                   ["Interaktive Ansicht", "dygraph"] 
+          (drop-down "chart-type" [["Interaktive Ansicht", "dygraph"] 
                                    ["Statische Ansicht" "chart"]
                                    ["Heatmap" "heat-map"]
                                    ["Ungewöhnlicher Tag" "discord"]

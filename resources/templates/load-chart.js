@@ -44,86 +44,14 @@ $('%s').click(
 						$('#current-chart').hideLoading();
 					});
 
-				} else if (visType == 'interactive-client') {
+				} else if (visType == 'dygraph'){
 					ensure({
-						js : [ baseUrl+"/js/chart/d3.v2.min.js", baseUrl+"/js/chart/d3.layout.min.js", baseUrl+"/js/chart/rickshaw.min.js" ],
-						css : baseUrl+"/css/chart/rickshaw.min.css"
-					}, function() {
-						chartDiv.append($("<div id='chart_container'><div id='y_axis'/><div id='chart'/></div><div id=\'legend\'/>"));
-						// create map of iec61850 names to human readable labels
-						var seriesLabelsMap = $('#series-tree').dynatree('getSelectedNodes').reduce(function(m, sel) {
-							var title = sel.data.title;
-							var id = sel.data.series;
-							if (id) {
-								var prefix = id.substring(0, id.indexOf('/'));
-								m[id] = prefix + "|" + sel.data.title;
-							}
-							;
-							return m;
-						}, new Object());
-
-						var palette = new Rickshaw.Color.Palette();
-
-						var series = [];
-						for (idx in selectedSeries)
-							series.push({
-								key : selectedSeries[idx],
-								name : seriesLabelsMap[selectedSeries[idx]],
-								color : palette.color()
-							});
-
-						ajaxGraph = new Rickshaw.Graph.Ajax({
-							element : document.getElementById("chart"),
-							width : width,
-							height : height,
-							renderer : 'line',
-							min : 'auto',
-							dataURL : baseUrl + '/series-of/' + id + '/' + selectedSeries.join('-') + '/' + interval + '/data.json?width=' + width,
-							onData : function(d) {
-								Rickshaw.Series.zeroFill(d);
-								return d
-							},
-							series : series,
-							onComplete : function(ajaxGraph) {
-								$('#current-chart').hideLoading();
-								var graph = ajaxGraph.graph;
-								var axes = new Rickshaw.Graph.Axis.Time({
-									graph : graph
-								});
-								var y_axis = new Rickshaw.Graph.Axis.Y({
-									graph : graph,
-									orientation : 'left',
-									tickFormat : Rickshaw.Fixtures.Number.formatKMBT,
-									element : document.getElementById('y_axis')
-								});
-								var legend = new Rickshaw.Graph.Legend({
-									element : document.querySelector('#legend'),
-									graph : graph
-								});
-								var hover = new Rickshaw.Graph.HoverDetail({
-									graph : ajaxGraph.graph
-								});
-								var shelving = new Rickshaw.Graph.Behavior.Series.Toggle({
-									graph : graph,
-									legend : legend
-								});
-								var highlighter = new Rickshaw.Graph.Behavior.Series.Highlight({
-									graph : graph,
-									legend : legend
-								});
-
-								graph.render();
-							}
-						});
-					});
-
-				}else if (visType == 'dygraph'){
-					ensure({
-						js : [ baseUrl+"/js/chart/dygraph-combined.js"],
+						js : [ baseUrl+"/js/chart/dygraph-combined.js", baseUrl+"/js/chart/dygraph-functions.js"],
 						css : []
 					}, function() {
 						chartDiv.append($("<div id='dygraph-chart'/>"));
 						var jsonURL = baseUrl + '/series-of/' + id + '/' + selectedSeries.join('-') + '/' + interval + '/data-dyson.json?width=' + width;
+						// load chart data as json
 						$.getJSON(jsonURL, function(response){
 							$('#current-chart').hideLoading();
 							// create date instances from unix timestamps
@@ -131,7 +59,7 @@ $('%s').click(
 							for(var i=0;i<data.length;i++) { 
 								data[i][0] = new Date(data[i][0]); 
 							}; 
-							g = new Dygraph(
+							dygraphChart = new Dygraph(
 									// containing div
 									$('#dygraph-chart')[0],
 									response.data,
@@ -146,8 +74,17 @@ $('%s').click(
 										  strokeWidth: 2,
 										  strokeBorderWidth: 1,
 										  highlightCircleSize: 5,
+									  },
+									  interactionModel : {
+										  'mousedown' : downV3,
+									      'mousemove' : moveV3,
+									      'mouseup' : upV3,
+									      'click' : clickV3,
+									      'dblclick' : dblClickV3,
+									      'mousewheel' : scrollV3
 									  }
 									});
+							chartDiv.append($("<input type='button' class='btn btn-info' value='Position wiederherstellen' onclick='restorePositioning(dygraphChart)'>"));
 						});
 					});
 				} else { //static image
