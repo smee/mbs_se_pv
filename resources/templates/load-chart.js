@@ -123,23 +123,32 @@ $('%s').click(
 						css : []
 					}, function() {
 						chartDiv.append($("<div id='dygraph-chart'/>"));
-						g = new Dygraph(
-							    // containing div
-								$('#dygraph-chart')[0],
-								baseUrl + '/series-of/' + id + '/' + selectedSeries.join('-') + '/' + interval + '/data-dyson.csv?width=' + width,
-							    { width: width,
-								  height: height,
-								  customBars: true,
-								  showRoller: true,
-								  labelsKMB :true,
-								  labelsSeparateLines: true,
-							        highlightSeriesOpts: {
-							            strokeWidth: 2,
-							            strokeBorderWidth: 1,
-							            highlightCircleSize: 5,
-							          },
-								  drawCallback: function(graph,isInitial){ if(isInitial) $('#current-chart').hideLoading();}
-								});
+						var jsonURL = baseUrl + '/series-of/' + id + '/' + selectedSeries.join('-') + '/' + interval + '/data-dyson.json?width=' + width;
+						$.getJSON(jsonURL, function(response){
+							$('#current-chart').hideLoading();
+							// create date instances from unix timestamps
+							var data = response.data;
+							for(var i=0;i<data.length;i++) { 
+								data[i][0] = new Date(data[i][0]); 
+							}; 
+							g = new Dygraph(
+									// containing div
+									$('#dygraph-chart')[0],
+									response.data,
+									{ width: width,
+									  height: height,
+									  labels: response.labels,
+									  customBars: true,
+									  showRoller: true,
+									  labelsKMB :true,
+									  labelsSeparateLines: true,
+									  highlightSeriesOpts: {
+										  strokeWidth: 2,
+										  strokeBorderWidth: 1,
+										  highlightCircleSize: 5,
+									  }
+									});
+						});
 					});
 				} else { //static image
 					chartDiv.append($("<img id='chart-image' src=''/>"));

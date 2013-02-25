@@ -376,18 +376,17 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                           :key %1 
                           :data %2) names values))))
 
-(def-chart-page "data-dyson.csv" []
+(def-chart-page "data-dyson.json" []
   (let [values (->> names
                  (pmap #(get-series-values id % s e width))
                  (map (mapp (juxt :timestamp :min :value :max)))
-                 (map (mapp (fn [[timestamp & data]] (list (.format (util/dateformat-dyson) timestamp) (string/join ";" data)))))) 
+                 (map (mapp #(vector (first %) (apply vector (rest %)))))) 
         by-time (sort-by first (map #(apply list (ffirst %) (mapcat next %)) (vals (group-by first (apply concat values)))))
         ; problem: not all lines have the same number of values
         all-names (db/all-series-names-of-plant id) 
         all-names (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) names)]
-    (string/join "\n" 
-                 (cons (string/join "," (cons "X" all-names)) ;header
-                       (map #(string/join "," %) by-time))))) ;values
+    (json {:labels (cons "Datum" all-names) 
+           :data by-time}))) ;values
 
 ;;;;;;;;;;;; render a tiling map of a chart ;;;;;;;;;;;;;;;;;;;;;;
 (defn- render-grid [len x y zoom]
@@ -544,17 +543,13 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                                                                 :bins (s2i bins 500)
                                                                 :min-hist (s2d min-hist 0.05) 
                                                                 :max-hist (s2d max-hist 0.2)) 
-        entropy-slopes (map #(- (second %) (first %)) (partition 2 1 entropies)) 
-        pe (doto (ch/time-series-plot x entropies) (cjf/add-value-marker 1.3 "Threshold"))
-        charts [pe (doto (ch/time-series-plot (rest x) entropy-slopes) (cjf/add-value-marker 0 ""))]]
-    (return-image (doto (->> charts
-                          (map (memfn getPlot))
-                          (apply cjf/combined-domain-plot)
-                          (org.jfree.chart.JFreeChart.))
+        pe (doto (ch/time-series-plot x entropies) (cjf/add-value-marker 1.3 "Threshold"))]
+    (return-image (doto pe
                     (ch/set-title (format "Signifikante Veränderungen im Verlauf von %s\n(%s)" (get-in (db/all-series-names-of-plant id) [name :name]) name))
                     (ch/add-subtitle (str (.format (dateformat) s) " - " (.format (dateformat) e)))
                     (ch/set-x-label "Datum") 
-                    (.removeLegend))
+                    (.removeLegend)
+                    (cjf/set-discontinuous))
                   :height height 
                   :width width)))
 
