@@ -12,7 +12,7 @@
      [correlations :as tc]
      [changepoints :as cp]
      [functions :as f]]
-    [stats.kolmogorov-smirnoff :as ks]
+    [stats.entropy :as e]
     [bigml.histogram.core :as h]
     [chart-utils.jfreechart :as cjf]
     [sun :as sun])
@@ -531,42 +531,22 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 (defn- day-of-year [{t :timestamp}]
     (.get (as-calendar t) java.util.Calendar/DAY_OF_YEAR))
 
-(defn- pdf-vals [hist & {:keys [n min max] :or {n 500}}]
-    (if (zero? (h/total-count hist))
-      [[] []]
-      (let [bounds (h/bounds hist)
-            min (or min (:min bounds))
-            max (or max (:max bounds))
-            stepsize (/ (- max min) n)
-            x (range min max stepsize)
-            y (map (h/cdf hist) x)]
-        [(butlast x) (map #(- (second %) (first %)) (partition 2 1 y))])))
-
 (def-chart-page "entropy.png" [days bins min-hist max-hist denominator]
   (let [name (first names) 
         e (if (= s e) (+ e ONE-DAY) e)
-        n (s2i days 30) 
-        bins (s2i bins 500)
-        min-hist (s2d min-hist 0.05) 
-        max-hist (s2d max-hist 0.2)
         data (get-series-values id name s e)
         insol-name (or denominator (if (re-matches #"INVU1.*" name) "INVU1/MMET1.HorInsol.mag.f" "INVU2/MMET1.HorInsol.mag.f"))
         insol-data (get-series-values id insol-name s e) 
         vs (map (fn [{tdc :value :as a} {ti :value}] (if (zero? ti) (assoc a :value 0) (assoc a :value (/ tdc ti)))) data insol-data)
         vs (partition-by day-of-year vs)
-        daily-hists (map (partial reduce h/insert!) 
-                          (repeatedly h/create) 
-                          (map (comp (partial remove zero?) (partial map :value)) vs))
-        x (drop n (map (comp :timestamp first) vs))
-        hs2-ps (partition n 1 daily-hists) 
-        merged (pmap #(reduce h/merge! (h/create :bins bins) %) hs2-ps)
-        pdf-merged (pmap #(second (pdf-vals % :n bins :min min-hist :max max-hist)) merged)
-        pdf-hs2s (drop n (pmap #(second (pdf-vals % :n bins :min min-hist :max max-hist)) daily-hists))
-        entropies (map ks/relative-entropy pdf-hs2s pdf-merged)
+        [x entropies] (e/calculate-segmented-relative-entropies vs 
+                                                                :n (s2i days 30)
+                                                                :bins (s2i bins 500)
+                                                                :min-hist (s2d min-hist 0.05) 
+                                                                :max-hist (s2d max-hist 0.2)) 
         entropy-slopes (map #(- (second %) (first %)) (partition 2 1 entropies)) 
         pe (doto (ch/time-series-plot x entropies) (cjf/add-value-marker 1.3 "Threshold"))
-        charts [pe (doto (ch/time-series-plot (rest x) entropy-slopes) (cjf/add-value-marker 0 ""))]
-        ]
+        charts [pe (doto (ch/time-series-plot (rest x) entropy-slopes) (cjf/add-value-marker 0 ""))]]
     (return-image (doto (->> charts
                           (map (memfn getPlot))
                           (apply cjf/combined-domain-plot)
