@@ -49,6 +49,18 @@ $('%s').click(
 						js : [ baseUrl+"/js/chart/dygraph-combined.js", baseUrl+"/js/chart/dygraph-functions.js"],
 						css : []
 					}, function() {
+						Date.ext.locales.de = {
+								a: ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'],
+								A: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'],
+								b: ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'],
+								B: ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
+								c: '%%a %%d %%b %%Y %%T %%Z',
+								p: ['AM', 'PM'],
+								P: ['am', 'pm'],
+								x: '%%d.%%m.%%y',
+								X: '%%T'
+							};
+						Date.prototype.locale = 'de';
 						chartDiv.append($("<div id='dygraph-chart'/>"));
 						var jsonURL = baseUrl + '/series-of/' + id + '/' + selectedSeries.join('-') + '/' + interval + '/data-dyson.json?width=' + width;
 						// load chart data as json
