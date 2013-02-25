@@ -250,7 +250,10 @@
           (text-field {:class "input-small"} "bins" 500)]
          [:div.input-prepend
           [:span.add-on "Tage: "]
-          (text-field {:class "input-small"} "days" 30)]] 
+          (text-field {:class "input-small"} "days" 30)]
+         [:div.input-prepend
+          [:span.add-on "Grenzwert: "]
+          (text-field {:class "input-small"} "threshold" 1.3)]] 
         [:div
          [:h4 "Größe:"]
          [:input#chart-width.input-mini {:value "950" :type "number"}] 

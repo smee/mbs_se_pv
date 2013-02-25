@@ -13,7 +13,6 @@
      [changepoints :as cp]
      [functions :as f]]
     [stats.entropy :as e]
-    [bigml.histogram.core :as h]
     [chart-utils.jfreechart :as cjf]
     [sun :as sun])
   (:use  
@@ -527,29 +526,72 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                   :height height 
                   :width width)))
 
+;;;;;;;;;;;;;;;;;; relative entropy comparison between daily ratios of time series
+
 (defn- day-of-year [{t :timestamp}]
     (.get (as-calendar t) java.util.Calendar/DAY_OF_YEAR))
 
-(def-chart-page "entropy.png" [days bins min-hist max-hist denominator]
-  (let [name (first names) 
-        e (if (= s e) (+ e ONE-DAY) e)
+(defn- calculate-entropies [name id s e days bins min-hist max-hist denominator]
+  (let [e (if (= s e) (+ e ONE-DAY) e)
         data (get-series-values id name s e)
         insol-name (or denominator (if (re-matches #"INVU1.*" name) "INVU1/MMET1.HorInsol.mag.f" "INVU2/MMET1.HorInsol.mag.f"))
         insol-data (get-series-values id insol-name s e) 
         vs (map (fn [{tdc :value :as a} {ti :value}] (if (zero? ti) (assoc a :value 0) (assoc a :value (/ tdc ti)))) data insol-data)
         vs (partition-by day-of-year vs)
+        n (s2i days 30)
+        bins (s2i bins 500)
+        min-hist (s2d min-hist 0.05) 
+        max-hist (s2d max-hist 0.2)
         [x entropies] (e/calculate-segmented-relative-entropies vs 
-                                                                :n (s2i days 30)
-                                                                :bins (s2i bins 500)
-                                                                :min-hist (s2d min-hist 0.05) 
-                                                                :max-hist (s2d max-hist 0.2)) 
-        pe (doto (ch/time-series-plot x entropies) (cjf/add-value-marker 1.3 "Threshold"))]
-    (return-image (doto pe
-                    (ch/set-title (format "Signifikante Veränderungen im Verlauf von %s\n(%s)" (get-in (db/all-series-names-of-plant id) [name :name]) name))
+                                              :n n
+                                              :bins bins
+                                              :min-hist min-hist 
+                                              :max-hist max-hist)]
+    {:x x 
+     :entropies entropies 
+     :days vs 
+     :name name 
+     :denominator insol-name
+     :n n
+     :bins bins
+     :min-hist min-hist 
+     :max-hist max-hist}))
+
+(def-chart-page "entropy.json" [days bins min-hist max-hist denominator]
+  (let [name (first names)
+        {:keys [x entropies]} (calculate-entropies name id s e days bins min-hist max-hist denominator)]
+    (json {:x x :entropies entropies})))
+
+(defn- find-indices-over-threshold [threshold vs]
+  (keep-indexed #(when (<= threshold %2) %) vs))
+
+(def-chart-page "entropy.png" [days bins min-hist max-hist denominator threshold]
+  (let [name (first names)
+        {:keys [x entropies days denominator n]} (calculate-entropies name id s e days bins min-hist max-hist denominator)
+        threshold (s2d threshold 1.3)
+        entropy-chart (doto (ch/time-series-plot x entropies) (cjf/add-value-marker 1.3 "Threshold"))
+        times (mapcat (mapp :timestamp) days)
+        values (mapcat (mapp :value) days)
+        all-names (db/all-series-names-of-plant id)
+        min (s2d min-hist (apply min times)) 
+        max (s2d max-hist (apply max times))
+        ratio-chart (doto (ch/time-series-plot times values) (ch/set-y-range min max))
+        highlight-indices (set (map #(+ n %) (find-indices-over-threshold threshold entropies)))
+        days-to-highlight (keep-indexed #(when (highlight-indices %) %2) days)
+        highlight-ranges (map (juxt (comp :timestamp first) (comp :timestamp last)) days-to-highlight)
+        chart (->> [entropy-chart ratio-chart] 
+                          (map (memfn getPlot))
+                          (apply cjf/combined-domain-plot)
+                          (org.jfree.chart.JFreeChart.))]
+    (doseq [[from to] highlight-ranges]
+      (cjf/add-domain-interval-marker chart from to ""))
+    (return-image (doto chart                     
+                    (ch/set-title (format "Signifikante Veränderungen im Verlauf von \"%s\"\nim Vergleich mit \"%s\"\n(%s vs. %s)" (get-in all-names [name :name]) (get-in all-names [denominator :name]) name denominator))
                     (ch/add-subtitle (str (.format (dateformat) s) " - " (.format (dateformat) e)))
                     (ch/set-x-label "Datum") 
                     (.removeLegend)
-                    (cjf/set-discontinuous))
+                    ;(cjf/set-discontinuous)
+                    )
                   :height height 
                   :width width)))
 

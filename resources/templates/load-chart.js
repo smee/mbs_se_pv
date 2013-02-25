@@ -115,7 +115,8 @@ $('%s').click(
 						link += '&bins=' + $('input#bins').val()
 						     +  '&min-hist=' + $('input#min-hist').val()
 						     +  '&max-hist=' + $('input#max-hist').val()
-						     +  '&days=' + $('input#days').val();
+						     +  '&days=' + $('input#days').val()
+						     +  '&threshold=' + $('input#threshold').val();
 					}
 					// show chart
 					$('#chart-image').attr('src', link).load(function() {
