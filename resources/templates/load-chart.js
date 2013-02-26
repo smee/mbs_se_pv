@@ -1,4 +1,4 @@
-(function (Charting, $, undefined){
+(function (Charting, $, baseUrl, id, undefined){
 
 	// hide loading indicator if loading an image does not work
 	$('#chart-image').error(function(){ 
@@ -69,7 +69,6 @@
 	// handler for the main button
 	$('%s').click(
 			function(event) {
-				(function(baseUrl, id) {
 					event.preventDefault();
 					var params = readParameters();
 					var visType=params.visType;
@@ -152,12 +151,11 @@
 							$('#current-chart').hideLoading();
 						});
 					}
-					return false;
-				})("%s", "%s");
+					return false;				
 
 			});
 	
-}( window.Charting = window.Charting || {}, jQuery ));
+}( window.Charting = window.Charting || {}, jQuery, "%s", "%s"));
 
 
 
