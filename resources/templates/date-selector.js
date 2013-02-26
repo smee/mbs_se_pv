@@ -1,4 +1,4 @@
-(function(dateField, formattedDate, minDate, maxDate) {
+(function(DateSelector, $, dateField, formattedDate, minDate, maxDate, undefined) {
 	var df = $(dateField);
 	df.DatePicker({
 		format : 'd.m.Y',
@@ -20,8 +20,8 @@
 	});
 	// set calendar value from string after manual change.
 	$(dateField).change(function(){df.val($(this).val())});
-	// FIXME no namespace!
-	shiftTime = function(days, months, years){
+
+	DateSelector.shiftTime = function(days, months, years){
 		// FIXME hard coded selectors
 		var sf = $('#start-date');
 		var ef = $('#end-date');
@@ -48,4 +48,4 @@
 		return false;
 	}
 	
-})("%s","%s",%s, %s);
+})(window.DateSelector = window.DateSelector || {}, jQuery, "%s","%s",%s, %s);

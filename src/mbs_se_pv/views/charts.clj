@@ -55,7 +55,7 @@
   "Parse strings of shape 'yyyyMMdd-yyyyMMdd'."
   [times]
   (when-let [[_ start-time end-time] (re-find #"(\d{8,12})-(\d{8,12})" times)]
-    (let [format (if (= 8 (count start-time)) (dateformatrev) (dateformatrev-detailed))
+    (let [^SimpleDateFormat format (if (= 8 (count start-time)) (dateformatrev) (dateformatrev-detailed))
           s (as-unix-timestamp (.parse format start-time))
           e (as-unix-timestamp (.parse format end-time))]
       [(min s e) (max s e)])))
@@ -558,9 +558,13 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
      :max-hist max-hist}))
 
 (def-chart-page "entropy.json" [days bins min-hist max-hist denominator]
-  (let [name (first names)
-        {:keys [x entropies]} (calculate-entropies name id s e days bins min-hist max-hist denominator)]
-    (json {:x x :entropies entropies})))
+  (let [{:keys [x entropies name denominator min-hist max-hist]} (calculate-entropies (first names) id s e days bins min-hist max-hist denominator)] 
+    (json {:entropies (map vector x entropies)
+           :min min-hist
+           :max max-hist
+           :numerator name
+           :denominator denominator
+           })))
 
 (defn- find-indices-over-threshold [threshold vs]
   (keep-indexed #(when (<= threshold %2) %) vs))
@@ -580,9 +584,9 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
         days-to-highlight (keep-indexed #(when (highlight-indices %) %2) days)
         highlight-ranges (map (juxt (comp :timestamp first) (comp :timestamp last)) days-to-highlight)
         chart (->> [entropy-chart ratio-chart] 
-                          (map (memfn getPlot))
-                          (apply cjf/combined-domain-plot)
-                          (org.jfree.chart.JFreeChart.))]
+                (map (memfn getPlot))
+                (apply cjf/combined-domain-plot)
+                (org.jfree.chart.JFreeChart.))]
     (doseq [[from to] highlight-ranges]
       (cjf/add-domain-interval-marker chart from to ""))
     (return-image (doto chart                     
