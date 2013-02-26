@@ -174,18 +174,89 @@
 			  }
             }
 	}
+
+	  function initI18n(){
+			// define and use german locale for all charts
+			Date.ext.locales.de = {
+					a: ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'],
+					A: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'],
+					b: ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'],
+					B: ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
+					c: '%%a %%d %%b %%Y %%T %%Z',
+					p: ['AM', 'PM'],
+					P: ['am', 'pm'],
+					x: '%%d.%%m.%%y',
+					X: '%%T'
+				};
+			Date.prototype.locale = 'de';
+	  };
 	
 	// public
 	
-	  dygraphFunctions.interactionModel = {
-			  'mousedown' : downV3,
-		      'mousemove' : moveV3,
-		      'mouseup' : upV3,
-		      'click' : clickV3,
-		      'dblclick' : dblClickV3,
-		      'mousewheel' : scrollV3
-		  };
+	  dygraphFunctions.createSettings = function(response){
+		  // create settings map for a new Dygraph instance
+		  var d = response.data;
+		  return { 
+			  labels: response.labels,
+			  title: response.title,
+			  customBars: d.length > 0 && $.isArray(d[0][1]) && d[0][1].length == 3, // customBars if there are three values per series (min, mean, max),
+			  avoidMinZero: true,
+			  showRoller: true,
+			  stepPlot: response.stepPlot || false,
+			  labelsKMB :true,
+			  animatedZooms: true,
+			  labelsSeparateLines: true,
+			  highlightSeriesOpts: {
+				  strokeWidth: 2,
+				  strokeBorderWidth: 1,
+				  highlightCircleSize: 5,
+			  },
+			  interactionModel : {
+				  'mousedown' : downV3,
+			      'mousemove' : moveV3,
+			      'mouseup' : upV3,
+			      'click' : clickV3,
+			      'dblclick' : dblClickV3,
+			      'mousewheel' : scrollV3
+			  },
+			  underlayCallback: renderHighlights(response.highlights, response.threshold),
+			  clickCallback : function(e, x, points){
+				  console.log(e,x,points);
+			  }
+			}
+	  }
 	  dygraphFunctions.restorePositioning = restorePositioning;
-	  dygraphFunctions.renderHighlights = renderHighlights;
+	  
+	  dygraphFunctions.createChart=function(id, link, params, settingsCallback){
+		  var dygraphChart = dygraphFunctions[id];
+		  initI18n();
+		  // load chart data as json
+			$.getJSON(link, function(response){
+				// create date instances from unix timestamps
+				var data = response.data;
+				if(data.length==0){
+					$('#dygraph-chart').append("<div class='alert'><strong>Sorry!</strong> Für diesen Zeitraum liegen keine Daten vor.</div>");
+					return;
+				}
+				for(var i=0;i<data.length;i++) { 
+					data[i][0] = new Date(data[i][0]); 
+				}; 
+				
+				if(typeof dygraphChart != "undefined" && dygraphChart != null) {
+					dygraphChart.destroy(); //remove all old data if there is any
+					dygraphFunctions[id] = null;
+				}
+				var chartSettings = dygraphFunctions.createSettings(response);
+				chartSettings.width=params.width;
+				chartSettings.height=params.height;
+				
+				if(typeof settingsCallback != "undefined" && settingsCallback != null){ settingsCallback(chartSettings,response);};
+				
+				var chartDiv = $('#'+id);
+				dygraphChart = new Dygraph( chartDiv[0], data, chartSettings);
+				dygraphFunctions[id] = dygraphChart;//store reference to this chart
+				chartDiv.append($("<input type='button' class='btn btn-info' value='Position wiederherstellen' onclick='dygraphFunctions.restorePositioning(dygraphFunctions[\""+id+"\"])'>"));
+			});
+	  }
 	  
 }(window.dygraphFunctions = window.dygraphFunctions || {}, jQuery));

@@ -76,7 +76,7 @@
 					var chartDiv = $('#current-chart');
 					chartDiv.empty();
 					
-					$('#current-chart').showLoading();
+					chartDiv.showLoading();
 
 					if (visType == 'interactive-map') {
 						ensure({
@@ -90,78 +90,32 @@
 								noWrap : true,
 								maxZoom : 10
 							}).addTo(map);
-							$('#current-chart').hideLoading();
+							chartDiv.hideLoading();
 						});
 
-					} else if (visType == 'dygraph.json' || visType == 'entropy.json'){
+					} else if (visType == 'dygraph.json'){
 						ensure({
 							js : [ baseUrl+"/js/chart/dygraph-combined.js", baseUrl+"/js/chart/dygraph-functions.js"],
 							css : []
-						}, function() {	
-							// define and use german locale for all charts
-							Date.ext.locales.de = {
-									a: ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'],
-									A: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'],
-									b: ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'],
-									B: ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
-									c: '%%a %%d %%b %%Y %%T %%Z',
-									p: ['AM', 'PM'],
-									P: ['am', 'pm'],
-									x: '%%d.%%m.%%y',
-									X: '%%T'
-								};
-							Date.prototype.locale = 'de';
-							
-							chartDiv.append($("<div id='dygraph-chart'/>"));
-							// load chart data as json
-							$.getJSON(link, function(response){
-								$('#current-chart').hideLoading();
-								// create date instances from unix timestamps
-								var data = response.data;
-								if(data.length==0){
-									$('#dygraph-chart').append("<div class='alert'><strong>Sorry!</strong> Für diesen Zeitraum liegen keine Daten vor.</div>");
-									return;
-								}
-								for(var i=0;i<data.length;i++) { 
-									data[i][0] = new Date(data[i][0]); 
-								}; 
-								var withErrorBars = data.length > 0 && $.isArray(data[0][1]) && data[0][1].length == 3; // customBars if there are three values per series (min, mean, max)
-								if(typeof dygraphChart != "undefined" && dygraphChart != null) {
-									dygraphChart.destroy(); //remove all old data if there is any
-									dygraphChart = null;
-								}
-
-								dygraphChart = new Dygraph(
-										// containing div
-										$('#dygraph-chart')[0],
-										data,
-										{ width: params.width,
-										  height: params.height,
-										  labels: response.labels,
-										  title: response.title,
-										  customBars: withErrorBars,
-										  avoidMinZero: true,
-										  showRoller: true,
-										  stepPlot: response.stepPlot || false,
-										  labelsKMB :true,
-										  animatedZooms: true,
-										  labelsSeparateLines: true,
-										  highlightSeriesOpts: {
-											  strokeWidth: 2,
-											  strokeBorderWidth: 1,
-											  highlightCircleSize: 5,
-										  },
-										  interactionModel : dygraphFunctions.interactionModel,
-										  underlayCallback: dygraphFunctions.renderHighlights(response.highlights, response.threshold)
-										});
-								chartDiv.append($("<input type='button' class='btn btn-info' value='Position wiederherstellen' onclick='dygraphFunctions.restorePositioning(dygraphChart)'>"));
-							});
+						}, function() {							
+							var chartId = 'dygraph-chart';
+							chartDiv.append($("<div id='"+chartId+"'/>"));
+							dygraphFunctions.createChart(chartId, link, params, function(settings, response){ chartDiv.hideLoading(); });							
 						});
-					} else { //static image
+					} else if (visType == 'entropy.json'){
+						ensure({
+							js : [ baseUrl+"/js/chart/dygraph-combined.js", baseUrl+"/js/chart/dygraph-functions.js"],
+							css : []
+						}, function() {							
+							var chartId = 'dygraph-chart-entropy';
+							chartDiv.append($("<div id='"+chartId+"'/>"));
+							dygraphFunctions.createChart(chartId, link, params, function(settings, response){ chartDiv.hideLoading(); });							
+						});
+					}else { //static image
 						chartDiv.append($("<img id='chart-image' src=''/>"));
 						// show chart
 						$('#chart-image').attr('src', link).load(function() {
-							$('#current-chart').hideLoading();
+							chartDiv.hideLoading();
 						});
 					}
 					return false;				
