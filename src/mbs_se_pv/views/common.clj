@@ -22,7 +22,7 @@ If not, it loads a copy of the js file from a local uri."
    (include-js-with-fallback "http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js" "window.jQuery" "/js/jquery.min.js")
    (include-js "/js/ensure.js" 
                "/js/jquery.cookie.js"
-               "/js/jquery.showLoading.min.js")
+               "/js/jquery.blockUI.js")
    
    [:link {:rel "shortcut icon" :href "img/favicon.ico"}]])
 

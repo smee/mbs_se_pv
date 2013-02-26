@@ -1,8 +1,12 @@
 (function (Charting, $, baseUrl, id, undefined){
-
+	// hide loading indicator faster
+	$.blockUI.defaults.fadeOut = 0;
+	$.blockUI.defaults.fadeIn = 0;
+	$.blockUI.defaults.message = "<h1>Bitte warten, Daten werden geladen...</h1>"
+		
 	// hide loading indicator if loading an image does not work
 	$('#chart-image').error(function(){ 
-		$('#chart-image').hideLoading();
+		this.unblock();
 	});
 	
 	function readParameters(){
@@ -76,7 +80,7 @@
 					var chartDiv = $('#current-chart');
 					chartDiv.empty();
 					
-					chartDiv.showLoading();
+					chartDiv.block();
 
 					if (visType == 'interactive-map') {
 						ensure({
@@ -90,7 +94,7 @@
 								noWrap : true,
 								maxZoom : 10
 							}).addTo(map);
-							chartDiv.hideLoading();
+							chartDiv.unblock();
 						});
 
 					} else if (visType == 'dygraph.json'){
@@ -100,7 +104,11 @@
 						}, function() {							
 							var chartId = 'dygraph-chart';
 							chartDiv.append($("<div id='"+chartId+"'/>"));
-							dygraphFunctions.createChart(chartId, link, params, function(settings, response){ chartDiv.hideLoading(); });							
+							dygraphFunctions.createChart({id: chartId, 
+								  link: link, 
+								  params: params, 
+								  onLoad: function(settings, response){ chartDiv.unblock(); },
+								  onError: function(){ chartDiv.unblock(); }});							
 						});
 					} else if (visType == 'entropy.json'){
 						ensure({
@@ -109,13 +117,17 @@
 						}, function() {							
 							var chartId = 'dygraph-chart-entropy';
 							chartDiv.append($("<div id='"+chartId+"'/>"));
-							dygraphFunctions.createChart(chartId, link, params, function(settings, response){ chartDiv.hideLoading(); });							
-						});
+							dygraphFunctions.createChart({id: chartId, 
+														  link: link, 
+														  params: params, 
+														  onLoad: function(settings, response){ chartDiv.unblock(); },
+														  onError: function(){ chartDiv.unblock(); }});							
+							});
 					}else { //static image
 						chartDiv.append($("<img id='chart-image' src=''/>"));
 						// show chart
 						$('#chart-image').attr('src', link).load(function() {
-							chartDiv.hideLoading();
+							chartDiv.unblock();
 						});
 					}
 					return false;				
