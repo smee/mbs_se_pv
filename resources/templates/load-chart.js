@@ -16,13 +16,11 @@
 		var endDate = '' + end.getFullYear() + (m2 < 10 ? '0' + m2 : m2) + (d2 < 10 ? '0' + d2 : d2);
 		
 		return{ 
-			// create selected date interval: yyyyMMdd-yyyyMMdd
+			// selected date interval: yyyyMMdd-yyyyMMdd
 			interval : startDate + '-' + endDate,
-		// 	create list of selected time series
+			// list of selected time series
 			selectedSeries : $.map($('#series-tree').dynatree('getSelectedNodes'), function(node) { return node.data.series; }),
-		// 	find selected chart type
 			visType : $("#chart-type").val(),
-		// 	remove old contents
 			width : $('#chart-width').val(),
 			height : $('#chart-height').val(),
 			rank : $('input#rank').is(':checked'),
@@ -45,23 +43,21 @@
 		var v = params.visType;
 		if(v == 'interactive-map')
 			return baseUrl + '/tiles/' + id + '/' + series + '/' + dates + '/{x}/{y}/{z}';
-		else if(v == 'dygraph')
-			return baseUrl + '/series-of/' + id + '/' + series + '/' + dates + '/data-dyson.json?width=' + params.width;
 		else {
-			var link = baseUrl + '/series-of/' + id + '/' + series + '/' + dates + '/' + v + '.png?width=' + params.width + '&height=' + params.height;
-			if(v == 'changepoints'){
+			var link = baseUrl + '/series-of/' + id + '/' + series + '/' + dates + '/' + v + '?width=' + params.width + '&height=' + params.height;
+			if(v == 'changepoints.png'){
 				link += '&rank='+params.rank
 				       +'&zero='+params.zero
 				       +'&negative='+params.negative
 				       +'&confidence='+params.confidence
 				       +'&max-level='+params.maxLevel
 				       +'&maintainance='+maintainance;
-			}else if (v == 'entropy'){
+			}else if (v == 'entropy.json'){
 				link += '&bins=' + params.bins
-				     +  '&min-hist=' + params.minHist
-				     +  '&max-hist=' + params.maxHist
-				     +  '&days=' + params.days
-				     +  '&threshold=' + params.threshold;
+				     + '&min-hist=' + params.minHist
+				     + '&max-hist=' + params.maxHist
+				     + '&days=' + params.days
+				     + '&threshold=' + params.threshold;
 			}
 			return link;
 		}
@@ -71,8 +67,11 @@
 			function(event) {
 					event.preventDefault();
 					var params = readParameters();
-					var visType=params.visType;
+					// no series selected?
+					if (params.selectedSeries.length == 0)
+						return false;
 					
+					var visType=params.visType;					
 					var link = createLink(baseUrl, id, params);
 					var chartDiv = $('#current-chart');
 					chartDiv.empty();
@@ -94,7 +93,7 @@
 							$('#current-chart').hideLoading();
 						});
 
-					} else if (visType == 'dygraph'){
+					} else if (visType == 'dygraph.json' || visType == 'entropy.json'){
 						ensure({
 							js : [ baseUrl+"/js/chart/dygraph-combined.js", baseUrl+"/js/chart/dygraph-functions.js"],
 							css : []
@@ -122,15 +121,20 @@
 								for(var i=0;i<data.length;i++) { 
 									data[i][0] = new Date(data[i][0]); 
 								}; 
+								var withErrorBars = data.length > 0 && data[0].length == response.labels.length*3+1; // customBars if there are three values per series (min, mean, max)
+
 								dygraphChart = new Dygraph(
 										// containing div
 										$('#dygraph-chart')[0],
-										response.data,
+										data,
 										{ width: params.width,
 										  height: params.height,
 										  labels: response.labels,
-										  customBars: true,
+										  title: response.title,
+										  customBars: withErrorBars,
+										  avoidMinZero: true,
 										  showRoller: true,
+										  stepPlot: response.stepPlot || false,
 										  labelsKMB :true,
 										  animatedZooms: true,
 										  labelsSeparateLines: true,
@@ -139,7 +143,8 @@
 											  strokeBorderWidth: 1,
 											  highlightCircleSize: 5,
 										  },
-										  interactionModel : dygraphFunctions.interactionModel
+										  interactionModel : dygraphFunctions.interactionModel,
+										  underlayCallback: dygraphFunctions.renderHighlights(response.highlights, response.threshold)
 										});
 								chartDiv.append($("<input type='button' class='btn btn-info' value='Position wiederherstellen' onclick='dygraphFunctions.restorePositioning(dygraphChart)'>"));
 							});

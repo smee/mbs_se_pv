@@ -215,14 +215,14 @@
         [:div
          [:h4 "Art der Anzeige:"]
          [:div.controls
-          (drop-down "chart-type" [["Interaktive Ansicht", "dygraph"] 
-                                   ["Statische Ansicht" "chart"]
-                                   ["Heatmap" "heat-map"]
-                                   ["Ungewöhnlicher Tag" "discord"]
-                                   ["Verhaltensänderung" "changepoints"]
-                                   ["Entropieänderung" "entropy"]
+          (drop-down "chart-type" [["Interaktive Ansicht", "dygraph.json"] 
+                                   ["Statische Ansicht" "chart.png"]
+                                   ["Heatmap" "heat-map.png"]
+                                   ["Ungewöhnlicher Tag" "discord.png"]
+                                   ["Verhaltensänderung" "changepoints.png"]
+                                   ["Entropieänderung" "entropy.json"]
                                    ["Interaktiver Zoom" "interactive-map"]
-                                   ["Korrelationen" "correlation"]]
+                                   ["Korrelationen" "correlation.png"]]
                      "dygraph")]]
         [:div#changepoint-parameter
          [:h4 "Weitere Parameter"]
@@ -278,10 +278,10 @@
       (javascript-tag (util/render-javascript-template "templates/load-chart.js" "#render-chart" base-url id))
       (javascript-tag "$('#chart-type').change(function(){
                             var params=$('#changepoint-parameter'); 
-                            if('changepoints'==$(this).val()){ params.slideDown();} else{ params.slideUp();}})")
+                            if('changepoints.png'==$(this).val()){ params.slideDown();} else{ params.slideUp();}})")
       (javascript-tag "$('#chart-type').change(function(){
                             var params=$('#entropy-parameter'); 
-                            if('entropy'==$(this).val()){ params.slideDown();} else{ params.slideUp();}})"))))
+                            if('entropy.json'==$(this).val()){ params.slideDown();} else{ params.slideUp();}})"))))
 
 ;;;;;;;;;;;;;;;;;; components of a plant ;;;;;;;;;;;;;;;;;;;;;;
 (defn- convert-node [node]

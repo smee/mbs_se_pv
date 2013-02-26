@@ -375,7 +375,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                           :key %1 
                           :data %2) names values))))
 
-(def-chart-page "data-dyson.json" []
+(def-chart-page "dygraph.json" []
   (let [values (->> names
                  (pmap #(get-series-values id % s e width))
                  (map (mapp (juxt :timestamp :min :value :max)))
@@ -385,7 +385,8 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
         all-names (db/all-series-names-of-plant id) 
         all-names (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) names)]
     (json {:labels (cons "Datum" all-names) 
-           :data by-time}))) ;values
+           :data by-time
+           :title (str "Chart für den Zeitraum " (.format (dateformat) s) " bis " (.format (dateformat) e))}))) ;values
 
 ;;;;;;;;;;;; render a tiling map of a chart ;;;;;;;;;;;;;;;;;;;;;;
 (defn- render-grid [len x y zoom]
@@ -557,17 +558,34 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
      :min-hist min-hist 
      :max-hist max-hist}))
 
-(def-chart-page "entropy.json" [days bins min-hist max-hist denominator]
-  (let [{:keys [x entropies name denominator min-hist max-hist]} (calculate-entropies (first names) id s e days bins min-hist max-hist denominator)] 
-    (json {:entropies (map vector x entropies)
+
+(defn- find-indices-over-threshold [threshold vs]
+  (keep-indexed #(when (<= threshold %2) %) vs))
+
+(defn- highlight-ranges [threshold n days entropies]
+  (let [highlight-indices (set (map #(+ n %) (find-indices-over-threshold threshold entropies)))
+        days-to-highlight (keep-indexed #(when (highlight-indices %) %2) days)]
+    (map (juxt (comp :timestamp first) (comp :timestamp last)) days-to-highlight)))
+
+(def-chart-page "entropy.json" [days bins min-hist max-hist denominator threshold]
+  (let [name (first names)
+        {:keys [x entropies name denominator min-hist max-hist days n]} (calculate-entropies name id s e days bins min-hist max-hist denominator)
+        threshold (s2d threshold 1.3)
+        highlights (highlight-ranges threshold n days entropies)
+        all-names (db/all-series-names-of-plant id)
+        title (format "Signifikante Veränderungen im Verlauf von \"%s\"\nim Vergleich mit \"%s\"\n(%s vs. %s)" (get-in all-names [name :name]) (get-in all-names [denominator :name]) name denominator)] 
+    (json {:data (map vector x entropies)
+           :labels ["Datum", "Relative Entropie"]
+           :highlights highlights
+           :title title
            :min min-hist
            :max max-hist
            :numerator name
            :denominator denominator
+           :threshold threshold
+           :stepPlot true
+           ;:ratios (map vector (mapcat (mapp :timestamp) days) (mapcat (mapp :value) days))
            })))
-
-(defn- find-indices-over-threshold [threshold vs]
-  (keep-indexed #(when (<= threshold %2) %) vs))
 
 (def-chart-page "entropy.png" [days bins min-hist max-hist denominator threshold]
   (let [name (first names)
@@ -580,14 +598,11 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
         min (s2d min-hist (apply min times)) 
         max (s2d max-hist (apply max times))
         ratio-chart (doto (ch/time-series-plot times values) (ch/set-y-range min max))
-        highlight-indices (set (map #(+ n %) (find-indices-over-threshold threshold entropies)))
-        days-to-highlight (keep-indexed #(when (highlight-indices %) %2) days)
-        highlight-ranges (map (juxt (comp :timestamp first) (comp :timestamp last)) days-to-highlight)
         chart (->> [entropy-chart ratio-chart] 
                 (map (memfn getPlot))
                 (apply cjf/combined-domain-plot)
                 (org.jfree.chart.JFreeChart.))]
-    (doseq [[from to] highlight-ranges]
+    (doseq [[from to] (highlight-ranges threshold n days entropies)]
       (cjf/add-domain-interval-marker chart from to ""))
     (return-image (doto chart                     
                     (ch/set-title (format "Signifikante Veränderungen im Verlauf von \"%s\"\nim Vergleich mit \"%s\"\n(%s vs. %s)" (get-in all-names [name :name]) (get-in all-names [denominator :name]) name denominator))

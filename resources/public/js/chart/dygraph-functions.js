@@ -1,5 +1,6 @@
 (function (dygraphFunctions, $, undefined){
-
+	//private
+	
 	// extracted from http://dygraphs.com/tests/interaction.js, see demo at http://dygraphs.com/tests/interaction.html
 	function downV3(event, g, context) {
 	  context.initializeMouseDown(event, g, context);
@@ -143,6 +144,39 @@
 	  });
 	}
 	
+	function renderHighlights(hl, threshold){
+		return function(canvas, area, g) {
+			  if(hl !== undefined){
+				  // render all highlights (ranges on the domain)
+				  for(var i=0;i<hl.length;i++){
+					  var from = hl[i][0];
+					  var to = hl[i][1];
+					  var bottom_left = g.toDomCoords(from, -20);
+					  var top_right = g.toDomCoords(to, +20);
+					  
+					  var left = bottom_left[0];
+					  var right = top_right[0];
+					  
+					  canvas.fillStyle = "rgba(255, 255, 102, 1.0)";
+					  canvas.fillRect(left, area.y, right - left, area.h);
+				  }
+			  }
+			  if(threshold !== undefined){
+				  // render horizontal threshold line
+				  var y = g.toDomYCoord(threshold);
+				  canvas.fillStyle = "black";
+				  canvas.beginPath();
+				  canvas.moveTo(area.x,y);
+				  canvas.lineTo(area.w+area.x,y);
+				  canvas.stroke();
+				  canvas.closePath();
+				  canvas.fillText("Grenzwert",area.x+5, y-10);
+			  }
+            }
+	}
+	
+	// public
+	
 	  dygraphFunctions.interactionModel = {
 			  'mousedown' : downV3,
 		      'mousemove' : moveV3,
@@ -152,5 +186,6 @@
 		      'mousewheel' : scrollV3
 		  };
 	  dygraphFunctions.restorePositioning = restorePositioning;
+	  dygraphFunctions.renderHighlights = renderHighlights;
 	  
 }(window.dygraphFunctions = window.dygraphFunctions || {}, jQuery));
