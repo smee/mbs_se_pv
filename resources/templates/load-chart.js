@@ -118,6 +118,10 @@
 								$('#current-chart').hideLoading();
 								// create date instances from unix timestamps
 								var data = response.data;
+								if(data.length==0){
+									$('#dygraph-chart').append("<div class='alert'><strong>Sorry!</strong> Für diesen Zeitraum liegen keine Daten vor.</div>");
+									return;
+								}
 								for(var i=0;i<data.length;i++) { 
 									data[i][0] = new Date(data[i][0]); 
 								}; 
