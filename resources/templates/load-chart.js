@@ -126,6 +126,10 @@
 									data[i][0] = new Date(data[i][0]); 
 								}; 
 								var withErrorBars = data.length > 0 && $.isArray(data[0][1]) && data[0][1].length == 3; // customBars if there are three values per series (min, mean, max)
+								if(typeof dygraphChart != "undefined" && dygraphChart != null) {
+									dygraphChart.destroy(); //remove all old data if there is any
+									dygraphChart = null;
+								}
 
 								dygraphChart = new Dygraph(
 										// containing div
