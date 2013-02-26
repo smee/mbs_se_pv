@@ -125,7 +125,7 @@
 								for(var i=0;i<data.length;i++) { 
 									data[i][0] = new Date(data[i][0]); 
 								}; 
-								var withErrorBars = data.length > 0 && data[0].length == response.labels.length*3+1; // customBars if there are three values per series (min, mean, max)
+								var withErrorBars = data.length > 0 && $.isArray(data[0][1]) && data[0][1].length == 3; // customBars if there are three values per series (min, mean, max)
 
 								dygraphChart = new Dygraph(
 										// containing div
