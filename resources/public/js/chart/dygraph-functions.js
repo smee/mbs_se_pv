@@ -190,10 +190,8 @@
 				};
 			Date.prototype.locale = 'de';
 	  };
-	
-	// public
-	
-	  dygraphFunctions.createSettings = function(response){
+	  
+	  function createSettings(response){
 		  // create settings map for a new Dygraph instance
 		  var d = response.data;
 		  return { 
@@ -219,51 +217,58 @@
 			      'dblclick' : dblClickV3,
 			      'mousewheel' : scrollV3
 			  },
-			  underlayCallback: renderHighlights(response.highlights, response.threshold),
-			  clickCallback : function(e, x, points){
-				  console.log(e,x,points);
-			  }
+			  underlayCallback: renderHighlights(response.highlights, response.threshold)			  
 			}
 	  }
+	  
+	  function renderChart(config, response){
+		  var id = config.id;
+		  var dygraphChart = dygraphFunctions.charts[id];
+		  
+		  // create date instances from unix timestamps
+		  var data = response.data;
+		  if(data.length==0){
+			  $('#dygraph-chart').append("<div class='alert'><strong>Sorry!</strong> Für diesen Zeitraum liegen keine Daten vor.</div>");
+			  if(typeof config.onError != "undefined" && config.onError != null) config.onError();
+			  return;
+		  }
+		  // convert unix timestamps into date instances
+		  for(var i=0;i<data.length;i++) { 
+			  data[i][0] = new Date(data[i][0]); 
+		  }; myd = data;
+		  // remove all old data if there is any
+		  if(typeof dygraphChart != "undefined" && dygraphChart != null) {
+			  dygraphChart.destroy(); 
+			  dygraphFunctions.charts[id] = null;
+			  $('#'+id+'-button').remove();
+		  }
+		  // create chart configuration
+		  var chartSettings = createSettings(response);
+		  chartSettings.width = config.params.width;
+		  chartSettings.height = config.params.height;
+		  // callback to modify settings
+		  if(typeof config.onLoad != "undefined" && config.onLoad != null){ config.onLoad(chartSettings,response);};
+			
+		  var chartDiv = $("#"+id);
+		  dygraphChart = new Dygraph(chartDiv[0], data, chartSettings);
+		  //store reference to this chart
+		  dygraphFunctions.charts[id] = dygraphChart;
+		  // button to reset zoom for this chart
+		  chartDiv.after($("<input type='button' id='"+id+"-button' class='btn btn-info' value='Position wiederherstellen' onclick='dygraphFunctions.restorePositioning(dygraphFunctions.charts[\""+id+"\"])'>"));
+		  return dygraphChart;
+	  }
+	
+	// public
+	
 	  dygraphFunctions.restorePositioning = restorePositioning;
 	  
 	  dygraphFunctions.createChart=function(config){
-		  var id = config.id;
-		  var dygraphChart = dygraphFunctions[id];
-		  
 		  initI18n();
 		  // load chart data as json
-			$.getJSON(config.link, function(response){
-				// create date instances from unix timestamps
-				var data = response.data;
-				if(data.length==0){
-					$('#dygraph-chart').append("<div class='alert'><strong>Sorry!</strong> Für diesen Zeitraum liegen keine Daten vor.</div>");
-					if(typeof config.onError != "undefined" && config.onError != null) config.onError();
-					return;
-				}
-				// convert unix timestamps into date instances
-				for(var i=0;i<data.length;i++) { 
-					data[i][0] = new Date(data[i][0]); 
-				}; 
-				// remove all old data if there is any
-				if(typeof dygraphChart != "undefined" && dygraphChart != null) {
-					dygraphChart.destroy(); 
-					dygraphFunctions[id] = null;
-				}
-				// create chart configuration
-				var chartSettings = dygraphFunctions.createSettings(response);
-				chartSettings.width = config.params.width;
-				chartSettings.height = config.params.height;
-				// callback to modify settings
-				if(typeof config.onLoad != "undefined" && config.onLoad != null){ config.onLoad(chartSettings,response);};
-				
-				var chartDiv = $('#'+id);
-				dygraphChart = new Dygraph( chartDiv[0], data, chartSettings);
-				//store reference to this chart
-				dygraphFunctions[id] = dygraphChart;
-				// button to reset zoom for this chart
-				chartDiv.append($("<input type='button' class='btn btn-info' value='Position wiederherstellen' onclick='dygraphFunctions.restorePositioning(dygraphFunctions[\""+id+"\"])'>"));
-			});
+		  $.getJSON(config.link, function(response){
+			renderChart(config, response);
+		  });			
 	  }
+	  dygraphFunctions.charts = {};
 	  
 }(window.dygraphFunctions = window.dygraphFunctions || {}, jQuery));

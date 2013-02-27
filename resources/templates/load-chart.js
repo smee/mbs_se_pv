@@ -8,20 +8,18 @@
 	$('#chart-image').error(function(){ 
 		this.unblock();
 	});
-	
+	function formatDate(date){
+		var m1 = date.getMonth() + 1;
+		var d1 = date.getDate();
+		return '' + date.getFullYear() + (m1 < 10 ? '0' + m1 : m1) + (d1 < 10 ? '0' + d1 : d1);		
+	}
 	function readParameters(){
-		var start = $('#start-date').DatePickerGetDate(false);
-		var end = $('#end-date').DatePickerGetDate(false);
-		var m1 = start.getMonth() + 1;
-		var m2 = end.getMonth() + 1;
-		var d1 = start.getDate();
-		var d2 = end.getDate();
-		var startDate = '' + start.getFullYear() + (m1 < 10 ? '0' + m1 : m1) + (d1 < 10 ? '0' + d1 : d1);
-		var endDate = '' + end.getFullYear() + (m2 < 10 ? '0' + m2 : m2) + (d2 < 10 ? '0' + d2 : d2);
+		var startDate = $('#start-date').DatePickerGetDate(false);
+		var endDate = $('#end-date').DatePickerGetDate(false);
 		
-		return{ 
+		return{
 			// selected date interval: yyyyMMdd-yyyyMMdd
-			interval : startDate + '-' + endDate,
+			interval : formatDate(startDate) + '-' + formatDate(endDate),
 			// list of selected time series
 			selectedSeries : $.map($('#series-tree').dynatree('getSelectedNodes'), function(node) { return node.data.series; }),
 			visType : $("#chart-type").val(),
@@ -96,7 +94,6 @@
 							}).addTo(map);
 							chartDiv.unblock();
 						});
-
 					} else if (visType == 'dygraph.json'){
 						ensure({
 							js : [ baseUrl+"/js/chart/dygraph-combined.js", baseUrl+"/js/chart/dygraph-functions.js"],
@@ -117,10 +114,31 @@
 						}, function() {							
 							var chartId = 'dygraph-chart-entropy';
 							chartDiv.append($("<div id='"+chartId+"'/>"));
+							var detailChartId = 'dygraph-chart-entropy-ratios';
+							chartDiv.append($("<div id='"+detailChartId+"'/>"));
+							
 							dygraphFunctions.createChart({id: chartId, 
 														  link: link, 
 														  params: params, 
-														  onLoad: function(settings, response){ chartDiv.unblock(); },
+														  onLoad: function(settings, response){ 
+															  chartDiv.unblock();
+															  var denominator = response.denominator;
+															  var numerator = response.numerator;
+															  
+															  settings.clickCallback = function(e, x, points){
+																  var params=readParameters();
+																  params.visType='dygraph.json';
+																  
+																  var startDate=new Date(x);
+																  var endDate=new Date(x);
+																  startDate.addDays(-7);
+																  endDate.addDays(2);																  
+																  params.interval=formatDate(startDate) + '-' + formatDate(endDate),
+																  params.selectedSeries=[numerator, denominator];
+																  
+																  dygraphFunctions.createChart({id: detailChartId, link: createLink(baseUrl, id, params), params: params})																  
+															  }
+														  },
 														  onError: function(){ chartDiv.unblock(); }});							
 							});
 					}else { //static image
