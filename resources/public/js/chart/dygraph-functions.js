@@ -220,6 +220,9 @@
 			  underlayCallback: renderHighlights(response.highlights, response.threshold)			  
 			}
 	  }
+	  function defined(x){
+		  return typeof x != "undefined" && x != null;
+	  }
 	  
 	  function renderChart(config, response){
 		  var id = config.id;
@@ -237,7 +240,7 @@
 			  data[i][0] = new Date(data[i][0]); 
 		  }; myd = data;
 		  // remove all old data if there is any
-		  if(typeof dygraphChart != "undefined" && dygraphChart != null) {
+		  if(defined(dygraphChart)) {
 			  dygraphChart.destroy(); 
 			  dygraphFunctions.charts[id] = null;
 			  $('#'+id+'-button').remove();
@@ -246,8 +249,9 @@
 		  var chartSettings = createSettings(response);
 		  chartSettings.width = config.params.width;
 		  chartSettings.height = config.params.height;
+		  if(defined(config.params.valueRange)) chartSettings.valueRange=config.params.valueRange;
 		  // callback to modify settings
-		  if(typeof config.onLoad != "undefined" && config.onLoad != null){ config.onLoad(chartSettings,response);};
+		  if(defined(config.onLoad)){ config.onLoad(chartSettings,response);};
 			
 		  var chartDiv = $("#"+id);
 		  dygraphChart = new Dygraph(chartDiv[0], data, chartSettings);

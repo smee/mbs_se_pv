@@ -33,7 +33,7 @@
 
 (def handler (server/gen-handler {:mode :prod
                   :ns 'mbs-se-pv
-                  :base-url "/eumonis-mbs-se-pv-psm"}))
+                  :base-url ""}))
 
 (comment
   (-main)

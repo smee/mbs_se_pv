@@ -94,20 +94,7 @@
 							}).addTo(map);
 							chartDiv.unblock();
 						});
-					} else if (visType == 'dygraph.json'){
-						ensure({
-							js : [ baseUrl+"/js/chart/dygraph-combined.js", baseUrl+"/js/chart/dygraph-functions.js"],
-							css : []
-						}, function() {							
-							var chartId = 'dygraph-chart';
-							chartDiv.append($("<div id='"+chartId+"'/>"));
-							dygraphFunctions.createChart({id: chartId, 
-								  link: link, 
-								  params: params, 
-								  onLoad: function(settings, response){ chartDiv.unblock(); },
-								  onError: function(){ chartDiv.unblock(); }});							
-						});
-					} else if (visType == 'entropy.json'){
+					}else if (visType == 'entropy.json'){
 						ensure({
 							js : [ baseUrl+"/js/chart/dygraph-combined.js", baseUrl+"/js/chart/dygraph-functions.js"],
 							css : []
@@ -127,20 +114,33 @@
 															  
 															  settings.clickCallback = function(e, x, points){
 																  var params=readParameters();
-																  params.visType='dygraph.json';
+																  params.visType='dygraph-ratios.json';
 																  
 																  var startDate=new Date(x);
 																  var endDate=new Date(x);
-																  startDate.addDays(-7);
-																  endDate.addDays(2);																  
+																  startDate.addDays(-10);
+																  endDate.addDays(3);																  
 																  params.interval=formatDate(startDate) + '-' + formatDate(endDate),
 																  params.selectedSeries=[numerator, denominator];
-																  
+																  params.valueRange=[params.minHist, params.maxHist];
 																  dygraphFunctions.createChart({id: detailChartId, link: createLink(baseUrl, id, params), params: params})																  
 															  }
 														  },
 														  onError: function(){ chartDiv.unblock(); }});							
 							});
+					} else if (visType.indexOf('.json')==visType.length-5){
+						ensure({
+							js : [ baseUrl+"/js/chart/dygraph-combined.js", baseUrl+"/js/chart/dygraph-functions.js"],
+							css : []
+						}, function() {							
+							var chartId = 'dygraph-chart';
+							chartDiv.append($("<div id='"+chartId+"'/>"));
+							dygraphFunctions.createChart({id: chartId, 
+								  link: link, 
+								  params: params, 
+								  onLoad: function(settings, response){ chartDiv.unblock(); },
+								  onError: function(){ chartDiv.unblock(); }});							
+						});
 					}else { //static image
 						chartDiv.append($("<img id='chart-image' src=''/>"));
 						// show chart

@@ -217,6 +217,7 @@
          [:div.controls
           (drop-down "chart-type" [["Interaktive Ansicht", "dygraph.json"] 
                                    ["Statische Ansicht" "chart.png"]
+                                   ["Verhältnis" "dygraph-ratios.json"] 
                                    ["Heatmap" "heat-map.png"]
                                    ["Ungewöhnlicher Tag" "discord.png"]
                                    ["Verhaltensänderung" "changepoints.png"]

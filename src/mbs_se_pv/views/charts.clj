@@ -197,7 +197,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
           ;; set colors
           (.setSeriesPaint r 0 (-> n get-series-type unit-properties :color))))
       names))
-  (.. chart getLegend (setItemFont (java.awt.Font. "Courier" java.awt.Font/PLAIN 7))) 
+  (.. chart getLegend (setItemFont (java.awt.Font. "Courier" java.awt.Font/PLAIN 12))) 
   chart)
 
 (defn- create-time-series-chart 
@@ -388,6 +388,16 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
            :data by-time
            :title (str "Chart für den Zeitraum " (.format (dateformat) s) " bis " (.format (dateformat) e))}))) ;values
 
+(def-chart-page "dygraph-ratios.json" []
+  (let [[num dem] names
+        [num-data denom-data] (pmap #(get-series-values id % s e width) names)
+        vs (map (fn [{tdc :value :as a} {ti :value}] (if (zero? ti) (assoc a :value 0) (assoc a :value (/ tdc ti)))) num-data denom-data)
+        all-names (db/all-series-names-of-plant id) 
+        [name1 name2] (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) names)]
+    (json {:labels (list "Datum" (str "Verhältnis von " name1 " und " name2)) 
+           :data (map (juxt :timestamp :value) vs) 
+           :title (str  "Verhältnis von " name1 " und " name2 "<br/>" (.format (dateformat) s) " bis " (.format (dateformat) e))}))) ;values
+
 ;;;;;;;;;;;; render a tiling map of a chart ;;;;;;;;;;;;;;;;;;;;;;
 (defn- render-grid [len x y zoom]
   (let [bi (java.awt.image.BufferedImage. len len java.awt.image.BufferedImage/TYPE_INT_ARGB)
@@ -573,13 +583,11 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
         threshold (s2d threshold 1.3)
         highlights (highlight-ranges threshold n days entropies)
         all-names (db/all-series-names-of-plant id)
-        title (format "Signifikante Veränderungen im Verlauf von \"%s\"\nim Vergleich mit \"%s\"\n(%s vs. %s)" (get-in all-names [name :name]) (get-in all-names [denominator :name]) name denominator)] 
+        title (format "Signifikante Veränderungen im Verlauf von \"%s\"<br/>im Vergleich mit \"%s\"<br/>(%s vs. %s)" (get-in all-names [name :name]) (get-in all-names [denominator :name]) name denominator)] 
     (json {:data (map vector x entropies)
            :labels ["Datum", "Relative Entropie"]
            :highlights highlights
            :title title
-           :min min-hist
-           :max max-hist
            :numerator name
            :denominator denominator
            :threshold threshold
