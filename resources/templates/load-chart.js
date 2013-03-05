@@ -30,7 +30,7 @@
 			negative : $('input#negative').is(':checked'),
 			confidence : $('input#confidence').val(),
 			maxLevel : $('input#max-level').val(),
-			maintainance : $('input#maintainance').is(':checked'),
+			maintenance : $('input#maintenance').is(':checked'),
 			bins : $('input#bins').val(),
 			minHist : $('input#min-hist').val(),
 			maxHist : $('input#max-hist').val(),
@@ -43,26 +43,23 @@
 		var series = params.selectedSeries.join('-');
 		var dates = params.interval;
 		var v = params.visType;
-		if(v == 'interactive-map')
-			return baseUrl + '/tiles/' + id + '/' + series + '/' + dates + '/{x}/{y}/{z}';
-		else {
-			var link = baseUrl + '/series-of/' + id + '/' + series + '/' + dates + '/' + v + '?width=' + params.width + '&height=' + params.height;
-			if(v == 'changepoints.png'){
-				link += '&rank='+params.rank
-				       +'&zero='+params.zero
-				       +'&negative='+params.negative
-				       +'&confidence='+params.confidence
-				       +'&max-level='+params.maxLevel
-				       +'&maintainance='+maintainance;
-			}else if (v == 'entropy.json'){
-				link += '&bins=' + params.bins
-				     + '&min-hist=' + params.minHist
-				     + '&max-hist=' + params.maxHist
-				     + '&days=' + params.days
-				     + '&threshold=' + params.threshold;
-			}
-			return link;
+
+		var link = baseUrl + '/series-of/' + id + '/' + series + '/' + dates + '/' + v + '?width=' + params.width + '&height=' + params.height;
+		if(v == 'changepoints.png'){
+			link += '&rank='+params.rank
+			       +'&zero='+params.zero
+			       +'&negative='+params.negative
+			       +'&confidence='+params.confidence
+			       +'&max-level='+params.maxLevel
+			       +'&maintenance='+params.maintenance;
+		}else if (v == 'entropy.json'){
+			link += '&bins=' + params.bins
+			     + '&min-hist=' + params.minHist
+			     + '&max-hist=' + params.maxHist
+			     + '&days=' + params.days
+			     + '&threshold=' + params.threshold;
 		}
+		return link;
 	}
 	// handler for the main button
 	$('%s').click(
@@ -80,25 +77,7 @@
 					
 					chartDiv.block();
 
-					if (visType == 'interactive-map') {
-						ensure({
-							js : "/js/chart/leaflet.js",
-							css : "/css/chart/leaflet.css"
-						}, function() {
-							chartDiv.append($("<div id='interactive-map'/>"));
-							var map = L.map('interactive-map').setView([ 51.505, -0.09 ], 2);
-							L.tileLayer(link, {
-								attribution : 'done by me :)',
-								noWrap : true,
-								maxZoom : 10
-							}).addTo(map);
-							chartDiv.unblock();
-						});
-					}else if (visType == 'entropy.json'){
-						ensure({
-							js : [ baseUrl+"/js/chart/dygraph-combined.js", baseUrl+"/js/chart/dygraph-functions.js"],
-							css : []
-						}, function() {							
+					if (visType == 'entropy.json'){
 							var chartId = 'dygraph-chart-entropy';
 							chartDiv.append($("<div id='"+chartId+"'/>"));
 							var detailChartId = 'dygraph-chart-entropy-ratios';
@@ -127,12 +106,7 @@
 															  }
 														  },
 														  onError: function(){ chartDiv.unblock(); }});							
-							});
 					} else if (visType.indexOf('.json')==visType.length-5){
-						ensure({
-							js : [ baseUrl+"/js/chart/dygraph-combined.js", baseUrl+"/js/chart/dygraph-functions.js"],
-							css : []
-						}, function() {							
 							var chartId = 'dygraph-chart';
 							chartDiv.append($("<div id='"+chartId+"'/>"));
 							dygraphFunctions.createChart({id: chartId, 
@@ -140,7 +114,6 @@
 								  params: params, 
 								  onLoad: function(settings, response){ chartDiv.unblock(); },
 								  onError: function(){ chartDiv.unblock(); }});							
-						});
 					}else { //static image
 						chartDiv.append($("<img id='chart-image' src=''/>"));
 						// show chart

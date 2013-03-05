@@ -1,7 +1,5 @@
 (function(baseUrl) {
 	$(document).ready(function() {
-		ensure({ js: baseUrl+"/js/jquery.dataTables.min.js"}, function() { //TODO why doesn't ensure evaluate the javascript files in declaration order?
-			ensure({js: baseUrl+"/js/dataTables.paging.bootstrap.js"}, function(){
 				// compatibility between datatables and bootstrap
 				// see http://www.datatables.net/blog/Twitter_Bootstrap
 				$.extend($.fn.dataTableExt.oStdClasses, {
@@ -30,7 +28,5 @@
 					},
 					'aoColumns' : [ {}, {sClass : 'alignRight'}, {sClass : 'alignRight'}, {} ]
 				});
-			});			
-		});
 	});
 })("%s")

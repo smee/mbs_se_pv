@@ -13,7 +13,7 @@
            core
            [options :only (resolve-url)]]
           [cheshire.core :as json] 
-          [hiccup core element form]
+          [hiccup core element form page]
           [ring.util.codec :only (url-encode)]
           [org.clojars.smee 
            [time :only (as-date)] 
@@ -108,6 +108,8 @@
         (render-gain-image plant one-year-ago today w h "week")
         [:h4 "Gesamtertrag pro Monat"]
         (render-gain-image plant one-year-ago today w h "month")]
+       (hiccup.page/include-css "/css/colorbrewer.css")
+       (hiccup.page/include-js "/js/chart/d3.v2.min.js") 
        (javascript-tag (util/render-javascript-template 
                          "templates/calendar.js"
                          (util/base-url)
@@ -222,7 +224,6 @@
                                    ["Ungewöhnlicher Tag" "discord.png"]
                                    ["Verhaltensänderung" "changepoints.png"]
                                    ["Entropieänderung" "entropy.json"]
-                                   ["Interaktiver Zoom" "interactive-map"]
                                    ["Korrelationen" "correlation.png"]]
                      "dygraph")]]
         [:div#changepoint-parameter
@@ -231,7 +232,7 @@
           [:label.checkbox (check-box :rank false) "Rang statt Rohwerten verwenden"]
           [:label.checkbox (check-box :zero false) "Nullwerte löschen"]
           [:label.checkbox (check-box :negative false) "Nur Verschlechterungen anzeigen"]
-          [:label.checkbox (check-box :maintainance true) "Wartungstage ignorieren"]]
+          [:label.checkbox (check-box :maintenance true) "Wartungstage ignorieren"]]
          [:div.input-prepend
           [:span.add-on "CI: "]
           (text-field {:placeholder "p-Wert" :class "input-small"} "confidence" 0.9999)]
@@ -272,7 +273,9 @@
       ;; render calendar input via jquery plugin
       (hiccup.page/include-js "/js/jquery-ui.min.js" 
                               "/js/jquery.dynatree.min.js" 
-                              "/js/datepicker.js")
+                              "/js/datepicker.js"
+                              "/js/chart/dygraph-combined.js"
+                              "/js/chart/dygraph-functions.js")
       (hiccup.page/include-css "/css/dynatree/ui.dynatree.css" "/css/datepicker.css") 
       (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#start-date" date min max))
       (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#end-date" date min max))
