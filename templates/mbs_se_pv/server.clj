@@ -8,12 +8,13 @@
   )
 
 ;; initialize database settings
-  (db/use-db-settings {:classname   "com.mysql.jdbc.Driver"
-                       :subprotocol "mysql"
-                       :user         "{{db-user}}"
-                       :password     "{{db-password}}"
-                       :subname      "//{{db-url}}"
-                       :connection-name "{{db-name}}"})
+  (when (not *compile-files*)
+    (db/use-db-settings {:classname   "com.mysql.jdbc.Driver"
+                         :subprotocol "mysql"
+                         :user         "{{db-user}}"
+                         :password     "{{db-password}}"
+                         :subname      "//{{db-url}}"
+                         :connection-name "{{db-name}}"}))
 
 (defn -main [& m]
   (let [mode (keyword (or (first m) :dev))
