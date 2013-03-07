@@ -375,7 +375,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                           :key %1 
                           :data %2) names values))))
 
-(def-chart-page "dygraph.json" []
+(def-chart-page "dygraph.json" [] 
   (let [values (->> names
                  (pmap #(get-series-values id % s e width))
                  (map (mapp (juxt :timestamp :min :value :max)))
@@ -579,6 +579,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 
 (def-chart-page "entropy.json" [days bins min-hist max-hist denominator threshold]
   (let [name (first names)
+        denominator (or denominator (second names)) 
         {:keys [x entropies name denominator min-hist max-hist days n]} (calculate-entropies name id s e days bins min-hist max-hist denominator)
         threshold (s2d threshold 1.3)
         highlights (highlight-ranges threshold n days entropies)

@@ -8,18 +8,14 @@
 	$('#chart-image').error(function(){ 
 		this.unblock();
 	});
-	function formatDate(date){
-		var m1 = date.getMonth() + 1;
-		var d1 = date.getDate();
-		return '' + date.getFullYear() + (m1 < 10 ? '0' + m1 : m1) + (d1 < 10 ? '0' + d1 : d1);		
-	}
+	
 	function readParameters(){
 		var startDate = $('#start-date').DatePickerGetDate(false);
 		var endDate = $('#end-date').DatePickerGetDate(false);
 		
 		return{
 			// selected date interval: yyyyMMdd-yyyyMMdd
-			interval : formatDate(startDate) + '-' + formatDate(endDate),
+			interval : dygraphFunctions.formatDate(startDate) + '-' + dygraphFunctions.formatDate(endDate),
 			// list of selected time series
 			selectedSeries : $.map($('#series-tree').dynatree('getSelectedNodes'), function(node) { return node.data.series; }),
 			visType : $("#chart-type").val(),
@@ -99,7 +95,7 @@
 																  var endDate=new Date(x);
 																  startDate.addDays(-10);
 																  endDate.addDays(3);																  
-																  params.interval=formatDate(startDate) + '-' + formatDate(endDate),
+																  params.interval=dygraphFunctions.formatDate(startDate) + '-' + dygraphFunctions.formatDate(endDate),
 																  params.selectedSeries=[numerator, denominator];
 																  params.valueRange=[params.minHist, params.maxHist];
 																  dygraphFunctions.createChart({id: detailChartId, link: createLink(baseUrl, id, params), params: params})																  

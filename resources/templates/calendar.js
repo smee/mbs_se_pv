@@ -81,6 +81,7 @@
 		  var minmax = d3.extent(d3.values(data));
 		  if(minmax[0]==minmax[1])
 			  minmax[0]=0;
+		  minmax[1]=Math.min(minmax[1], 381600);//XXX fix double data in feb. 2013, currently there should be no more than 1440*265 data points per day
 		  var color = d3.scale.quantize()
 		    .domain(minmax)
 		    .range(d3.range(9));		  

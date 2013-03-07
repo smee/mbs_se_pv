@@ -140,7 +140,8 @@
 	function restorePositioning(g) {
 	  g.updateOptions({
 	    dateWindow: null,
-	    valueRange: null
+	    valueRange: null,
+	    file: g['originalData_'] || g.file_
 	  });
 	}
 	
@@ -191,7 +192,7 @@
 			Date.prototype.locale = 'de';
 	  };
 	  
-	  function createSettings(response){
+	  function createSettings(config, response){
 		  // create settings map for a new Dygraph instance
 		  var d = response.data;
 		  return { 
@@ -217,11 +218,57 @@
 			      'dblclick' : dblClickV3,
 			      'mousewheel' : scrollV3
 			  },
+			  zoomCallback: function(minX, maxX, yRanges) {
+				  foo(minX,maxX,config);
+	              },
 			  underlayCallback: renderHighlights(response.highlights, response.threshold)			  
 			}
 	  }
+	  var lastMinX=-1;
+	  var lastMaxX=-1;
+	  function foo(minX,maxX,config){
+		  // TODO does not work for every link! for example relative entropies should not load detail data, there is none!
+		  if(minX===lastMinX && maxX===lastMaxX)
+			  return;
+		  lastMinX=minX;
+		  lastMaxX=maxX;
+		  var chart = dygraphFunctions.charts[config.id];
+		  var minX=Math.floor(minX);
+		  var maxX=Math.floor(maxX);
+		  var link = config.link.replace(/\d{8,12}-\d{8,12}/g, formatDate(new Date(minX),true)+'-'+formatDate(new Date(maxX),true));
+		  // load detail data
+		  $.getJSON(link, function(response){
+			  // merge current data with new data
+			  var newData = convertDates(response.data);
+			  var oldData = chart.file_;
+			  var lastLower = -1;
+			  var firstHigher = -1;
+			  var firstDetailDate=newData[0][0];
+			  var lastDetailDate=newData[newData.length-1][0];
+			  for(var i=0;i<oldData.length;i++){
+				  if(oldData[i][0]<firstDetailDate)
+					  lastLower=i;
+				  if(firstHigher==-1 && oldData[i][0]>lastDetailDate)
+					  firstHigher=i;
+			  }
+			  var lowerOld=(lastLower==-1)?[]:oldData.slice(0,lastLower+1);
+			  var upperOld=(firstHigher==-1)?[]:oldData.slice(firstHigher);
+			  
+			  newData=lowerOld.concat(newData).concat(upperOld);
+			  dygraphFunctions.charts[config.id].updateOptions({file:newData});
+			  });	
+	}
+	  
 	  function defined(x){
 		  return typeof x != "undefined" && x != null;
+	  }
+	  
+	  function convertDates(data){
+		  // convert unix timestamps into date instances
+		  for(var i=0;i<data.length;i++) { 
+			  data[i][0] = new Date(data[i][0]); 
+		  };
+		  return data;
 	  }
 	  
 	  function renderChart(config, response){
@@ -229,16 +276,13 @@
 		  var dygraphChart = dygraphFunctions.charts[id];
 		  
 		  // create date instances from unix timestamps
-		  var data = response.data;
+		  var data = convertDates(response.data);
 		  if(data.length==0){
 			  $('#dygraph-chart').append("<div class='alert'><strong>Sorry!</strong> Für diesen Zeitraum liegen keine Daten vor.</div>");
 			  if(typeof config.onError != "undefined" && config.onError != null) config.onError();
 			  return;
 		  }
-		  // convert unix timestamps into date instances
-		  for(var i=0;i<data.length;i++) { 
-			  data[i][0] = new Date(data[i][0]); 
-		  }; myd = data;
+
 		  // remove all old data if there is any
 		  if(defined(dygraphChart)) {
 			  dygraphChart.destroy(); 
@@ -246,7 +290,7 @@
 			  $('#'+id+'-button').remove();
 		  }
 		  // create chart configuration
-		  var chartSettings = createSettings(response);
+		  var chartSettings = createSettings(config, response);
 		  chartSettings.width = config.params.width;
 		  chartSettings.height = config.params.height;
 		  if(defined(config.params.valueRange)) chartSettings.valueRange=config.params.valueRange;
@@ -255,13 +299,26 @@
 			
 		  var chartDiv = $("#"+id);
 		  dygraphChart = new Dygraph(chartDiv[0], data, chartSettings);
+		  dygraphChart.originalData_ = data;
 		  //store reference to this chart
 		  dygraphFunctions.charts[id] = dygraphChart;
 		  // button to reset zoom for this chart
 		  chartDiv.after($("<input type='button' id='"+id+"-button' class='btn btn-info' value='Position wiederherstellen' onclick='dygraphFunctions.restorePositioning(dygraphFunctions.charts[\""+id+"\"])'>"));
 		  return dygraphChart;
 	  }
-	
+	  
+	  function formatDate(date, withTime){
+			var m1 = date.getMonth() + 1;
+			var d1 = date.getDate();
+			var h=date.getHours();
+			var m=date.getMinutes();
+			var s= '' + date.getFullYear() + (m1 < 10 ? '0':'') + m1 + (d1 < 10 ? '0' + d1 : d1);
+			if(withTime){
+				s+=(h<10?'0':'')+h+(m<10?'0':'')+m;
+			}
+			return s;
+	  }
+	  
 	// public
 	
 	  dygraphFunctions.restorePositioning = restorePositioning;
@@ -273,6 +330,8 @@
 			renderChart(config, response);
 		  });			
 	  }
+	  dygraphFunctions.formatDate = formatDate;
 	  dygraphFunctions.charts = {};
 	  
 }(window.dygraphFunctions = window.dygraphFunctions || {}, jQuery));
+
