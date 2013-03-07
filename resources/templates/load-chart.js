@@ -1,4 +1,4 @@
-(function (Charting, $, baseUrl, id, undefined){
+(function (Charting, $, baseUrl, plantId, undefined){
 	// hide loading indicator faster
 	$.blockUI.defaults.fadeOut = 0;
 	$.blockUI.defaults.fadeIn = 0;
@@ -35,12 +35,12 @@
 		};
 	}
 	
-	function createLink(baseUrl, id, params){
+	function createLink(baseUrl, plantId, params){
 		var series = params.selectedSeries.join('-');
 		var dates = params.interval;
 		var v = params.visType;
 
-		var link = baseUrl + '/series-of/' + id + '/' + series + '/' + dates + '/' + v + '?width=' + params.width + '&height=' + params.height;
+		var link = baseUrl + '/series-of/' + plantId + '/' + series + '/' + dates + '/' + v + '?width=' + params.width + '&height=' + params.height;
 		if(v == 'changepoints.png'){
 			link += '&rank='+params.rank
 			       +'&zero='+params.zero
@@ -57,6 +57,32 @@
 		}
 		return link;
 	}
+	function createCBFunction(chartDiv, numerator,denominator,visType,detailChartId){
+		/* XXX dirty hack: create a new chart div and return function that can be used as a click handler in a dygraph
+		 * really ugly, many things hard coded
+		 */
+		chartDiv.append($("<div id='"+detailChartId+"'/>"));
+		
+		return function(e, x, points){
+			  var params=readParameters();
+			  params.visType=visType;
+			  
+			  var startDate=new Date(x);
+			  var endDate=new Date(x);
+			  startDate.addDays(-10);
+			  endDate.addDays(3);																  
+			  params.interval=dygraphFunctions.formatDate(startDate) + '-' + dygraphFunctions.formatDate(endDate),
+			  params.selectedSeries=[numerator, denominator];
+			  params.valueRange=[params.minHist, params.maxHist];
+			  dygraphFunctions.createChart({id: detailChartId, 
+				  link: createLink(baseUrl, plantId, params), 
+				  params: params,
+				  onLoad: function(settings, response){ 
+					  settings.clickCallback = createCBFunction(chartDiv,numerator,denominator,'dygraph.json','dygraph-raw-series');
+				  },
+				  onError: function(){ chartDiv.unblock(); }});																  
+		  }
+	}
 	// handler for the main button
 	$('%s').click(
 			function(event) {
@@ -67,7 +93,7 @@
 						return false;
 					
 					var visType=params.visType;					
-					var link = createLink(baseUrl, id, params);
+					var link = createLink(baseUrl, plantId, params);
 					var chartDiv = $('#current-chart');
 					chartDiv.empty();
 					
@@ -76,8 +102,6 @@
 					if (visType == 'entropy.json'){
 							var chartId = 'dygraph-chart-entropy';
 							chartDiv.append($("<div id='"+chartId+"'/>"));
-							var detailChartId = 'dygraph-chart-entropy-ratios';
-							chartDiv.append($("<div id='"+detailChartId+"'/>"));
 							
 							dygraphFunctions.createChart({id: chartId, 
 														  link: link, 
@@ -85,21 +109,8 @@
 														  onLoad: function(settings, response){ 
 															  chartDiv.unblock();
 															  var denominator = response.denominator;
-															  var numerator = response.numerator;
-															  
-															  settings.clickCallback = function(e, x, points){
-																  var params=readParameters();
-																  params.visType='dygraph-ratios.json';
-																  
-																  var startDate=new Date(x);
-																  var endDate=new Date(x);
-																  startDate.addDays(-10);
-																  endDate.addDays(3);																  
-																  params.interval=dygraphFunctions.formatDate(startDate) + '-' + dygraphFunctions.formatDate(endDate),
-																  params.selectedSeries=[numerator, denominator];
-																  params.valueRange=[params.minHist, params.maxHist];
-																  dygraphFunctions.createChart({id: detailChartId, link: createLink(baseUrl, id, params), params: params})																  
-															  }
+															  var numerator = response.numerator;															  
+															  settings.clickCallback = createCBFunction(chartDiv, numerator,denominator,'dygraph-ratios.json','dygraph-chart-entropy-ratios');
 														  },
 														  onError: function(){ chartDiv.unblock(); }});							
 					} else if (visType.indexOf('.json')==visType.length-5){
