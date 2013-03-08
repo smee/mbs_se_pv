@@ -375,6 +375,24 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                           :key %1 
                           :data %2) names values))))
 
+(defn- insert-nils 
+  "Dygraph needs explicit null values if there should be a gap in the chart.
+Tries to estimate the average x distance between points and whenever there is a gap bigger than two times
+that distance, inserts an artificial entry of shape `[(inc last-x)...]`
+Use this function for all dygraph data."
+  [data]
+  (let [max-gap (->> data (map first) (partition 2 1) (map #(- (second %) (first %))) sort f/mean (* 2))
+        v1 (second (first data))
+        nothing (if (coll? v1) (repeat (count v1) nil) nil)] 
+    (concat
+      (apply concat
+             (for [[[x1 & vs] [x2 _]] (partition 2 1 data)
+                   :let [diff (- x2 x1)]] 
+               (if (> diff max-gap)
+                 [(cons x1 vs) (cons (inc x1) (repeat (count vs) nothing))]
+                 [(cons x1 vs)])))
+      (take-last 1 data))))
+
 (def-chart-page "dygraph.json" [] 
   (let [values (->> names
                  (pmap #(get-series-values id % s e width))
@@ -385,7 +403,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
         all-names (db/all-series-names-of-plant id) 
         all-names (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) names)]
     (json {:labels (cons "Datum" all-names) 
-           :data by-time
+           :data (insert-nils by-time)
            :title (str "Chart für den Zeitraum " (.format (dateformat) s) " bis " (.format (dateformat) e))}))) ;values
 
 (def-chart-page "dygraph-ratios.json" []
@@ -395,89 +413,8 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
         all-names (db/all-series-names-of-plant id) 
         [name1 name2] (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) names)]
     (json {:labels (list "Datum" (str "Verhältnis von " name1 " und " name2)) 
-           :data (map (juxt :timestamp :value) vs) 
+           :data (insert-nils (map (juxt :timestamp :value) vs)) 
            :title (str  "Verhältnis von " name1 " und " name2 "<br/>" (.format (dateformat) s) " bis " (.format (dateformat) e))}))) ;values
-
-;;;;;;;;;;;; render a tiling map of a chart ;;;;;;;;;;;;;;;;;;;;;;
-(defn- render-grid [len x y zoom]
-  (let [bi (java.awt.image.BufferedImage. len len java.awt.image.BufferedImage/TYPE_INT_ARGB)
-        g (.createGraphics bi)
-        baos (ByteArrayOutputStream.)]
-    (doto g
-      (.setColor Color/RED)
-      (.drawRect 0 0 (dec len) (dec len)) 
-      (.drawString (format "[%d,%d] @ %d" x y zoom) 20 20))
-    (javax.imageio.ImageIO/write bi "png" baos)
-    (content-type "image/png" (ByteArrayInputStream. (.toByteArray baos)))))
-
-(defn- hide-legend [chart]
-  (.removeLegend chart)
-  chart)
-
-(defn- hide-axis [chart]
-  (dotimes [i (.. chart getPlot getRangeAxisCount)] 
-    (doto (.. chart getPlot (getRangeAxis i))
-      (.setVisible false)
-      (.setLowerMargin 0)
-      (.setUpperMargin 0)))
-  (doto (.. chart getPlot getDomainAxis)
-    (.setVisible false)
-    (.setLowerMargin 0)
-    (.setUpperMargin 0))  
-  (doto (.getPlot chart)
-    (.setDomainGridlinesVisible false)
-    (.setRangeGridlinesVisible false)
-    (.setRangeMinorGridlinesVisible false)
-    (.setOutlineVisible false)
-    (.setInsets org.jfree.ui.RectangleInsets/ZERO_INSETS)
-    (.setRangeTickBandPaint nil)
-    (.setDomainZeroBaselineVisible false))
-  (doto chart 
-    (.setBorderVisible false)
-    hide-legend
-    (.setTitle nil)
-    (.setPadding org.jfree.ui.RectangleInsets/ZERO_INSETS))  
-  
-  chart)
-
-(defpage "/tiles/:id/*/:times/:x/:y/:zoom" {:keys [id times x y zoom] :as params}
-  (if-let [[s e] (parse-times times)]
-    (let [names (distinct (re-seq #"[^-]+" (get params :*))) ;; split at any minus
-          values (pmap #(get-series-values id % s e) names)
-          chart (create-time-series-chart names values)
-          x (s2i x), y (s2i y), zoom (s2i zoom)
-          ;TODO find true maximum y for all series!
-          xmin (apply min (map :timestamp (first values)))
-          xmax (apply max (map :timestamp (first values)))
-          x-range (- xmax xmin)
-          ymin (reduce min (mapcat (partial map :value) values))
-          ymax (reduce max (mapcat (partial map :value) values))
-          y-range (- ymax ymin)
-          num-tiles (bit-shift-left 1 zoom)
-          tile-x-len (long (/ x-range num-tiles)) ;x are timestamps in milliseconds, always a long
-          tile-y-len (/ y-range num-tiles) ; y are floating point values, seldom a long (so do not cast!)
-          tile-xmin (+ xmin (* x tile-x-len))
-          tile-xmax (+ xmin (* (inc x) tile-x-len))
-          tile-ymin (- ymax (* (inc y) tile-y-len))
-          tile-ymax (- ymax (* y tile-y-len))]
-      ;(println x y zoom)
-      ;(printf "tile-x: [%d; %d], tile-y: [%.2f; %.2f]\n" tile-xmin tile-xmax tile-ymin tile-ymax)
-      ;(printf "tile-x-len=%d, tile-y-len=%.2f\n" tile-x-len tile-y-len)
-      ;(println (apply str (repeat 50 "-")))
-      ;; draw square / grid
-      ;(render-grid 256 x y zoom)
-      (noir.response/set-headers 
-        {"Cache-Control" "public, max-age=60, s-maxage=60"}
-        (-> chart
-          ;(enhance-chart names)
-          (ch/set-x-range (as-date tile-xmin) (as-date tile-xmax))
-          (cjf/set-y-ranges tile-ymin tile-ymax)
-          ;hide-legend
-          hide-axis
-          return-image)))
-    {:status 400
-   :body "Wrong dates!"}))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; render a correlation matrix plot ;;;;;;;;;;;;;;;;
 (def-chart-page "correlation.png" [] 
@@ -549,6 +486,8 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
         insol-data (get-series-values id insol-name s e) 
         vs (map (fn [{tdc :value :as a} {ti :value}] (if (zero? ti) (assoc a :value 0) (assoc a :value (/ tdc ti)))) data insol-data)
         vs (partition-by day-of-year vs)
+;        max-len (apply max (map count vs))
+;        vs (remove #(< (count %) (* 0.95 max-len)) vs) ;TODO use expected number of data points per day, not maximum 
         n (s2i days 30)
         bins (s2i bins 500)
         min-hist (s2d min-hist 0.05) 
@@ -585,44 +524,11 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
         highlights (highlight-ranges threshold n days entropies)
         all-names (db/all-series-names-of-plant id)
         title (format "Signifikante Veränderungen im Verlauf von \"%s\"<br/>im Vergleich mit \"%s\"<br/>(%s vs. %s)" (get-in all-names [name :name]) (get-in all-names [denominator :name]) name denominator)] 
-    (json {:data (map vector x entropies)
+    (json {:data (insert-nils (map vector x entropies))
            :labels ["Datum", "Relative Entropie"]
            :highlights highlights
            :title title
            :numerator name
            :denominator denominator
            :threshold threshold
-           :stepPlot true
-           ;:ratios (map vector (mapcat (mapp :timestamp) days) (mapcat (mapp :value) days))
-           })))
-
-(def-chart-page "entropy.png" [days bins min-hist max-hist denominator threshold]
-  (let [name (first names)
-        {:keys [x entropies days denominator n]} (calculate-entropies name id s e days bins min-hist max-hist denominator)
-        threshold (s2d threshold 1.3)
-        entropy-chart (doto (ch/time-series-plot x entropies) (cjf/add-value-marker 1.3 "Threshold"))
-        times (mapcat (mapp :timestamp) days)
-        values (mapcat (mapp :value) days)
-        all-names (db/all-series-names-of-plant id)
-        min (s2d min-hist (apply min times)) 
-        max (s2d max-hist (apply max times))
-        ratio-chart (doto (ch/time-series-plot times values) (ch/set-y-range min max))
-        chart (->> [entropy-chart ratio-chart] 
-                (map (memfn getPlot))
-                (apply cjf/combined-domain-plot)
-                (org.jfree.chart.JFreeChart.))]
-    (doseq [[from to] (highlight-ranges threshold n days entropies)]
-      (cjf/add-domain-interval-marker chart from to ""))
-    (return-image (doto chart                     
-                    (ch/set-title (format "Signifikante Veränderungen im Verlauf von \"%s\"\nim Vergleich mit \"%s\"\n(%s vs. %s)" (get-in all-names [name :name]) (get-in all-names [denominator :name]) name denominator))
-                    (ch/add-subtitle (str (.format (dateformat) s) " - " (.format (dateformat) e)))
-                    (ch/set-x-label "Datum") 
-                    (.removeLegend)
-                    ;(cjf/set-discontinuous)
-                    )
-                  :height height 
-                  :width width)))
-
-  
-  
-  
+           :stepPlot true})))
