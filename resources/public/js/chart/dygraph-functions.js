@@ -109,6 +109,7 @@
 	//
 	// If a bias is missing it splits it down the middle.
 	function zoom(g, zoomInPercentage, xBias, yBias) {
+		// TODO does not call the zoomCallback, so can't dynamically load new data 
 	  xBias = xBias || 0.5;
 	  yBias = yBias || 0.5;
 	  function adjustAxis(axis, zoomInPercentage, bias) {
@@ -228,8 +229,10 @@
 	  var lastMaxX=-1;
 	  function foo(minX,maxX,config){
 		  // TODO does not work for every link! for example relative entropies should not load detail data, there is none!
-		  if(minX===lastMinX && maxX===lastMaxX)
+		  if(Math.abs(minX-lastMinX)<=1 && Math.abs(maxX-lastMaxX)<=1)
 			  return;
+//		  console.log('min old: ',lastMinX,'new:',minX, 'diff:',lastMinX-minX);
+//		  console.log('max old: ',lastMaxX,'new:',maxX, 'diff:',lastMaxX-maxX);
 		  lastMinX=minX;
 		  lastMaxX=maxX;
 		  var chart = dygraphFunctions.charts[config.id];
@@ -255,6 +258,8 @@
 			  var upperOld=(firstHigher==-1)?[]:oldData.slice(firstHigher);
 			  
 			  newData=lowerOld.concat(newData).concat(upperOld);
+//			  console.log("old upper date:", oldData[oldData.length-1]);
+//			  console.log("new upper date:", newData[newData.length-1]);
 			  dygraphFunctions.charts[config.id].updateOptions({file:newData});
 			  });	
 	}
