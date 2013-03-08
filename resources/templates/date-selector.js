@@ -23,8 +23,8 @@
 
 	DateSelector.shiftTime = function(days, months, years){
 		// FIXME hard coded selectors
-		var sf = $('#start-date');
-		var ef = $('#end-date');
+		var sf = $('#startDate');
+		var ef = $('#endDate');
 		
 		var startdate = sf.DatePickerGetDate(false);
 		var enddate = ef.DatePickerGetDate(false);

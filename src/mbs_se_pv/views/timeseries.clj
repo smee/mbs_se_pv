@@ -196,10 +196,10 @@
          [:h4 "Datum"]
          [:div.input-prepend 
           [:span.add-on "von: "] 
-          (text-field {:placeholder "Startdatum" :class "input-small"} "start-date" date)]
+          (text-field {:placeholder "Startdatum" :class "input-small"} "startDate" date)]
          [:div.input-prepend
           [:span.add-on "bis: "]
-          (text-field {:placeholder "Enddatum" :class "input-small"} "end-date" date)]
+          (text-field {:placeholder "Enddatum" :class "input-small"} "endDate" date)]
          [:div
           [:a.btn.btn-mini {:href "#" :onclick "DateSelector.shiftTime(-1,0,0,0)"} "< Tag"]
           [:a.btn.btn-mini {:href "#" :onclick "DateSelector.shiftTime(-7,0,0)"} "< Woche"]
@@ -217,7 +217,7 @@
         [:div
          [:h4 "Art der Anzeige:"]
          [:div.controls
-          (drop-down "chart-type" [["Interaktive Ansicht", "dygraph.json"] 
+          (drop-down "visType" [["Interaktive Ansicht", "dygraph.json"] 
                                    ["Statische Ansicht" "chart.png"]
                                    ["Verhältnis" "dygraph-ratios.json"] 
                                    ["Heatmap" "heat-map.png"]
@@ -238,15 +238,15 @@
           (text-field {:placeholder "p-Wert" :class "input-small"} "confidence" 0.9999)]
          [:div.input-prepend
           [:span.add-on "lvl: "]
-          (text-field {:placeholder "Max. level" :class "input-small"} "max-level" 2)]]
+          (text-field {:placeholder "Max. level" :class "input-small"} "maxLevel" 2)]]
         [:div#entropy-parameter
          [:h4 "Weitere Parameter"]
          [:div.input-prepend
           [:span.add-on "min: "]
-          (text-field {:class "input-small"} "min-hist" 0.05)]
+          (text-field {:class "input-small"} "minHist" 0.05)]
          [:div.input-prepend
           [:span.add-on "max: "]
-          (text-field {:class "input-small"} "max-hist" 0.2)]
+          (text-field {:class "input-small"} "maxHist" 0.2)]
          [:div.input-prepend
           [:span.add-on "bins: "]
           (text-field {:class "input-small"} "bins" 500)]
@@ -258,9 +258,9 @@
           (text-field {:class "input-small"} "threshold" 1.3)]] 
         [:div
          [:h4 "Größe:"]
-         [:input#chart-width.input-mini {:value "950" :type "number"}] 
-         [:span "X"] 
-         [:input#chart-height.input-mini {:value "600" :type "number"}]
+         (text-field {:type "number" :class "input-mini"} "width" 950)
+         [:span "X"]
+         (text-field {:type "number" :class "input-mini"} "height" 600)
          [:span "px"]]
         [:button#render-chart.btn-primary.btn-large 
          [:i.icon-picture.icon-white]
@@ -274,16 +274,16 @@
       (hiccup.page/include-js "/js/jquery-ui.min.js" 
                               "/js/jquery.dynatree.min.js" 
                               "/js/datepicker.js"
-                              "/js/chart/dygraph-combined.js"
+                              "/js/chart/dygraph-combined-dev.js"
                               "/js/chart/dygraph-functions.js")
       (hiccup.page/include-css "/css/dynatree/ui.dynatree.css" "/css/datepicker.css") 
-      (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#start-date" date min max))
-      (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#end-date" date min max))
+      (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#startDate" date min max))
+      (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#endDate" date min max))
       (javascript-tag (util/render-javascript-template "templates/load-chart.js" "#render-chart" base-url id))
-      (javascript-tag "$('#chart-type').change(function(){
+      (javascript-tag "$('#visType').change(function(){
                             var params=$('#changepoint-parameter'); 
                             if('changepoints.png'==$(this).val()){ params.slideDown();} else{ params.slideUp();}})")
-      (javascript-tag "$('#chart-type').change(function(){
+      (javascript-tag "$('#visType').change(function(){
                             var params=$('#entropy-parameter'); 
                             if('entropy.json'==$(this).val()){ params.slideDown();} else{ params.slideUp();}})"))))
 

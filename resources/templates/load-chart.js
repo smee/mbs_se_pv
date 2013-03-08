@@ -10,34 +10,22 @@
 	});
 	
 	function readParameters(){
-		var startDate = $('#start-date').DatePickerGetDate(false);
-		var endDate = $('#end-date').DatePickerGetDate(false);
+		var params = {};
+		$('form input').each(function(){params[$(this).attr('name')]=$(this).val()});
+		$('form input[type="checkbox"]').each(function(){params[$(this).attr('name')]=$(this).is(':checked')});
+		$('form select').each(function(){params[$(this).attr('id')]=$(this).val()});
 		
-		return{
-			// selected date interval: yyyyMMdd-yyyyMMdd
-			interval : dygraphFunctions.formatDate(startDate) + '-' + dygraphFunctions.formatDate(endDate),
-			// list of selected time series
-			selectedSeries : $.map($('#series-tree').dynatree('getSelectedNodes'), function(node) { return node.data.series; }),
-			visType : $("#chart-type").val(),
-			width : $('#chart-width').val(),
-			height : $('#chart-height').val(),
-			rank : $('input#rank').is(':checked'),
-			zero : $('input#zero').is(':checked'),
-			negative : $('input#negative').is(':checked'),
-			confidence : $('input#confidence').val(),
-			maxLevel : $('input#max-level').val(),
-			maintenance : $('input#maintenance').is(':checked'),
-			bins : $('input#bins').val(),
-			minHist : $('input#min-hist').val(),
-			maxHist : $('input#max-hist').val(),
-			days : $('input#days').val(),
-			threshold : $('input#threshold').val()
-		};
+		var startDate = $('#startDate').DatePickerGetDate(false);
+		var endDate = $('#endDate').DatePickerGetDate(false);
+		params.startDate = startDate;
+		params.endDate = endDate;
+		params.selectedSeries = $.map($('#series-tree').dynatree('getSelectedNodes'), function(node) { return node.data.series; });
+		return params;
 	}
 	
 	function createLink(baseUrl, plantId, params){
 		var series = params.selectedSeries.join('-');
-		var dates = params.interval;
+		var dates = dygraphFunctions.formatDate(params.startDate) + '-' + dygraphFunctions.formatDate(params.endDate);
 		var v = params.visType;
 
 		var link = baseUrl + '/series-of/' + plantId + '/' + series + '/' + dates + '/' + v + '?width=' + params.width + '&height=' + params.height;
@@ -71,7 +59,9 @@
 			  var endDate=new Date(x);
 			  startDate.addDays(-10);
 			  endDate.addDays(3);																  
-			  params.interval=dygraphFunctions.formatDate(startDate) + '-' + dygraphFunctions.formatDate(endDate),
+			  params.startDate=startDate;
+			  params.endDate=endDate;
+			  
 			  params.selectedSeries=[numerator, denominator];
 			  params.valueRange=[params.minHist, params.maxHist];
 			  dygraphFunctions.createChart({id: detailChartId, 
@@ -113,7 +103,7 @@
 															  settings.clickCallback = createCBFunction(chartDiv, numerator,denominator,'dygraph-ratios.json','dygraph-chart-entropy-ratios');
 														  },
 														  onError: function(){ chartDiv.unblock(); }});							
-					} else if (visType.indexOf('.json')==visType.length-5){
+					} else if (visType.slice(-5)=='.json'){
 							var chartId = 'dygraph-chart';
 							chartDiv.append($("<div id='"+chartId+"'/>"));
 							dygraphFunctions.createChart({id: chartId, 
