@@ -13,7 +13,7 @@ For example, parsing with format `yyyMMdd` in time zone 'Europe/Berlin' and inpu
 '20120904' results in a date of '2012-09-03T22:00:00' *puzzled*"
   [format-string]
   (doto (SimpleDateFormat. format-string)
-    (.setTimeZone (TimeZone/getTimeZone "GMT"))))
+    #_(.setTimeZone (TimeZone/getTimeZone "GMT"))))
 
 (def timeformat (per-thread-singleton #(create-date-format "yyyy-MM-dd HH:mm:ss")))
 (def dateformat (per-thread-singleton #(create-date-format "dd.MM.yyyy")))
