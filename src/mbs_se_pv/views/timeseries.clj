@@ -219,11 +219,12 @@
          [:div.controls
           (drop-down "visType" [["Interaktive Ansicht", "dygraph.json"] 
                                    ["Statische Ansicht" "chart.png"]
-                                   ["Verhältnis" "dygraph-ratios.json"] 
                                    ["Heatmap" "heat-map.png"]
-                                   ["Ungewöhnlicher Tag" "discord.png"]
-                                   ["Verhaltensänderung" "changepoints.png"]
+                                   ["Verhältnis" "dygraph-ratios.json"] 
                                    ["Entropieänderung" "entropy.json"]
+                                   ["Entropieänderung - paarweise" "entropy-bulk.json"]
+                                   ["Verhaltensänderung" "changepoints.png"]
+                                   ["Ungewöhnlicher Tag" "discord.png"]
                                    ["Korrelationen" "correlation.png"]]
                      "dygraph")]]
         [:div#changepoint-parameter
@@ -246,7 +247,7 @@
           (text-field {:class "input-small"} "minHist" 0.05)]
          [:div.input-prepend
           [:span.add-on "max: "]
-          (text-field {:class "input-small"} "maxHist" 0.2)]
+          (text-field {:class "input-small"} "maxHist" 2)]
          [:div.input-prepend
           [:span.add-on "bins: "]
           (text-field {:class "input-small"} "bins" 500)]
@@ -255,7 +256,7 @@
           (text-field {:class "input-small"} "days" 30)]
          [:div.input-prepend
           [:span.add-on "Grenzwert: "]
-          (text-field {:class "input-small"} "threshold" 1.3)]] 
+          (text-field {:class "input-small"} "threshold" 1.8)]] 
         [:div
          [:h4 "Größe:"]
          (text-field {:type "number" :class "input-mini"} "width" 950)
@@ -284,8 +285,9 @@
                             var params=$('#changepoint-parameter'); 
                             if('changepoints.png'==$(this).val()){ params.slideDown();} else{ params.slideUp();}})")
       (javascript-tag "$('#visType').change(function(){
-                            var params=$('#entropy-parameter'); 
-                            if('entropy.json'==$(this).val()){ params.slideDown();} else{ params.slideUp();}})"))))
+                            var params=$('#entropy-parameter');
+                            var val=$(this).val(); 
+                            if(val.slice(0,7)=='entropy'){ params.slideDown();} else{ params.slideUp();}})"))))
 
 ;;;;;;;;;;;;;;;;;; components of a plant ;;;;;;;;;;;;;;;;;;;;;;
 (defn- convert-node [node]

@@ -11,10 +11,12 @@
      [discord :as discord]
      [correlations :as tc]
      [changepoints :as cp]
-     [functions :as f]]
+     [functions :as f]
+     [sax :as sax]]
     [stats.entropy :as e]
     [chart-utils.jfreechart :as cjf]
-    [sun :as sun])
+    [sun :as sun]
+    [clojure.math.combinatorics :as combo])
   (:use  
     timeseries.align
     [clojure.string :only (split)]
@@ -486,6 +488,7 @@ Use this function for all dygraph data."
         insol-data (get-series-values id insol-name s e) 
         vs (map (fn [{tdc :value :as a} {ti :value}] (if (zero? ti) (assoc a :value 0) (assoc a :value (/ tdc ti)))) data insol-data)
         vs (partition-by day-of-year vs)
+
 ;        max-len (apply max (map count vs))
 ;        vs (remove #(< (count %) (* 0.95 max-len)) vs) ;TODO use expected number of data points per day, not maximum 
         n (s2i days 30)
@@ -498,8 +501,7 @@ Use this function for all dygraph data."
                                               :min-hist min-hist 
                                               :max-hist max-hist)]
     {:x x 
-     :entropies entropies 
-     :days vs 
+     :entropies (sax/normalize entropies) 
      :name name 
      :denominator insol-name
      :n n
@@ -519,7 +521,7 @@ Use this function for all dygraph data."
 (def-chart-page "entropy.json" [days bins min-hist max-hist denominator threshold]
   (let [name (first names)
         denominator (or denominator (second names)) 
-        {:keys [x entropies name denominator min-hist max-hist days n]} (calculate-entropies name id s e days bins min-hist max-hist denominator)
+        {:keys [x entropies name denominator min-hist max-hist n]} (calculate-entropies name id s e days bins min-hist max-hist denominator)
         threshold (s2d threshold 1.3)
         highlights (highlight-ranges threshold n days entropies)
         all-names (db/all-series-names-of-plant id)
@@ -530,5 +532,25 @@ Use this function for all dygraph data."
            :title title
            :numerator name
            :denominator denominator
+           :threshold threshold
+           :stepPlot true})))
+
+(def-chart-page "entropy-bulk.json" [days bins min-hist max-hist threshold]
+  (let [all-names (db/all-series-names-of-plant id)
+        [name & names] names
+        results (map (partial calculate-entropies name id s e days bins min-hist max-hist) names)
+        title (format "Signifikante Veränderungen im Verlauf von \"%s\" (%s)" (get-in all-names [name :name]) name)
+        entropies (map :entropies results)
+        entropies-sums (apply map + entropies)
+        normalized-sums (sax/normalize entropies-sums)
+        entropies-normalized (for [es entropies] (map #(* %3 (/ %1 %2)) es entropies-sums normalized-sums))] 
+    (json {:data (insert-nils (apply map vector (-> results first :x) entropies-normalized))
+           ;:data (insert-nils (map vector (-> results first :x) entropies))
+           ;:labels ["Datum", "Relative Entropie"]
+           :labels (cons "Datum" (map #(get-in all-names [% :name]) (map :denominator results)))
+           :highlights [] 
+           :title title
+           :numerator name
+           :denominator "all" 
            :threshold threshold
            :stepPlot true})))

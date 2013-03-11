@@ -59,7 +59,7 @@
         return link;
     }
     
-    function createCBFunction(chartDiv, numerator,denominator,visType,detailChartId){
+    function createCBFunction(chartDiv,visType,detailChartId){
         /*
 		 * XXX dirty hack: create a new chart div and return function that can
 		 * be used as a click handler in a dygraph really ugly, many things hard
@@ -67,27 +67,29 @@
 		 */
         chartDiv.append($("<div id='"+detailChartId+"'/>"));
         
-        return function(e, x, points){
-              var params=readParameters();
-              params.visType=visType;
+        return function(e, point){
+        	var x = point.xval;
+            var params=readParameters();
+            params.visType=visType;
+            var startDate=new Date(x);
+            var endDate=new Date(x);
+            startDate.addDays(-10);
+            endDate.addDays(3);                                                                  
+            params.startDate=startDate;
+            params.endDate=endDate;
               
-              var startDate=new Date(x);
-              var endDate=new Date(x);
-              startDate.addDays(-10);
-              endDate.addDays(3);                                                                  
-              params.startDate=startDate;
-              params.endDate=endDate;
-              
-              params.selectedSeries=[numerator, denominator];
-              params.valueRange=[params.minHist, params.maxHist];
-              dygraphFunctions.createChart({id: detailChartId, 
-                  link: createLink(baseUrl, plantId, params), 
-                  params: params,
-                  onError: function(){ chartDiv.unblock(); }},
-                  function(settings, response){ 
-                      settings.clickCallback = createCBFunction(chartDiv,numerator,denominator,'dygraph.json','dygraph-raw-series');
-                  });                                                                  
-          }
+            if(visType.slice(0,7)=='entropy'){
+            	  params.valueRange=[params.minHist, params.maxHist];
+            }
+            console.log('clicked on chart, loading new chart',detailChartId, params);
+            dygraphFunctions.createChart({id: detailChartId, 
+                link: createLink(baseUrl, plantId, params), 
+                params: params,
+                onError: function(){ chartDiv.unblock(); }},
+                function(settings, response){ 
+                    settings.pointClickCallback = createCBFunction(chartDiv,'dygraph.json','dygraph-raw-series');
+                });                                                                  
+          };
     }
     // handler for the main button
     $('%s').click(
@@ -105,7 +107,7 @@
 				chartDiv.block();
 
 				var concattedSelection = params.selectedSeries.reduce(function(all, s) {
-					return all.concat(s)
+					return all.concat(s);
 				});
 				var chartId = 'dygraph-chart-entropy-' + concattedSelection.hashCode();
 
@@ -116,9 +118,9 @@
 						chartDiv.unblock();
 					});
 				} else {
-					if (visType == 'entropy.json' || visType == 'entropy.json') {
+					if (visType == 'entropy.json' || visType == 'entropy-bulk.json') {
 						chartDiv.append($("<div id='" + chartId + "'/>"));
-
+						
 						dygraphFunctions.createChart({
 							id : chartId,
 							link : link,
@@ -128,10 +130,10 @@
 							}
 						}, function(settings, response) {
 							chartDiv.unblock();
-							var denominator = response.denominator;
-							var numerator = response.numerator;
-							settings.clickCallback = createCBFunction(chartDiv, numerator, denominator, 'dygraph-ratios.json',
-									'dygraph-chart-entropy-ratios');
+							settings.stackedGraph= (visType=='entropy-bulk.json');
+//							settings.fillGraph= (visType=='entropy-bulk.json');
+							settings.pointClickCallback = createCBFunction(chartDiv, 'dygraph-ratios.json', 'dygraph-chart-entropy-ratios');
+							console.log(settings,response);
 						});
 					} else if (visType.slice(-5) == '.json') {
 						chartDiv.append($("<div id='" + chartId + "'/>"));
