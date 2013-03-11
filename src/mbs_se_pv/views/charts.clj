@@ -410,8 +410,9 @@ Use this function for all dygraph data."
 
 (def-chart-page "dygraph-ratios.json" []
   (let [[num dem] names
-        [num-data denom-data] (pmap #(get-series-values id % s e width) names)
-        vs (map (fn [{tdc :value :as a} {ti :value}] (if (zero? ti) (assoc a :value 0) (assoc a :value (/ tdc ti)))) num-data denom-data)
+;        [num-data denom-data] (pmap #(get-series-values id % s e width) names)
+;        vs (map (fn [{tdc :value :as a} {ti :value}] (if (zero? ti) (assoc a :value 0) (assoc a :value (/ tdc ti)))) num-data denom-data)
+        vs (db/rolled-up-ratios-in-time-range id num dem s e width)
         all-names (db/all-series-names-of-plant id) 
         [name1 name2] (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) names)]
     (json {:labels (list "Datum" (str "Verhältnis von " name1 " und " name2)) 
@@ -483,12 +484,13 @@ Use this function for all dygraph data."
 
 (defn- calculate-entropies [name id s e days bins min-hist max-hist denominator]
   (let [e (if (= s e) (+ e ONE-DAY) e)
-        data (get-series-values id name s e)
+;        data (get-series-values id name s e)
         insol-name (or denominator (if (re-matches #"INVU1.*" name) "INVU1/MMET1.HorInsol.mag.f" "INVU2/MMET1.HorInsol.mag.f"))
-        insol-data (get-series-values id insol-name s e) 
-        vs (map (fn [{tdc :value :as a} {ti :value}] (if (zero? ti) (assoc a :value 0) (assoc a :value (/ tdc ti)))) data insol-data)
+;        insol-data (get-series-values id insol-name s e) 
+;        vs (map (fn [{tdc :value :as a} {ti :value}] (if (zero? ti) (assoc a :value 0) (assoc a :value (/ tdc ti)))) data insol-data)
+        vs (db/all-ratios-in-time-range id name insol-name s e)
         vs (partition-by day-of-year vs)
-
+        
 ;        max-len (apply max (map count vs))
 ;        vs (remove #(< (count %) (* 0.95 max-len)) vs) ;TODO use expected number of data points per day, not maximum 
         n (s2i days 30)
