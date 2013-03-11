@@ -211,6 +211,7 @@
 				  strokeBorderWidth: 1,
 				  highlightCircleSize: 5,
 			  },
+//			  timingName: "foo",
 			  interactionModel : {
 				  'mousedown' : downV3,
 			      'mousemove' : moveV3,
@@ -220,14 +221,14 @@
 			      'mousewheel' : scrollV3
 			  },
 			  zoomCallback: function(minX, maxX, yRanges) {
-				  foo(minX,maxX,config);
+				  foo(minX,maxX,config, yRanges);
 	              },
 			  underlayCallback: renderHighlights(response.highlights, response.threshold)			  
 			}
 	  }
 	  var lastMinX=-1;
 	  var lastMaxX=-1;
-	  function foo(minX,maxX,config){
+	  function foo(minX,maxX,config,yRanges){
 		  // TODO does not work for every link! for example relative entropies should not load detail data, there is none!
 		  if(Math.abs(minX-lastMinX)<=1 && Math.abs(maxX-lastMaxX)<=1)
 			  return;
@@ -260,8 +261,12 @@
 			  newData=lowerOld.concat(newData).concat(upperOld);
 //			  console.log("old upper date:", oldData[oldData.length-1]);
 //			  console.log("new upper date:", newData[newData.length-1]);
-			  dygraphFunctions.charts[config.id].updateOptions({file:newData});
-			  });	
+//			  console.log(yRanges);
+			  chart.updateOptions({file:newData,
+				    dateWindow: [minX, maxX],
+				    valueRange: yRanges[0]
+				    });
+		});	
 	}
 	  
 	  function defined(x){
