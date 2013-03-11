@@ -281,7 +281,7 @@
 		  return data;
 	  }
 	  
-	  function renderChart(config, response){
+	  function renderChart(config, callback, response){
 		  var id = config.id;
 		  var dygraphChart = dygraphFunctions.charts[id];
 		  
@@ -305,7 +305,7 @@
 		  chartSettings.height = config.params.height;
 		  if(defined(config.params.valueRange)) chartSettings.valueRange=config.params.valueRange;
 		  // callback to modify settings
-		  if(defined(config.onLoad)){ config.onLoad(chartSettings,response);};
+		  if(defined(callback)){ callback(chartSettings,response);};
 			
 		  var chartDiv = $("#"+id);
 		  dygraphChart = new Dygraph(chartDiv[0], data, chartSettings);
@@ -333,11 +333,11 @@
 	
 	  dygraphFunctions.restorePositioning = restorePositioning;
 	  
-	  dygraphFunctions.createChart=function(config){
+	  dygraphFunctions.createChart=function(config, callback){
 		  initI18n();
 		  // load chart data as json
 		  $.getJSON(config.link, function(response){
-			renderChart(config, response);
+			renderChart(config, callback, response);
 		  });			
 	  }
 	  dygraphFunctions.formatDate = formatDate;
