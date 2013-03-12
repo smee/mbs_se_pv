@@ -110,3 +110,11 @@ table {
 #entropy-parameter {
 	display: none;
 }
+
+.dygraph-legend span {
+	font-size: small;
+}
+.dygraph-legend .highlight {
+    font-weight: bold;
+    border: 1px solid;
+}

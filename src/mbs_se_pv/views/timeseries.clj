@@ -11,13 +11,15 @@
       [mbs-db.core :as db])
     (:use [noir 
            core
-           [options :only (resolve-url)]]
+           [options :only (resolve-url)]
+           [response :only [json]]]
           [cheshire.core :as json] 
           [hiccup core element form page]
           [ring.util.codec :only (url-encode)]
           [org.clojars.smee 
            [time :only (as-date)] 
-           [util :only (s2i)]]))
+           [util :only (s2i)]]
+          [clojure.walk :only [postwalk]]))
 
 (declare toolbar-links)
 
@@ -156,15 +158,19 @@
    (for [[k vs] nested]
      (if (and (sequential? vs) (= 1 (count vs)))
        [:li {:data (format "{series: '%s'}" (first vs))} k]
-       (do (def x nested) 
-       [:li.folder k (make-nested-list vs)])))])
+       [:li.folder k (make-nested-list vs)]))])
 
 (defpartial series-tree [id names elem-id]
-  (let [by-phys {"nach Bauteil" (restore-physical-hierarchy names)}
+  (let [;not-all-caps (partial every? #(Character/isUpperCase %))
+        by-phys {"nach Bauteil" (restore-physical-hierarchy names)}
         by-type {"nach Datenart" (cluster-by-type names)} 
         tree (->> by-phys
                (merge by-type)               
-               (clojure.walk/postwalk #(if (map? %) (into (sorted-map) %) %))
+               (postwalk #(if (map? %) (into (sorted-map) %) %))
+               (postwalk #(if (map? %) (reduce (fn [m[k v]] 
+                                                 (if (and (map? v) (= 1 (count (keys v))) #_(not-all-caps k))
+                                                   (apply assoc (dissoc m k) (first v))
+                                                   m)) % (seq %)) %)) 
                make-nested-list)]
     [:div {:id elem-id} 
       tree
@@ -256,7 +262,10 @@
           (text-field {:class "input-small"} "days" 30)]
          [:div.input-prepend
           [:span.add-on "Grenzwert: "]
-          (text-field {:class "input-small"} "threshold" 1.8)]] 
+          (text-field {:class "input-small"} "threshold" 1.8)]
+         [:div.input-prepend
+          [:span.add-on "Sensor: "]
+          (text-field {:class "input-large" :placeholder "Welche Messreihe?"} "sensor" "")]] 
         [:div
          [:h4 "Größe:"]
          (text-field {:type "number" :class "input-mini"} "width" 950)
@@ -276,8 +285,10 @@
                               "/js/jquery.dynatree.min.js" 
                               "/js/datepicker.js"
                               "/js/chart/dygraph-combined-dev.js"
-                              "/js/chart/dygraph-functions.js")
-      (hiccup.page/include-css "/css/dynatree/ui.dynatree.css" "/css/datepicker.css") 
+                              "/js/chart/dygraph-functions.js"
+                              "/js/hogan-2.0.0.js"
+                              "/js/typeahead.js")
+      (hiccup.page/include-css "/css/dynatree/ui.dynatree.css" "/css/datepicker.css" "/css/typeahead.css") 
       (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#startDate" date min max))
       (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#endDate" date min max))
       (javascript-tag (util/render-javascript-template "templates/load-chart.js" "#render-chart" base-url id))
@@ -287,7 +298,15 @@
       (javascript-tag "$('#visType').change(function(){
                             var params=$('#entropy-parameter');
                             var val=$(this).val(); 
-                            if(val.slice(0,7)=='entropy'){ params.slideDown();} else{ params.slideUp();}})"))))
+                            if(val.slice(0,7)=='entropy'){ params.slideDown();} else{ params.slideUp();}})")
+      (javascript-tag (format 
+                        "$('#sensor').typeahead({
+                             name: 'sensor-numerator',
+                           engine: Hogan,
+                         prefetch: '%s',
+                            limit: 10,
+                         template: '<p>{{component}}/{{name}}</p><p>({{type}})</p>'})"
+                        (resolve-url (format "/data/%s/names.json" id)))))))
 
 ;;;;;;;;;;;;;;;;;; components of a plant ;;;;;;;;;;;;;;;;;;;;;;
 (defn- convert-node [node]

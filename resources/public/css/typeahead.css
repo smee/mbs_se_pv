@@ -1,0 +1,78 @@
+/*!
+ * typeahead.js 0.8.2
+ * https://github.com/twitter/typeahead
+ * Copyright 2013 Twitter, Inc. and other contributors; Licensed MIT
+ */
+
+.twitter-typeahead {
+  position: relative !important;
+  display: inline-block;
+  *display: inline;
+  *zoom: 1;
+}
+.tt-query {
+  position: relative !important;
+  /* for unknown reasons, this fixes alignment issues in ie7 */
+
+  *margin-top: -1px !important;
+  background-color: transparent !important;
+  /* ie6-8 doesn't fire hover and click events for transparent elements
+     for a workaround, use a 1x1 transparent gif */
+
+  background-image: url(data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7) !important;
+}
+.tt-hint {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  border-color: transparent !important;
+  -webkit-box-shadow: none !important;
+  -moz-box-shadow: none !important;
+  box-shadow: none !important;
+}
+.tt-dropdown-menu,
+.tt-suggestions,
+.tt-suggestion {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.tt-dropdown-menu {
+    background-color: #FFFFFF;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 8px 8px 8px 8px;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+    margin-top: 12px;
+    padding: 8px 0;
+    width: 422px;
+    display: none;
+}
+.tt-dropdown-menu.tt-is-open {
+  display: block;
+}
+.tt-dropdown-menu.tt-is-empty {
+  display: none;
+}
+.tt-suggestion {
+    padding: 8px 20px;
+}
+.tt-suggestion + .tt-suggestion {
+   border-top: 1px solid #CCCCCC;
+}
+.tt-suggestion * {
+  white-space: normal;
+}
+/* rtl support */
+/* ----------- */
+.twitter-typeahead.tt-rtl {
+  direction: rtl;
+}
+.twitter-typeahead.tt-rtl .tt-dropdown-menu {
+  left: auto;
+  right: 0;
+}
+.tt-suggestion.tt-is-under-cursor {
+  color: #fff;
+  background-color: #0097cf;
+}

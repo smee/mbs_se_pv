@@ -10,3 +10,4 @@ pom.xml
 *war
 target/
 checkouts/
+.externalToolBuilders/

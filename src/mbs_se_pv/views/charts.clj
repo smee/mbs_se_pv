@@ -383,7 +383,8 @@ Tries to estimate the average x distance between points and whenever there is a 
 that distance, inserts an artificial entry of shape `[(inc last-x)...]`
 Use this function for all dygraph data."
   [data]
-  (let [max-gap (->> data (map first) (partition 2 1) (map #(- (second %) (first %))) sort f/mean (* 2))
+  (let [max-gap (->> data (map first) (partition 2 1) (map #(- (second %) (first %))) sort)
+        max-gap (if (not-empty max-gap) (* 2 (f/mean max-gap)) max-gap)
         v1 (second (first data))
         nothing (if (coll? v1) (repeat (count v1) nil) nil)] 
     (concat
@@ -410,8 +411,6 @@ Use this function for all dygraph data."
 
 (def-chart-page "dygraph-ratios.json" []
   (let [[num dem] names
-;        [num-data denom-data] (pmap #(get-series-values id % s e width) names)
-;        vs (map (fn [{tdc :value :as a} {ti :value}] (if (zero? ti) (assoc a :value 0) (assoc a :value (/ tdc ti)))) num-data denom-data)
         vs (db/rolled-up-ratios-in-time-range id num dem s e width)
         all-names (db/all-series-names-of-plant id) 
         [name1 name2] (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) names)]
@@ -484,13 +483,9 @@ Use this function for all dygraph data."
 
 (defn- calculate-entropies [name id s e days bins min-hist max-hist denominator]
   (let [e (if (= s e) (+ e ONE-DAY) e)
-;        data (get-series-values id name s e)
         insol-name (or denominator (if (re-matches #"INVU1.*" name) "INVU1/MMET1.HorInsol.mag.f" "INVU2/MMET1.HorInsol.mag.f"))
-;        insol-data (get-series-values id insol-name s e) 
-;        vs (map (fn [{tdc :value :as a} {ti :value}] (if (zero? ti) (assoc a :value 0) (assoc a :value (/ tdc ti)))) data insol-data)
-        vs (db/all-ratios-in-time-range id name insol-name s e)
+        vs (db/ratios-in-time-range id name insol-name s e)
         vs (partition-by day-of-year vs)
-        
 ;        max-len (apply max (map count vs))
 ;        vs (remove #(< (count %) (* 0.95 max-len)) vs) ;TODO use expected number of data points per day, not maximum 
         n (s2i days 30)
@@ -537,22 +532,22 @@ Use this function for all dygraph data."
            :threshold threshold
            :stepPlot true})))
 
-(def-chart-page "entropy-bulk.json" [days bins min-hist max-hist threshold]
+(def-chart-page "entropy-bulk.json" [days bins min-hist max-hist threshold sensor]
   (let [all-names (db/all-series-names-of-plant id)
-        [name & names] names
-        results (map (partial calculate-entropies name id s e days bins min-hist max-hist) names)
-        title (format "Signifikante Veränderungen im Verlauf von \"%s\" (%s)" (get-in all-names [name :name]) name)
+        names (remove #{sensor} names)
+        results (map (partial calculate-entropies sensor id s e days bins min-hist max-hist) names)
+        title (format "Signifikante Veränderungen im Verlauf von \"%s\" (%s)" (get-in all-names [sensor :name]) sensor)
         entropies (map :entropies results)
         entropies-sums (apply map + entropies)
         normalized-sums (sax/normalize entropies-sums)
-        entropies-normalized (for [es entropies] (map #(* %3 (/ %1 %2)) es entropies-sums normalized-sums))] 
+        entropies-normalized (for [es entropies] (map #(if (zero? %2) 0 (* %3 (/ %1 %2))) es entropies-sums normalized-sums))] 
     (json {:data (insert-nils (apply map vector (-> results first :x) entropies-normalized))
            ;:data (insert-nils (map vector (-> results first :x) entropies))
            ;:labels ["Datum", "Relative Entropie"]
            :labels (cons "Datum" (map #(get-in all-names [% :name]) (map :denominator results)))
            :highlights [] 
            :title title
-           :numerator name
+           :numerator sensor
            :denominator "all" 
            :threshold threshold
            :stepPlot true})))

@@ -54,7 +54,8 @@
                  + '&min-hist=' + params.minHist
                  + '&max-hist=' + params.maxHist
                  + '&days=' + params.days
-                 + '&threshold=' + params.threshold;
+                 + '&threshold=' + params.threshold
+                 + '&sensor=' + params.sensor;
         }
         return link;
     }
@@ -67,8 +68,7 @@
 		 */
         chartDiv.append($("<div id='"+detailChartId+"'/>"));
         
-        return function(e, point){
-        	var x = point.xval;
+        return function(e, x, point){
             var params=readParameters();
             params.visType=visType;
             var startDate=new Date(x);
@@ -87,7 +87,7 @@
                 params: params,
                 onError: function(){ chartDiv.unblock(); }},
                 function(settings, response){ 
-                    settings.pointClickCallback = createCBFunction(chartDiv,'dygraph.json','dygraph-raw-series');
+                    settings.clickCallback = createCBFunction(chartDiv,'dygraph.json','dygraph-raw-series');
                 });                                                                  
           };
     }
@@ -132,7 +132,7 @@
 							chartDiv.unblock();
 							settings.stackedGraph= (visType=='entropy-bulk.json');
 //							settings.fillGraph= (visType=='entropy-bulk.json');
-							settings.pointClickCallback = createCBFunction(chartDiv, 'dygraph-ratios.json', 'dygraph-chart-entropy-ratios');
+							settings.clickCallback = createCBFunction(chartDiv, 'dygraph-ratios.json', 'dygraph-chart-entropy-ratios');
 							console.log(settings,response);
 						});
 					} else if (visType.slice(-5) == '.json') {
