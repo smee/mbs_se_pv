@@ -128,7 +128,7 @@
 (defn- split-iec-name [n]
   (let [[ld-name ln-name & _] (string/split n #"/|\.")
         [prefix ln-name id] (extract-ln-name ln-name)]
-    (remove empty? [ld-name ln-name prefix id])))
+    (remove empty? [ld-name ln-name id prefix])))
 
 (defn- restore-physical-hierarchy [names] 
   (let [iec (keys names)
@@ -143,7 +143,7 @@
 (defn- split-iec-name-typed [n]
   (let [[ld-name ln-name type & _] (string/split n #"/|\.")
         [prefix ln-name id] (extract-ln-name ln-name)]
-    (remove empty? [(names/type-names type type) ld-name prefix id])))
+    (remove empty? [(names/type-names type type) ld-name id prefix])))
 
 (defn- cluster-by-type [names]
   (let [iec (keys names)
