@@ -399,10 +399,14 @@ Use this function for all dygraph data."
 (def-chart-page "dygraph.json" [] 
   (let [values (->> names
                  (pmap #(get-series-values id % s e width))
-                 (map (mapp (juxt :timestamp :min :value :max)))
-                 (map (mapp #(vector (first %) (apply vector (rest %)))))) 
-        by-time (sort-by first (map #(apply list (ffirst %) (mapcat next %)) (vals (group-by first (apply concat values)))))
+                 (map (mapp #(vector (:timestamp %) [(:min %) (:value %) (:max %)]))))
+        ;; if one series has no value for a timestamp, the number of entries in 
+        ;; the returned row is too low, need to insert [nil nil nil] instead!
         ; problem: not all lines have the same number of values
+        vs-maps (map (partial reduce (fn [m [t vs]] (assoc m t vs)) {}) values)
+        timestamps (->> values (apply concat) (map first) distinct sort)
+        by-time (for [t timestamps]
+                  [t (map #(get % t [nil nil nil]) vs-maps)])
         all-names (db/all-series-names-of-plant id) 
         all-names (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) names)]
     (json {:labels (cons "Datum" all-names) 
