@@ -1,31 +1,22 @@
-(ns mbs-se-pv.views.charts
-  (:require 
+(ns ^{:doc "Generate static graphics"} mbs-se-pv.views.charts
+  (:require
+    [timeseries.align :as align]
     [clojure.string :as string]
-    [mbs-se-pv.views 
-     [common :as common]
-     [util :as util]]
+    [mbs-se-pv.views.util :as util]
     [mbs-db.core :as db]
     [incanter.core :as ic]
     [incanter.charts :as ch]
+    [noir.response :as response]
     [timeseries 
      [discord :as discord]
      [correlations :as tc]
      [changepoints :as cp]
-     [functions :as f]
-     [sax :as sax]]
-    [stats.entropy :as e]
-    [chart-utils.jfreechart :as cjf]
-    [sun :as sun]
-    [clojure.math.combinatorics :as combo])
+     [functions :as f]]
+    [chart-utils.jfreechart :as cjf])
   (:use  
-    timeseries.align
-    [clojure.string :only (split)]
     [noir.core :only (defpage)]
-    [noir.response :only (content-type json)]
-    [mbs-se-pv.views.util :only (dateformatrev dateformatrev-detailed dateformat ONE-DAY convert-si-unit create-si-prefix-formatter)]
     [org.clojars.smee 
-     [map :only (mapp map-values)] 
-     [time :only (as-sql-timestamp as-date as-unix-timestamp as-calendar)]
+     [time :only (as-sql-timestamp as-unix-timestamp)]
      [util :only (s2i s2d)]])
   (:import 
     [java.io ByteArrayOutputStream ByteArrayInputStream]
@@ -49,39 +40,22 @@
 (defn- return-image [chart & opts] 
   (let [baos (ByteArrayOutputStream.)]
     (apply ic/save chart baos opts)
-    (noir.response/set-headers 
+    (response/set-headers 
         {"Cache-Control" "public, max-age=31536000, s-maxage=31536000"}
-        (content-type "image/png" (ByteArrayInputStream. (.toByteArray baos))))))
+        (response/content-type "image/png" (ByteArrayInputStream. (.toByteArray baos))))))
 
-(defn- parse-times 
+(defn parse-times 
   "Parse strings of shape 'yyyyMMdd-yyyyMMdd'."
   [times]
   (when-let [[_ start-time end-time] (re-find #"(\d{8,12})-(\d{8,12})" times)]
-    (let [^SimpleDateFormat format (if (= 8 (count start-time)) (dateformatrev) (dateformatrev-detailed))
+    (let [^SimpleDateFormat format (if (= 8 (count start-time)) (util/dateformatrev) (util/dateformatrev-detailed))
           s (as-unix-timestamp (.parse format start-time))
           e (as-unix-timestamp (.parse format end-time))]
       [(min s e) (max s e)])))
 
-(defn- start-of-day [millis]
-  (- millis (mod millis ONE-DAY)))
-
-
-;;;;;;;;;;;;;;;; experiments with colors and color scales ;;;;;;;;;;;;;;;;;;
-(defn color-distance 
-  "Natural color distance metric, see http:;www.compuphase.com/cmetric.htm"
-  [^Color c1 ^Color c2]
-  (let [rmean (* 0.5 (+ (.getRed c1) (.getRed c2)))
-        r (- (.getRed c1) (.getRed c2))
-        g (- (.getGreen c1) (.getGreen c2))
-        b (- (.getBlue c1) (.getBlue c2))
-        weight-r (+ 2 (/ rmean 256))
-        weight-g 4.0
-        weight-b (+ 2 (/ (- 255 rmean) 256))]
-    (Math/sqrt (+ (* weight-r r r) (* weight-g g g) (* weight-b b b)))))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn- get-series-type [s]
+(defn get-series-type [s]
   (let [parts (->> s
                 (remove #(Character/isDigit %))
                 (partition-by #{\. \/})  
@@ -91,7 +65,7 @@
                 (string/join "."))]
     (keyword "mbs-se-pv.views.charts" parts)))
 
-(defn- unit-properties [val] 
+(defn unit-properties [val] 
   (let[m1 {::A.phsA.cVal ::curr
            ::A.phsB.cVal ::curr
            ::A.phsC.cVal ::curr
@@ -143,12 +117,12 @@
 (defn- get-series-label-iec61850 [s]
   (format "%s von %s" (-> s get-series-type unit-properties :label) s))
 
-(defn- get-series-values 
+(defn get-series-values 
   "Call appropriate database queries according to (get-series-type series-name). Returns
 sequence of value sequences (seq. of maps with keys :timestamp and :value)."
   ([plant-name series-id start-time end-time] (get-series-values plant-name series-id start-time end-time nil))
   ([plant-name series-id start-time end-time width]
-    (let [end-time (if (= end-time start-time) (+ end-time ONE-DAY) end-time)
+    (let [end-time (if (= end-time start-time) (+ end-time util/ONE-DAY) end-time)
           s (as-sql-timestamp start-time) 
           e (as-sql-timestamp end-time)]
       (if width
@@ -177,7 +151,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
       (.setLabelPaint c)
       (.setAxisLinePaint c)
       (.setTickLabelPaint c)
-      (.setNumberFormatOverride (create-si-prefix-formatter "#.##"  (:unit props))))
+      (.setNumberFormatOverride (util/create-si-prefix-formatter "#.##"  (:unit props))))
     (when (not= axis (.getRangeAxis p idx)) 
       (.setRangeAxis p idx axis))
     (.mapDatasetToRangeAxis p series-idx idx)
@@ -240,7 +214,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
     (-> (create-time-series-chart names values)
       (ch/set-x-label "Zeit")
       (ch/set-y-label (-> names first get-series-type unit-properties :label))
-      (ch/set-title (str "Chart für den Zeitraum " (.format (dateformat) s) " bis " (.format (dateformat) e)))
+      (ch/set-title (str "Chart für den Zeitraum " (.format (util/dateformat) s) " bis " (.format (util/dateformat) e)))
       (enhance-chart names)
         (return-image :height height :width width))))
 
@@ -257,9 +231,9 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
         discord-days (->> discords
                        (map #(nth days (first %)))
                        (map vec)
-                       (map (fn [day] (map #(update-in % [:timestamp] mod ONE-DAY) day))))]
+                       (map (fn [day] (map #(update-in % [:timestamp] mod util/ONE-DAY) day))))]
     (-> (create-time-series-chart 
-          (for [[idx v] discords] (format "Discord am %s: %f" (.format (dateformat) (-> days (nth idx) first :timestamp)) v)) 
+          (for [[idx v] discords] (format "Discord am %s: %f" (.format (util/dateformat) (-> days (nth idx) first :timestamp)) v)) 
           discord-days 
           str)
       (ch/set-x-label "Zeit")
@@ -280,8 +254,8 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
           name id
           data (db-query name (as-sql-timestamp s) (as-sql-timestamp e))
           chart (doto (ch/bar-chart 
-                        (map #(.format (dateformat) (:time %)) data) (map #(/ (:value %) 1000) data)
-                        ;:title (format "Gesamtertrag für %s WR %s im Zeitraum %s bis %s" id wr-id (.format (dateformat) s) (.format (dateformat) e))
+                        (map #(.format (util/dateformat) (:time %)) data) (map #(/ (:value %) 1000) data)
+                        ;:title (format "Gesamtertrag für %s WR %s im Zeitraum %s bis %s" id wr-id (.format (util/dateformat) s) (.format (util/dateformat) e))
                         :x-label "Zeit"
                         :y-label "Ertrag in kWh"))] 
       (doto (.. chart getPlot getDomainAxis)
@@ -301,52 +275,25 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
         m (reduce #(assoc % (day-number (first %2)) %2) m days)]
     (vals m)))
 
-(defn- simulate-insolation-values 
-  "Create simulated insolation values for given geographical coordinates."
-  [s e tracker? & opts]
-  (let [opts (if (map? (first opts)) (first opts) (apply hash-map opts))
-        {:keys [latitude longitude height delta-gmt module-tilt module-azimuth] 
-         :or {latitude 12, longitude 50, height 0, delta-gmt 2, module-tilt 45, module-azimuth 180}} opts
-        s (as-calendar s)
-        start-day (-> s (.get java.util.Calendar/DAY_OF_YEAR))
-        end-day (-> e as-calendar (.get java.util.Calendar/DAY_OF_YEAR))
-        h-m (for [hour (range 0 24), minute (range 0 60 10)] [hour minute])]
-    (remove #(Double/isNaN (:value %))
-            (for [day-of-year (range start-day end-day), [h m] h-m
-                  :let [{:keys [sunrise sunset] :as pos} (sun/sun-pos day-of-year h m latitude longitude height delta-gmt)
-                        time (doto ^java.util.Calendar s
-                               (.set java.util.Calendar/DAY_OF_YEAR day-of-year)
-                               (.set java.util.Calendar/HOUR_OF_DAY h)
-                               (.set java.util.Calendar/MINUTE m))
-                        sunrise (doto ^java.util.Calendar (.clone time) 
-                                  (.set java.util.Calendar/HOUR_OF_DAY (unchecked-divide-int sunrise 60))
-                                  (.set java.util.Calendar/MINUTE (mod sunrise 60)))
-                        sunset (doto ^java.util.Calendar (.clone time) 
-                                  (.set java.util.Calendar/HOUR_OF_DAY (unchecked-divide-int sunset 60))
-                                  (.set java.util.Calendar/MINUTE (mod sunset 60)))]
-                  :when (and (.after time sunrise)(.before time sunset))]
-              {:timestamp (.getTimeInMillis time)
-               :value (max 0 (get (sun/module-sun-intensity pos height module-tilt module-azimuth) (if tracker? :s-incident :s-module)))}))))
-
 (def-chart-page "heat-map.png" [hours minutes]
   (let [name (first names)
         block-time-len (hm (s2i hours 0) (s2i minutes 5))
         values (get-series-values id name s e (/ (- e s) block-time-len))
-        ;values (simulate-insolation-values s e false {:latitude 37.606875 :longitude -8.087344}) 
+        ;values (alg/simulate-insolation-values s e false {:latitude 37.606875 :longitude -8.087344}) 
         days (->> values (partition-by day-number) (insert-missing-days s e)) 
         daily-start (hm 0 0)
         daily-end (hm 24 00)
-        gridded (map #(smooth (into-time-grid (map (juxt :timestamp :value) %) daily-start daily-end block-time-len)) days)
+        gridded (map #(align/smooth (align/into-time-grid (map (juxt :timestamp :value) %) daily-start daily-end block-time-len)) days)
         days (vec (map #(vec (map second %)) gridded))
         x-max (count days)
         y-max (apply max (map count days))
         f (fn [x y] 
-            (if-let [v (get-in days [(int (/ (- x s) ONE-DAY)) (int (/ (- y daily-start) block-time-len))])]
+            (if-let [v (get-in days [(int (/ (- x s) util/ONE-DAY)) (int (/ (- y daily-start) block-time-len))])]
               v
               0))
         props (-> name get-series-type unit-properties) 
         time-axis (doto (org.jfree.chart.axis.DateAxis.) (.setTimeZone (java.util.TimeZone/getTimeZone "UTC"))) 
-        chart (doto (cjf/heat-map f s (+ s (clojure.core/* ONE-DAY x-max)) daily-start daily-end 
+        chart (doto (cjf/heat-map f s (+ s (clojure.core/* util/ONE-DAY x-max)) daily-start daily-end 
                                   :color? true
                                   :title (format "Tagesverläufe von %s im Zeitraum %s" name times)
                                   :x-label "Tag"
@@ -358,84 +305,26 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                                   :z-max (props :max)
                                   :colors (props :color-scale)
                                   :color? true)
-                (.. getPlot getRenderer (setBlockWidth ONE-DAY))
+                (.. getPlot getRenderer (setBlockWidth util/ONE-DAY))
                 (.. getPlot getRenderer (setBlockHeight block-time-len)))] 
     (.. chart getPlot (setDomainAxis (org.jfree.chart.axis.DateAxis.)))
     (.. chart getPlot (setRangeAxis time-axis))
     (return-image chart :height height :width width)))
 
-(def-chart-page "data.json" []
-  (let [width (s2i width nil)
-        values (->> names
-                 (map #(get-series-values id % s e width))
-                 (map (mapp (juxt :timestamp :value)))
-                 (map (mapp (fn [[timestamp value]] {:x (long (/ timestamp 1000)), :y value}))))
-        all-names (db/all-series-names-of-plant id)]
-    (json (map #(hash-map :name (get-in all-names [%1 :name])
-                          :type (get-in all-names [%1 :type])
-                          :unit (-> %1 get-series-type unit-properties :unit)
-                          :key %1 
-                          :data %2) names values))))
 
-(defn- insert-nils 
-  "Dygraph needs explicit null values if there should be a gap in the chart.
-Tries to estimate the average x distance between points and whenever there is a gap bigger than two times
-that distance, inserts an artificial entry of shape `[(inc last-x)...]`
-Use this function for all dygraph data."
-  [data]
-  (let [max-gap (->> data (map first) (partition 2 1) (map #(- (second %) (first %))) sort)
-        max-gap (if (not-empty max-gap) (* 2 (f/mean max-gap)) max-gap)
-        v1 (second (first data))
-        nothing (if (coll? v1) (repeat (count v1) nil) nil)] 
-    (concat
-      (apply concat
-             (for [[[x1 & vs] [x2 _]] (partition 2 1 data)
-                   :let [diff (- x2 x1)]] 
-               (if (> diff max-gap)
-                 [(cons x1 vs) (cons (inc x1) (repeat (count vs) nothing))]
-                 [(cons x1 vs)])))
-      (take-last 1 data))))
-
-(def-chart-page "dygraph.json" [] 
-  (let [values (->> names
-                 (pmap #(get-series-values id % s e width))
-                 (map (mapp #(vector (:timestamp %) [(:min %) (:value %) (:max %)]))))
-        ;; if one series has no value for a timestamp, the number of entries in 
-        ;; the returned row is too low, need to insert [nil nil nil] instead!
-        ; problem: not all lines have the same number of values
-        vs-maps (map (partial reduce (fn [m [t vs]] (assoc m t vs)) {}) values)
-        timestamps (->> values (apply concat) (map first) distinct sort)
-        by-time (for [t timestamps]
-                  (apply vector t (map #(get % t [nil nil nil]) vs-maps)))
-        all-names (db/all-series-names-of-plant id) 
-        all-names (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) names)]
-    (json {:labels (cons "Datum" all-names) 
-           :data (insert-nils by-time)
-           :title (str "Chart für den Zeitraum " (.format (dateformat) s) " bis " (.format (dateformat) e))}))) ;values
-
-(def-chart-page "dygraph-ratios.json" []
-  (let [[num dem] names
-        all-names (db/all-series-names-of-plant id) 
-        num (or (some #(when (= (:name (second %)) num) (first %)) all-names) num) 
-        dem (or (some #(when (= (:name (second %)) dem) (first %)) all-names) dem) 
-        vs (db/rolled-up-ratios-in-time-range id num dem s e width)
-        [name1 name2] (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) [num dem])]
-    (json {:labels (list "Datum" (str "Verhältnis von " name1 " und " name2)) 
-           :data (insert-nils (map (juxt :timestamp :value) vs)) 
-           :title (str  "Verhältnis von " name1 " und " name2 "<br/>" (.format (dateformat) s) " bis " (.format (dateformat) e))}))) ;values
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; render a correlation matrix plot ;;;;;;;;;;;;;;;;
 (def-chart-page "correlation.png" [] 
   (let [values (for [name names] (map :value (get-series-values id name s (+ s util/ONE-DAY)))) 
         img (-> values 
               tc/calculate-correlation-matrix 
-              (tc/render-frame names (.format (dateformat) s)))]
+              (tc/render-frame names (.format (util/dateformat) s)))]
     (return-image img)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;; render change points in a chart
 (def-chart-page "changepoints.png" [rank negative zero confidence max-level maintainance] 
   (let [name (first names)
-        e (if (= s e) (+ e ONE-DAY) e) 
+        e (if (= s e) (+ e util/ONE-DAY) e) 
         ranks? (Boolean/parseBoolean rank)
         negative? (Boolean/parseBoolean negative) 
         zeroes? (Boolean/parseBoolean zero)
@@ -474,96 +363,11 @@ Use this function for all dygraph data."
                           (apply cjf/combined-domain-plot)
                           (org.jfree.chart.JFreeChart.))
                     (ch/set-title (format "Signifikante Veränderungen im Verlauf von %s\n(%s)" (get-in (db/all-series-names-of-plant id) [name :name]) name))
-                    (ch/add-subtitle (str (.format (dateformat) s) " - " (.format (dateformat) e)))
+                    (ch/add-subtitle (str (.format (util/dateformat) s) " - " (.format (util/dateformat) e)))
                     (ch/set-x-label "Datum") 
                     (.removeLegend)
                     ;(enhance-chart names)
                     )
                   :height height 
                   :width width)))
-
-;;;;;;;;;;;;;;;;;; relative entropy comparison between daily ratios of time series
-
-(defn- day-of-year [{t :timestamp}]
-    (.get (as-calendar t) java.util.Calendar/DAY_OF_YEAR))
-
-(defn- calculate-entropies [name id s e days bins min-hist max-hist denominator]
-  (let [e (if (= s e) (+ e ONE-DAY) e)
-        n (s2i days 30)
-        bins (s2i bins 500)
-        min-hist (s2d min-hist 0.05) 
-        max-hist (s2d max-hist 0.2)
-        insol-name (or denominator (if (re-matches #"INVU1.*" name) "INVU1/MMET1.HorInsol.mag.f" "INVU2/MMET1.HorInsol.mag.f"))
-        [x entropies] (db/ratios-in-time-range id name insol-name s e
-             (fn [vs] 
-               (let [days (partition-by day-of-year vs)
-                     x-and-hists (map (juxt (comp :timestamp first) e/day2histogram) days)
-                     x (drop n (mapv first x-and-hists))
-                     hists (mapv second x-and-hists)
-                     entropies (e/calculate-segmented-relative-entropies hists 
-                                                                         :n n
-                                                                         :bins bins
-                                                                         :min-hist min-hist 
-                                                                         :max-hist max-hist)]
-                [x (vec entropies)])))
-        
-;        max-len (apply max (map count vs))
-;        vs (remove #(< (count %) (* 0.95 max-len)) vs) ;TODO use expected number of data points per day, not maximum 
-         ]
-    {:x x 
-     :entropies entropies;(sax/normalize entropies) 
-     :name name 
-     :denominator insol-name
-     :n n
-     :bins bins
-     :min-hist min-hist 
-     :max-hist max-hist}))
-
-
-(defn- find-indices-over-threshold [threshold vs]
-  (keep-indexed #(when (<= threshold %2) %) vs))
-
-(defn- highlight-ranges [threshold n days entropies]
-  (let [highlight-indices (set (map #(+ n %) (find-indices-over-threshold threshold entropies)))
-        days-to-highlight (keep-indexed #(when (highlight-indices %) %2) days)]
-    (map (juxt (comp :timestamp first) (comp :timestamp last)) days-to-highlight)))
-
-(def-chart-page "entropy.json" [days bins min-hist max-hist denominator threshold]
-  (let [name (first names)
-        denominator (or denominator (second names)) 
-        {:keys [x entropies name denominator min-hist max-hist n]} (calculate-entropies name id s e days bins min-hist max-hist denominator)
-        e1 entropies
-        {:keys [x entropies name denominator min-hist max-hist n]} (calculate-entropies denominator id s e days bins min-hist max-hist name)
-        threshold (s2d threshold 1.3)
-        highlights (highlight-ranges threshold n days entropies)
-        all-names (db/all-series-names-of-plant id)
-        title (format "Signifikante Veränderungen im Verlauf von \"%s\"<br/>im Vergleich mit \"%s\"<br/>(%s vs. %s)" (get-in all-names [name :name]) (get-in all-names [denominator :name]) name denominator)] 
-    (json {:data (insert-nils (map vector x e1 entropies))
-           :labels ["Datum", "Relative Entropie", "rel. ent 2"]
-           :highlights highlights
-           :title title
-           :numerator name
-           :denominator denominator
-           :threshold threshold
-           :stepPlot true})))
-(use 'org.clojars.smee.serialization)
-(def-chart-page "entropy-bulk.json" [days bins min-hist max-hist threshold sensor]
-  (let [all-names (db/all-series-names-of-plant id)
-        names (remove #{sensor} names)
-;        {:keys [results]} (deserialize (str "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\20130322\\" (.replaceAll sensor "/" "_") ".clj"))
-        results (map (partial calculate-entropies sensor id s e days bins min-hist max-hist) names)
-;        res {:results results}
-;        _ (serialize (str "d:/Dropbox/temp/" (.replaceAll sensor "/" "_") ".clj") res)
-        title (format "Signifikante Veränderungen im Verlauf von \"%s\" (%s)" (get-in all-names [sensor :name]) sensor)
-        entropies (map :entropies results)
-        ]
-    (json {
-           :data (insert-nils (apply map vector (-> results first :x) entropies))
-           :labels (cons "Datum" (map #(get-in all-names [% :name]) names))
-           :highlights [] 
-           :title title
-           :numerator sensor
-           :denominator "all" 
-           :threshold threshold
-           :stepPlot true})))
 
