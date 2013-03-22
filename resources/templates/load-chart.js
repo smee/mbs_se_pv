@@ -49,7 +49,7 @@
                    +'&confidence='+params.confidence
                    +'&max-level='+params.maxLevel
                    +'&maintenance='+params.maintenance;
-        }else if (v == 'entropy.json' || v == 'entropy-bulk.json'){
+        }else if (v == 'entropy.json'){
             link += '&bins=' + params.bins
                  + '&min-hist=' + params.minHist
                  + '&max-hist=' + params.maxHist
@@ -129,7 +129,12 @@
 						chartDiv.unblock();
 					});
 				} else {
-					if (visType == 'entropy.json' || visType == 'entropy-bulk.json') {
+					if (visType == 'entropy.json') {
+						if(!params.sensor){
+							chartDiv.append("<div class='alert'>Bitte wählen Sie aus, welcher Messwert mit den selektierten Werten verglichen werden soll.</div>");
+							chartDiv.unblock();
+							return false; 
+						}
 						chartDiv.append($("<div id='" + chartId + "'/>"));
 						
 						dygraphFunctions.createChart({
@@ -141,8 +146,8 @@
 							}
 						}, function(settings, response) {
 							chartDiv.unblock();
-							settings.stackedGraph= (visType=='entropy-bulk.json');
-//							settings.fillGraph= (visType=='entropy-bulk.json');
+							settings.stackedGraph= (visType=='entropy.json');
+//							settings.fillGraph= (visType=='entropy.json');
 							settings.clickCallback = createCBFunction(chartDiv, {visType: 'dygraph-ratios.json', selectedSeries: [response.numerator]}, 'dygraph-chart-entropy-ratios');
 							console.log(settings,response);
 						});

@@ -79,30 +79,9 @@ Use this function for all dygraph data."
         days-to-highlight (keep-indexed #(when (highlight-indices %) %2) days)]
     (map (juxt (comp :timestamp first) (comp :timestamp last)) days-to-highlight)))
 
-(chart/def-chart-page "entropy.json" [days bins min-hist max-hist denominator threshold]
-  (let [name (first names)
-        denominator (or denominator (second names)) 
-        bins (s2i bins 500)
-        n (s2i days 30)
-        min-hist (s2d min-hist 0.05) 
-        max-hist (s2d max-hist 0.2)
-        {:keys [x entropies name denominator min-hist max-hist n]} (alg/calculate-entropies name id s e n bins min-hist max-hist denominator)
-        e1 entropies
-        {:keys [x entropies name denominator min-hist max-hist n]} (alg/calculate-entropies denominator id s e n bins min-hist max-hist name)
-        threshold (s2d threshold 1.3)
-        highlights (highlight-ranges threshold n days entropies)
-        all-names (db/all-series-names-of-plant id)
-        title (format "Signifikante Veränderungen im Verlauf von \"%s\"<br/>im Vergleich mit \"%s\"<br/>(%s vs. %s)" (get-in all-names [name :name]) (get-in all-names [denominator :name]) name denominator)] 
-    (json {:data (insert-nils (map vector x e1 entropies))
-           :labels ["Datum", "Relative Entropie", "rel. ent 2"]
-           :highlights highlights
-           :title title
-           :numerator name
-           :denominator denominator
-           :threshold threshold
-           :stepPlot true})))
+
 ;(use 'org.clojars.smee.serialization)
-(chart/def-chart-page "entropy-bulk.json" [days bins min-hist max-hist threshold sensor]
+(chart/def-chart-page "entropy.json" [days bins min-hist max-hist threshold sensor]
   (let [all-names (db/all-series-names-of-plant id)
         names (remove #{sensor} names)
         bins (s2i bins 500)

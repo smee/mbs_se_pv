@@ -228,7 +228,6 @@
                                    ["Heatmap" "heat-map.png"]
                                    ["Verhältnis" "dygraph-ratios.json"] 
                                    ["Entropieänderung" "entropy.json"]
-                                   ["Entropieänderung - paarweise" "entropy-bulk.json"]
                                    ["Verhaltensänderung" "changepoints.png"]
                                    ["Ungewöhnlicher Tag" "discord.png"]
                                    ["Korrelationen" "correlation.png"]]
