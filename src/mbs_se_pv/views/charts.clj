@@ -1,20 +1,22 @@
 (ns ^{:doc "Generate static graphics"} mbs-se-pv.views.charts
   (:require
-    [timeseries.align :as align]
     [clojure.string :as string]
     [mbs-se-pv.views.util :as util]
     [mbs-db.core :as db]
-    [incanter.core :as ic]
-    [incanter.charts :as ch]
-    [noir.response :as response]
-    [timeseries 
+    [incanter 
+     [core :as ic]
+     [charts :as ch]]  
+    [chart-utils.jfreechart :as cjf]
+    [noir
+     [core :refer [defpage]]
+     [response :as response]]
+    [timeseries
+     [align :as align]
      [discord :as discord]
      [correlations :as tc]
      [changepoints :as cp]
-     [functions :as f]]
-    [chart-utils.jfreechart :as cjf])
+     [functions :as f]])
   (:use  
-    [noir.core :only (defpage)]
     [org.clojars.smee 
      [time :only (as-sql-timestamp as-unix-timestamp)]
      [util :only (s2i s2d)]])

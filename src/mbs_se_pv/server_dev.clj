@@ -3,7 +3,7 @@
     [noir.server :as server]
     [mbs-db.core :as db]
     ;; view namespaces need to be required explicitely for tomcat
-    [mbs-se-pv.views common calendar charts data timeseries welcome metadata #_maps])
+    [mbs-se-pv.views common calendar charts data timeseries welcome metadata])
   ;(:gen-class)
   )
 
