@@ -5247,7 +5247,7 @@ Dygraph.prototype.rollingAverage = function(originalData, rollPeriod) {
     high = 0;
     var count = 0;
     for (i = 0; i < originalData.length; i++) {
-      var data = originalData[i][1];
+      var data = originalData[i][1] || [null,null,null];// workaround for buggy data
       y = data[1];
       rollingData[i] = [originalData[i][0], [y, y - data[0], data[2] - y]];
 

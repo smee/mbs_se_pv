@@ -406,7 +406,7 @@ Use this function for all dygraph data."
         vs-maps (map (partial reduce (fn [m [t vs]] (assoc m t vs)) {}) values)
         timestamps (->> values (apply concat) (map first) distinct sort)
         by-time (for [t timestamps]
-                  [t (map #(get % t [nil nil nil]) vs-maps)])
+                  (apply vector t (map #(get % t [nil nil nil]) vs-maps)))
         all-names (db/all-series-names-of-plant id) 
         all-names (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) names)]
     (json {:labels (cons "Datum" all-names) 
@@ -415,9 +415,11 @@ Use this function for all dygraph data."
 
 (def-chart-page "dygraph-ratios.json" []
   (let [[num dem] names
-        vs (db/rolled-up-ratios-in-time-range id num dem s e width)
         all-names (db/all-series-names-of-plant id) 
-        [name1 name2] (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) names)]
+        num (or (some #(when (= (:name (second %)) num) (first %)) all-names) num) 
+        dem (or (some #(when (= (:name (second %)) dem) (first %)) all-names) dem) 
+        vs (db/rolled-up-ratios-in-time-range id num dem s e width)
+        [name1 name2] (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) [num dem])]
     (json {:labels (list "Datum" (str "Verhältnis von " name1 " und " name2)) 
            :data (insert-nils (map (juxt :timestamp :value) vs)) 
            :title (str  "Verhältnis von " name1 " und " name2 "<br/>" (.format (dateformat) s) " bis " (.format (dateformat) e))}))) ;values
@@ -487,22 +489,29 @@ Use this function for all dygraph data."
 
 (defn- calculate-entropies [name id s e days bins min-hist max-hist denominator]
   (let [e (if (= s e) (+ e ONE-DAY) e)
-        insol-name (or denominator (if (re-matches #"INVU1.*" name) "INVU1/MMET1.HorInsol.mag.f" "INVU2/MMET1.HorInsol.mag.f"))
-        vs (db/ratios-in-time-range id name insol-name s e)
-        vs (partition-by day-of-year vs)
-;        max-len (apply max (map count vs))
-;        vs (remove #(< (count %) (* 0.95 max-len)) vs) ;TODO use expected number of data points per day, not maximum 
         n (s2i days 30)
         bins (s2i bins 500)
         min-hist (s2d min-hist 0.05) 
         max-hist (s2d max-hist 0.2)
-        [x entropies] (e/calculate-segmented-relative-entropies vs 
-                                              :n n
-                                              :bins bins
-                                              :min-hist min-hist 
-                                              :max-hist max-hist)]
+        insol-name (or denominator (if (re-matches #"INVU1.*" name) "INVU1/MMET1.HorInsol.mag.f" "INVU2/MMET1.HorInsol.mag.f"))
+        [x entropies] (db/ratios-in-time-range id name insol-name s e
+             (fn [vs] 
+               (let [days (partition-by day-of-year vs)
+                     x-and-hists (map (juxt (comp :timestamp first) e/day2histogram) days)
+                     x (drop n (mapv first x-and-hists))
+                     hists (mapv second x-and-hists)
+                     entropies (e/calculate-segmented-relative-entropies hists 
+                                                                         :n n
+                                                                         :bins bins
+                                                                         :min-hist min-hist 
+                                                                         :max-hist max-hist)]
+                [x (vec entropies)])))
+        
+;        max-len (apply max (map count vs))
+;        vs (remove #(< (count %) (* 0.95 max-len)) vs) ;TODO use expected number of data points per day, not maximum 
+         ]
     {:x x 
-     :entropies (sax/normalize entropies) 
+     :entropies entropies;(sax/normalize entropies) 
      :name name 
      :denominator insol-name
      :n n
@@ -523,35 +532,38 @@ Use this function for all dygraph data."
   (let [name (first names)
         denominator (or denominator (second names)) 
         {:keys [x entropies name denominator min-hist max-hist n]} (calculate-entropies name id s e days bins min-hist max-hist denominator)
+        e1 entropies
+        {:keys [x entropies name denominator min-hist max-hist n]} (calculate-entropies denominator id s e days bins min-hist max-hist name)
         threshold (s2d threshold 1.3)
         highlights (highlight-ranges threshold n days entropies)
         all-names (db/all-series-names-of-plant id)
         title (format "Signifikante Veränderungen im Verlauf von \"%s\"<br/>im Vergleich mit \"%s\"<br/>(%s vs. %s)" (get-in all-names [name :name]) (get-in all-names [denominator :name]) name denominator)] 
-    (json {:data (insert-nils (map vector x entropies))
-           :labels ["Datum", "Relative Entropie"]
+    (json {:data (insert-nils (map vector x e1 entropies))
+           :labels ["Datum", "Relative Entropie", "rel. ent 2"]
            :highlights highlights
            :title title
            :numerator name
            :denominator denominator
            :threshold threshold
            :stepPlot true})))
-
+(use 'org.clojars.smee.serialization)
 (def-chart-page "entropy-bulk.json" [days bins min-hist max-hist threshold sensor]
   (let [all-names (db/all-series-names-of-plant id)
         names (remove #{sensor} names)
+;        {:keys [results]} (deserialize (str "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\20130322\\" (.replaceAll sensor "/" "_") ".clj"))
         results (map (partial calculate-entropies sensor id s e days bins min-hist max-hist) names)
+;        res {:results results}
+;        _ (serialize (str "d:/Dropbox/temp/" (.replaceAll sensor "/" "_") ".clj") res)
         title (format "Signifikante Veränderungen im Verlauf von \"%s\" (%s)" (get-in all-names [sensor :name]) sensor)
         entropies (map :entropies results)
-        entropies-sums (apply map + entropies)
-        normalized-sums (sax/normalize entropies-sums)
-        entropies-normalized (for [es entropies] (map #(if (zero? %2) 0 (* %3 (/ %1 %2))) es entropies-sums normalized-sums))] 
-    (json {:data (insert-nils (apply map vector (-> results first :x) entropies-normalized))
-           ;:data (insert-nils (map vector (-> results first :x) entropies))
-           ;:labels ["Datum", "Relative Entropie"]
-           :labels (cons "Datum" (map #(get-in all-names [% :name]) (map :denominator results)))
+        ]
+    (json {
+           :data (insert-nils (apply map vector (-> results first :x) entropies))
+           :labels (cons "Datum" (map #(get-in all-names [% :name]) names))
            :highlights [] 
            :title title
            :numerator sensor
            :denominator "all" 
            :threshold threshold
            :stepPlot true})))
+

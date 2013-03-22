@@ -367,4 +367,5 @@
    (link-to (url-for all-series {:id (url-encode id)}) "Messwerte")]
   )
 
-
+(defpage string-status "/status/:id" {:keys [id]}
+  )

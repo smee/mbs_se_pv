@@ -59,8 +59,19 @@
         }
         return link;
     }
-    
-    function createCBFunction(chartDiv,visType,detailChartId){
+    function findNearest(y, points){
+    	var currentMin=1e9, currentName=points[0].name;
+    	for(var i=0;i<points.length;i++){
+    		var diff=Math.abs(y-points[i].canvasy);
+    		if(diff<currentMin){
+    			currentMin = diff;
+    			currentName = points[i].name;
+    		}
+    	} 
+    	return currentName;
+    		
+    }
+    function createCBFunction(chartDiv,paramsOverwrite,detailChartId){
         /*
 		 * XXX dirty hack: create a new chart div and return function that can
 		 * be used as a click handler in a dygraph really ugly, many things hard
@@ -68,9 +79,13 @@
 		 */
         chartDiv.append($("<div id='"+detailChartId+"'/>"));
         
-        return function(e, x, point){
+        return function(e, x, points){
             var params=readParameters();
-            params.visType=visType;
+            $.extend(params,paramsOverwrite);
+            
+            if(params.visType == 'dygraph-ratios.json'){
+            	params.selectedSeries[1]=findNearest(e.y, points);
+            }
             var startDate=new Date(x);
             var endDate=new Date(x);
             startDate.addDays(-10);
@@ -78,16 +93,12 @@
             params.startDate=startDate;
             params.endDate=endDate;
               
-            if(visType.slice(0,7)=='entropy'){
-            	  params.valueRange=[params.minHist, params.maxHist];
-            }
-            console.log('clicked on chart, loading new chart',detailChartId, params);
             dygraphFunctions.createChart({id: detailChartId, 
                 link: createLink(baseUrl, plantId, params), 
                 params: params,
                 onError: function(){ chartDiv.unblock(); }},
                 function(settings, response){ 
-                    settings.clickCallback = createCBFunction(chartDiv,'dygraph.json','dygraph-raw-series');
+                    settings.clickCallback = createCBFunction(chartDiv,{visType: 'dygraph.json'},'dygraph-raw-series');
                 });                                                                  
           };
     }
@@ -132,7 +143,7 @@
 							chartDiv.unblock();
 							settings.stackedGraph= (visType=='entropy-bulk.json');
 //							settings.fillGraph= (visType=='entropy-bulk.json');
-							settings.clickCallback = createCBFunction(chartDiv, 'dygraph-ratios.json', 'dygraph-chart-entropy-ratios');
+							settings.clickCallback = createCBFunction(chartDiv, {visType: 'dygraph-ratios.json', selectedSeries: [response.numerator]}, 'dygraph-chart-entropy-ratios');
 							console.log(settings,response);
 						});
 					} else if (visType.slice(-5) == '.json') {
