@@ -84,7 +84,7 @@
             $.extend(params,paramsOverwrite);
             
             if(params.visType == 'dygraph-ratios.json'){
-            	params.selectedSeries[1]=findNearest(e.y, points);
+            	params.selectedSeries[1]=findNearest(e.offsetY, points);
             }
             var startDate=new Date(x);
             var endDate=new Date(x);
