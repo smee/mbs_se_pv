@@ -114,7 +114,7 @@
   [s]
   (let [[_ wr-id] (re-find #".*\.wr\.(\d+)\..*" s )
         type (get-series-type s)]
-    (format "%s von%s" (-> s get-series-type unit-properties :label) wr-id)))
+    (format "%s von %s" (-> s get-series-type unit-properties :label) wr-id)))
 
 (defn- get-series-label-iec61850 [s]
   (format "%s von %s" (-> s get-series-type unit-properties :label) s))
@@ -199,11 +199,19 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 
 
 ;;;;;;;;;;;;;;;; Chart generation pages ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn label->series-name [all-names label]
+  (some (fn [[series-name {:keys [name component]}]] 
+          (when (= label (str component "/" name)) series-name)) all-names))
 
+;;  Default definition of a page returning any kind of chart data.
+;;  Each URL has the form '/series-of/:id/*/:times/file-name'. :id is the plant id, * is a by | separated list of
+;;  series names.
+;;  The body has access to these parsed variables: [s e all-names names height width]
 (defmacro def-chart-page [file-name additional-keys & body]
   `(defpage ~(format "/series-of/:id/*/:times/%s" file-name) {:keys [~'id ~'* ~'times ~'width ~'height ~@additional-keys]}
      (if-let [[~'s ~'e] (parse-times ~'times)]
-       (let [~'names (distinct (re-seq #"[^-]+" ~'*)) ;; split at any minus
+       (let [~'all-names  (db/all-series-names-of-plant ~'id)
+             ~'names (map #(or (label->series-name ~'all-names %) %)(distinct (re-seq #"[^\|]+" ~'*))) ;; split at any minus
              ~'* clojure.core/*
              ~'height (s2i ~'height 850)
              ~'width (s2i ~'width 700)]

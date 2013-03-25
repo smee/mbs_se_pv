@@ -37,7 +37,7 @@
     }
     
     function createLink(baseUrl, plantId, params){
-        var series = params.selectedSeries.join('-');
+        var series = params.selectedSeries.join('|');
         var dates = dygraphFunctions.formatDate(params.startDate) + '-' + dygraphFunctions.formatDate(params.endDate);
         var v = params.visType;
 

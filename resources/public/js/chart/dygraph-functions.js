@@ -237,8 +237,8 @@
 		  lastMinX=minX;
 		  lastMaxX=maxX;
 		  var chart = dygraphFunctions.charts[config.id];
-		  var minX=Math.floor(minX);
-		  var maxX=Math.floor(maxX);
+		  minX=Math.floor(minX);
+		  maxX=Math.floor(maxX);
 		  var link = config.link.replace(/\d{8,12}-\d{8,12}/g, formatDate(new Date(minX),true)+'-'+formatDate(new Date(maxX),true));
 		  // load detail data
 		  $.getJSON(link, function(response){

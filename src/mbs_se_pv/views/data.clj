@@ -5,7 +5,7 @@
             [mbs-db.core :as db]
             [org.clojars.smee 
              [map :refer (mapp)] 
-             [util :refer (s2i s2d)]]
+             [util :refer (s2i s2d s2b)]]
             [noir.response :refer (content-type json)]
             [timeseries.functions :as f]))
 
@@ -52,7 +52,6 @@ Use this function for all dygraph data."
         timestamps (->> values (apply concat) (map first) distinct sort)
         by-time (for [t timestamps]
                   (apply vector t (map #(get % t [nil nil nil]) vs-maps)))
-        all-names (db/all-series-names-of-plant id) 
         all-names (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) names)]
     (json {:labels (cons "Datum" all-names) 
            :data (insert-nils by-time)
@@ -60,9 +59,6 @@ Use this function for all dygraph data."
 
 (chart/def-chart-page "dygraph-ratios.json" []
   (let [[num dem] names
-        all-names (db/all-series-names-of-plant id) 
-        num (or (some #(when (= (:name (second %)) num) (first %)) all-names) num) 
-        dem (or (some #(when (= (:name (second %)) dem) (first %)) all-names) dem) 
         vs (db/rolled-up-ratios-in-time-range id num dem s e width)
         [name1 name2] (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) [num dem])]
     (json {:labels (list "Datum" (str "Verhältnis von " name1 " und " name2)) 
@@ -81,15 +77,15 @@ Use this function for all dygraph data."
 
 
 ;(use 'org.clojars.smee.serialization)
-(chart/def-chart-page "entropy.json" [days bins min-hist max-hist threshold sensor]
-  (let [all-names (db/all-series-names-of-plant id)
-        names (remove #{sensor} names)
+(chart/def-chart-page "entropy.json" [days bins min-hist max-hist threshold skip-missing sensor]
+  (let [names (remove #{sensor} names)
         bins (s2i bins 500)
         n (s2i days 30)
         min-hist (s2d min-hist 0.05) 
         max-hist (s2d max-hist 0.2)
+        skip-missing (s2b skip-missing) 
 ;        {:keys [results]} (deserialize (str "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\20130322\\" (.replaceAll sensor "/" "_") ".clj"))
-        results (map (partial alg/calculate-entropies sensor id s e n bins min-hist max-hist) names)
+        results (map #(alg/calculate-entropies id sensor % s e :days n :bins bins :min-hist min-hist :max-hist max-hist) names)
 ;        res {:results results}
 ;        _ (serialize (str "d:/Dropbox/temp/" (.replaceAll sensor "/" "_") ".clj") res)
         title (format "Signifikante Veränderungen im Verlauf von \"%s\" (%s)" (get-in all-names [sensor :name]) sensor)
@@ -97,7 +93,7 @@ Use this function for all dygraph data."
         ]
     (json {
            :data (insert-nils (apply map vector (-> results first :x) entropies))
-           :labels (cons "Datum" (map #(get-in all-names [% :name]) names))
+           :labels (cons "Datum" (map #(str (get-in all-names [% :component]) "/" (get-in all-names [% :name])) names))
            :highlights [] 
            :title title
            :numerator sensor

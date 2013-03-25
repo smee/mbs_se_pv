@@ -1,24 +1,26 @@
 (ns mbs-se-pv.algorithms
   (:require [mbs-db.core :as db]
             [mbs-se-pv.views.util :refer [ONE-DAY]]
-            [org.clojars.smee.time :refer (as-calendar)]
+            [org.clojars.smee.time :refer [as-calendar as-unix-timestamp]]
             [stats.entropy :as e]
             [sun :as sun]))
 
 (defn- day-of-year [{t :timestamp}]
     (.get (as-calendar t) java.util.Calendar/DAY_OF_YEAR))
 
-(defn calculate-entropies [name id s e n bins min-hist max-hist denominator]
-  (let [e (if (= s e) (+ e ONE-DAY) e)
-        insol-name (or denominator (if (re-matches #"INVU1.*" name) "INVU1/MMET1.HorInsol.mag.f" "INVU2/MMET1.HorInsol.mag.f"))
-        [x entropies] (db/ratios-in-time-range id name insol-name s e
+(defn calculate-entropies [plant-id sensor-name denominator s e & {:keys [days bins min-hist max-hist]} ]
+  (let [s (as-unix-timestamp s)
+        e (as-unix-timestamp e)
+        e (if (= s e) (+ e ONE-DAY) e)
+        insol-name (or denominator (if (re-matches #"INVU1.*" sensor-name) "INVU1/MMET1.HorInsol.mag.f" "INVU2/MMET1.HorInsol.mag.f"))
+        [x entropies] (db/ratios-in-time-range plant-id sensor-name insol-name s e
              (fn [vs] 
-               (let [days (partition-by day-of-year vs)
-                     x-and-hists (map (juxt (comp :timestamp first) e/day2histogram) days)
-                     x (drop n (mapv first x-and-hists))
+               (let [daily-ratios (partition-by day-of-year vs)
+                     x-and-hists (map (juxt (comp :timestamp first) e/day2histogram) daily-ratios)
+                     x (drop days (mapv first x-and-hists))
                      hists (mapv second x-and-hists)
                      entropies (e/calculate-segmented-relative-entropies hists 
-                                                                         :n n
+                                                                         :n days
                                                                          :bins bins
                                                                          :min-hist min-hist 
                                                                          :max-hist max-hist)]
@@ -29,9 +31,9 @@
          ]
     {:x x 
      :entropies entropies;(sax/normalize entropies) 
-     :name name 
+     :name sensor-name 
      :denominator insol-name
-     :n n
+     :n days
      :bins bins
      :min-hist min-hist 
      :max-hist max-hist}))
