@@ -54,7 +54,7 @@
                  + '&min-hist=' + params.minHist
                  + '&max-hist=' + params.maxHist
                  + '&days=' + params.days
-                 + '&threshold=' + params.threshold
+                 + '&skip-missing=' + params.skipMissing
                  + '&sensor=' + params.sensor;
         }
         return link;
@@ -117,10 +117,8 @@
 				chartDiv.empty();
 				chartDiv.block();
 
-				var concattedSelection = params.selectedSeries.reduce(function(all, s) {
-					return all.concat(s);
-				});
-				var chartId = 'dygraph-chart-entropy-' + concattedSelection.hashCode();
+				var selectionHash = params.selectedSeries.join('|').hashCode();
+				var chartId = 'dygraph-chart-' + selectionHash;
 
 				if (visType.slice(-4).toLowerCase() == '.png') { // static image
 					chartDiv.append($("<img id='chart-image' src=''/>"));
@@ -146,10 +144,9 @@
 							}
 						}, function(settings, response) {
 							chartDiv.unblock();
-							settings.stackedGraph= (visType=='entropy.json');
-//							settings.fillGraph= (visType=='entropy.json');
-							settings.clickCallback = createCBFunction(chartDiv, {visType: 'dygraph-ratios.json', selectedSeries: [response.numerator]}, 'dygraph-chart-entropy-ratios');
-							console.log(settings,response);
+							settings.stepPlot = true;
+							settings.stackedGraph= true;
+							settings.clickCallback = createCBFunction(chartDiv, {visType: 'dygraph-ratios.json', selectedSeries: [response.numerator]}, 'dygraph-chart-entropy-ratios'+selectionHash);
 						});
 					} else if (visType.slice(-5) == '.json') {
 						chartDiv.append($("<div id='" + chartId + "'/>"));

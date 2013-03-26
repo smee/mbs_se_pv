@@ -7,6 +7,7 @@
              [map :refer (mapp)] 
              [util :refer (s2i s2d s2b)]]
             [noir.response :refer (content-type json)]
+            [noir.core :refer [defpage]]
             [timeseries.functions :as f]))
 
 (chart/def-chart-page "data.json" []
@@ -67,16 +68,7 @@ Use this function for all dygraph data."
 
 ;;;;;;;;;;;;;;;;;; relative entropy comparison between daily ratios of time series
 
-(defn- find-indices-over-threshold [threshold vs]
-  (keep-indexed #(when (<= threshold %2) %) vs))
-
-(defn- highlight-ranges [threshold n days entropies]
-  (let [highlight-indices (set (map #(+ n %) (find-indices-over-threshold threshold entropies)))
-        days-to-highlight (keep-indexed #(when (highlight-indices %) %2) days)]
-    (map (juxt (comp :timestamp first) (comp :timestamp last)) days-to-highlight)))
-
-
-;(use 'org.clojars.smee.serialization)
+(use 'org.clojars.smee.serialization)
 (chart/def-chart-page "entropy.json" [days bins min-hist max-hist threshold skip-missing sensor]
   (let [names (remove #{sensor} names)
         bins (s2i bins 500)
@@ -84,9 +76,9 @@ Use this function for all dygraph data."
         min-hist (s2d min-hist 0.05) 
         max-hist (s2d max-hist 0.2)
         skip-missing (s2b skip-missing) 
-;        {:keys [results]} (deserialize (str "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\20130322\\" (.replaceAll sensor "/" "_") ".clj"))
-        results (map #(alg/calculate-entropies id sensor % s e :days n :bins bins :min-hist min-hist :max-hist max-hist) names)
-;        res {:results results}
+        {:keys [results]} (deserialize (str "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\invu2\\20130325 full-days\\" (.replaceAll sensor "/" "_") ".clj"))
+;        results (map #(alg/calculate-entropies id sensor % s e :days n :bins bins :min-hist min-hist :max-hist max-hist :skip-missing? skip-missing) names)
+        res {:results results}
 ;        _ (serialize (str "d:/Dropbox/temp/" (.replaceAll sensor "/" "_") ".clj") res)
         title (format "Signifikante Veränderungen im Verlauf von \"%s\" (%s)" (get-in all-names [sensor :name]) sensor)
         entropies (map :entropies results)
@@ -94,9 +86,39 @@ Use this function for all dygraph data."
     (json {
            :data (insert-nils (apply map vector (-> results first :x) entropies))
            :labels (cons "Datum" (map #(str (get-in all-names [% :component]) "/" (get-in all-names [% :name])) names))
-           :highlights [] 
            :title title
            :numerator sensor
            :denominator "all" 
            :threshold threshold
            :stepPlot true})))
+
+
+(comment
+    (def res
+    (into {} (for [f (file-seq (java.io.File. "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\invu1\\20130325 full-days\\"))
+          :when (.isFile f)
+          :let [x (:results (deserialize f))]]
+      [(:name (first x)) x])))
+  
+  (def ps (time
+              (doall (bayes.bayesian/calc-failure-probabilities res 1.3))))
+  (require '[org.clojars.smee.seq :refer [find-where]])
+  )
+(defpage "/data/:id/entropy-bulk.json" {:keys [id n]}
+  (let [names (sort (keys res))
+        all-names  (db/all-series-names-of-plant id)
+        index (into {} (map-indexed #(vector %2 %1) names))
+        n (s2i n)
+        name-combos (clojure.math.combinatorics/combinations names 2)
+        entropies-per-combo (into {} (for [[n1 n2] name-combos] [[n1 n2] (:entropies (find-where #(= (:denominator %) n2) (get res n1)))]))]
+    (json {:nodes (for [name names 
+                        :let [[_ st inv] (re-find #".*STRING(\d)_MMDC(\d).*" name)
+                              st (s2i st)
+                              inv (s2i inv)
+                              idx (+ st (* inv 4))]]
+                    {:name (get-in all-names [name :name]) 
+                     :group idx
+                     :probability (-> ps (nth n) (nth (index name)))}) 
+           :links (for [[a b :as c] name-combos :let [e (get entropies-per-combo c)]]
+                    {:source (index a) :target (index b) :value (nth e n)})}))
+  )

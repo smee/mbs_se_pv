@@ -202,7 +202,6 @@
 			  customBars: d.length > 0 && $.isArray(d[0][1]) && d[0][1].length == 3, // customBars if there are three values per series (min, mean, max),
 			  avoidMinZero: true,
 			  showRoller: true,
-			  stepPlot: response.stepPlot || false,
 			  labelsKMB :true,
 			  animatedZooms: true,
 			  labelsSeparateLines: true,
@@ -289,7 +288,7 @@
 		  var data = convertDates(response.data);
 		  if(data.length==0){
 			  $('#dygraph-chart').append("<div class='alert'><strong>Sorry!</strong> Für diesen Zeitraum liegen keine Daten vor.</div>");
-			  if(typeof config.onError != "undefined" && config.onError != null) config.onError();
+			  if(defined(config.onError)) config.onError();
 			  return;
 		  }
 
@@ -339,7 +338,7 @@
 		  $.getJSON(config.link, function(response){
 			renderChart(config, callback, response);
 		  });			
-	  }
+	  };
 	  dygraphFunctions.formatDate = formatDate;
 	  dygraphFunctions.charts = {};
 	  

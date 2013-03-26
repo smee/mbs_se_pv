@@ -3,12 +3,22 @@
             [mbs-se-pv.views.util :refer [ONE-DAY]]
             [org.clojars.smee.time :refer [as-calendar as-unix-timestamp]]
             [stats.entropy :as e]
+            [bigml.histogram.core :as h]
+            [timeseries.functions :as f]
             [sun :as sun]))
 
 (defn- day-of-year [{t :timestamp}]
     (.get (as-calendar t) java.util.Calendar/DAY_OF_YEAR))
 
-(defn calculate-entropies [plant-id sensor-name denominator s e & {:keys [days bins min-hist max-hist]} ]
+(defn- remove-partial-hists [x-and-hists]
+  (let [means (-> (map (comp h/total-count second) x-and-hists) sort)
+        ; we take the number of daily measurement points at the 50% percentile (median)
+        ; as an estimation of the expected daily number
+        probable-daily-num (nth means (int (* (count means) 0.1)))
+        ]
+    (remove #(< (h/total-count (second %)) probable-daily-num) x-and-hists)))
+
+(defn calculate-entropies [plant-id sensor-name denominator s e & {:keys [days bins min-hist max-hist skip-missing?]} ]
   (let [s (as-unix-timestamp s)
         e (as-unix-timestamp e)
         e (if (= s e) (+ e ONE-DAY) e)
@@ -17,8 +27,9 @@
              (fn [vs] 
                (let [daily-ratios (partition-by day-of-year vs)
                      x-and-hists (map (juxt (comp :timestamp first) e/day2histogram) daily-ratios)
+                     x-and-hists (if skip-missing? (remove-partial-hists x-and-hists) x-and-hists) 
                      x (drop days (mapv first x-and-hists))
-                     hists (mapv second x-and-hists)
+                     hists (mapv second x-and-hists)                      
                      entropies (e/calculate-segmented-relative-entropies hists 
                                                                          :n days
                                                                          :bins bins

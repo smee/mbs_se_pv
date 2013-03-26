@@ -259,9 +259,8 @@
          [:div.input-prepend
           [:span.add-on "Tage: "]
           (text-field {:class "input-small"} "days" 30)]
-         [:div.input-prepend
-          [:span.add-on "Grenzwert: "]
-          (text-field {:class "input-small"} "threshold" 1.8)]
+         [:div.controls
+          [:label.checkbox (check-box :skipMissing true) "Ignoriere lückenhafte Tage"]]         
          [:div.input-prepend
           [:span.add-on "Sensor: "]
           (text-field {:class "input-large" :placeholder "Welche Messreihe?"} "sensor" "")]] 
@@ -367,4 +366,33 @@
   )
 
 (defpage string-status "/status/:id" {:keys [id]}
-  )
+  (common/layout-with-links 
+    (toolbar-links id nil)
+    [:div.span2]
+    [:div.span8
+     [:div#matrix]]
+    [:div#entropyText.span2]
+    [:style ".background {
+  fill: #eee;
+}
+
+line {
+  stroke: #fff;
+}
+
+text.active {
+  fill: red;
+  font-weight: bold;
+  visibility: inherit;
+  fill-opacity: 1;
+}
+.cellLabel {
+  font-size:smaller;
+  visibility: hidden;
+}
+.cell {
+  cursor: pointer;
+  fill-opacity: 0.5;
+}"]
+     (hiccup.page/include-js "/js/chart/d3.v2.min.js" 
+                             "/js/chart/matrix.js")))
