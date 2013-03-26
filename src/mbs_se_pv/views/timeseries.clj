@@ -390,7 +390,7 @@ text.active {
 }
 .cellLabel {
   font-size:smaller;
-  visibility: hidden;
+  /*visibility: hidden;*/
 }
 .cell {
   cursor: pointer;

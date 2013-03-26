@@ -11,25 +11,28 @@
     (.get (as-calendar t) java.util.Calendar/DAY_OF_YEAR))
 
 (defn- remove-partial-hists [x-and-hists]
-  (let [means (-> (map (comp h/total-count second) x-and-hists) sort)
-        ; we take the number of daily measurement points at the 50% percentile (median)
+  (let [means (-> (map second x-and-hists) sort)
+        ; we take the number of daily measurement points at the 10% percentile (median)
         ; as an estimation of the expected daily number
         probable-daily-num (nth means (int (* (count means) 0.1)))
         ]
-    (remove #(< (h/total-count (second %)) probable-daily-num) x-and-hists)))
+    (remove #(< (second %) probable-daily-num) x-and-hists)))
+
+(defn- day2histogram "Create a histogram of all values in the given day. Removes all zero values!" 
+  [day]
+  (reduce h/insert! (h/create) (remove zero? (map :value day))))
 
 (defn calculate-entropies [plant-id sensor-name denominator s e & {:keys [days bins min-hist max-hist skip-missing?]} ]
   (let [s (as-unix-timestamp s)
         e (as-unix-timestamp e)
         e (if (= s e) (+ e ONE-DAY) e)
-        insol-name (or denominator (if (re-matches #"INVU1.*" sensor-name) "INVU1/MMET1.HorInsol.mag.f" "INVU2/MMET1.HorInsol.mag.f"))
-        [x entropies] (db/ratios-in-time-range plant-id sensor-name insol-name s e
-             (fn [vs] 
+        [x entropies] (db/ratios-in-time-range plant-id sensor-name denominator s e
+             (fn [vs]  ; make sure not to realize all results into RAM!
                (let [daily-ratios (partition-by day-of-year vs)
-                     x-and-hists (map (juxt (comp :timestamp first) e/day2histogram) daily-ratios)
+                     x-and-hists (map (juxt (comp :timestamp first) count e/day2histogram) daily-ratios)
                      x-and-hists (if skip-missing? (remove-partial-hists x-and-hists) x-and-hists) 
                      x (drop days (mapv first x-and-hists))
-                     hists (mapv second x-and-hists)                      
+                     hists (mapv last x-and-hists)                      
                      entropies (e/calculate-segmented-relative-entropies hists 
                                                                          :n days
                                                                          :bins bins
@@ -43,7 +46,7 @@
     {:x x 
      :entropies entropies;(sax/normalize entropies) 
      :name sensor-name 
-     :denominator insol-name
+     :denominator denominator
      :n days
      :bins bins
      :min-hist min-hist 
