@@ -76,7 +76,7 @@ Use this function for all dygraph data."
         min-hist (s2d min-hist 0.05) 
         max-hist (s2d max-hist 0.2)
         skip-missing (s2b skip-missing) 
-        {:keys [results]} (deserialize (str "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\invu2\\20130325 full-days\\" (.replaceAll sensor "/" "_") ".clj"))
+        {:keys [results]} (deserialize (str "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\invu1\\20130325 full-days\\" (.replaceAll sensor "/" "_") ".clj"))
 ;        results (map #(alg/calculate-entropies id sensor % s e :days n :bins bins :min-hist min-hist :max-hist max-hist :skip-missing? skip-missing) names)
         res {:results results}
 ;        _ (serialize (str "d:/Dropbox/temp/" (.replaceAll sensor "/" "_") ".clj") res)
@@ -111,7 +111,8 @@ Use this function for all dygraph data."
         n (s2i n)
         name-combos (clojure.math.combinatorics/combinations names 2)
         entropies-per-combo (into {} (for [[n1 n2] name-combos] [[n1 n2] (:entropies (find-where #(= (:denominator %) n2) (get res n1)))]))]
-    (json {:nodes (for [name names 
+    (json {:date (.format (util/dateformat) (-> res first second first :x (nth n)))
+           :nodes (for [name names 
                         :let [[_ st inv] (re-find #".*STRING(\d)_MMDC(\d).*" name)
                               st (s2i st)
                               inv (s2i inv)

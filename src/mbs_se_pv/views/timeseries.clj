@@ -369,9 +369,9 @@
   (common/layout-with-links 
     (toolbar-links id nil)
     [:div.span2]
-    [:div.span8
+    [:div.span6
      [:div#matrix]]
-    [:div#entropyText.span2]
+    [:div#entropyText.span4]
     [:style ".background {
   fill: #eee;
 }
@@ -394,5 +394,5 @@ text.active {
   cursor: pointer;
   fill-opacity: 0.5;
 }"]
-     (hiccup.page/include-js "/js/chart/d3.v2.min.js" 
-                             "/js/chart/matrix.js")))
+     (hiccup.page/include-js "/js/chart/d3.v2.min.js")
+     (javascript-tag (util/render-javascript-template "templates/matrix.js" (util/base-url) id 150))))
