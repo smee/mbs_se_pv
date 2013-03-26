@@ -1,11 +1,11 @@
-(function (EntropyChart, $, baseUrl, plantId, n, undefined){
+(function (EntropyChart, $, baseUrl, selector, plantId, n, undefined){
 
 var margin = {top: 150, right: 100, bottom: 10, left: 150},
     width = height = 400;
 var x = d3.scale.ordinal().rangeBands([0, width]),
     c = d3.scale.linear().domain([0,1,3]).range(["green","yellow","red"]);
 
-var svg = d3.select("#matrix")
+var svg = d3.select(selector)
             .append("svg")
               .attr("width", width + margin.left + margin.right)
               .attr("height", height + margin.top + margin.bottom);
@@ -116,6 +116,7 @@ d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json?n="+n, function(json) {
         d3.selectAll(".row text.matrixlabel").classed("active", function(d, i) { return i == p.y; });
         d3.selectAll(".column text.matrixlabel").classed("active", function(d, i) { return i == p.x; });
         d3.selectAll("text.cellLabel").classed("active", function(d, i) { return d.x==p.x && d.y == p.y; });
+        d3.selectAll("text.problabel").classed("active", function(d, i) { return d.index==p.y; });
         $('#entropyText').text("Fehlerwahrscheinlichkeit von "+nodes[p.y].name+": "+(nodes[p.y].probability * 100).toFixed(1)+"%%");
         //''+nodes[p.x].name+' vs. '+nodes[p.y].name+': '+p.z);
     }
@@ -142,4 +143,4 @@ d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json?n="+n, function(json) {
 
 });
 
-}( window.EntropyChart = window.EntropyChart || {}, jQuery, "%s", "%s", "%d"));
+}( window.EntropyChart = window.EntropyChart || {}, jQuery, "%s", "%s", "%s", "%d"));
