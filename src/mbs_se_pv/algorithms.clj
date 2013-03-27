@@ -29,7 +29,7 @@
         [x entropies] (db/ratios-in-time-range plant-id sensor-name denominator s e
              (fn [vs]  ; make sure not to realize all results into RAM!
                (let [daily-ratios (partition-by day-of-year vs)
-                     x-and-hists (map (juxt (comp :timestamp first) count e/day2histogram) daily-ratios)
+                     x-and-hists (map (juxt (comp :timestamp first) count day2histogram) daily-ratios)
                      x-and-hists (if skip-missing? (remove-partial-hists x-and-hists) x-and-hists) 
                      x (drop days (mapv first x-and-hists))
                      hists (mapv last x-and-hists)                      
@@ -38,11 +38,7 @@
                                                                          :bins bins
                                                                          :min-hist min-hist 
                                                                          :max-hist max-hist)]
-                [x (vec entropies)])))
-        
-;        max-len (apply max (map count vs))
-;        vs (remove #(< (count %) (* 0.95 max-len)) vs) ;TODO use expected number of data points per day, not maximum 
-         ]
+                [x (vec entropies)])))]
     {:x x 
      :entropies entropies;(sax/normalize entropies) 
      :name sensor-name 

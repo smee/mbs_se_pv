@@ -21,7 +21,8 @@ If not, it loads a copy of the js file from a local uri."
                 "/css/customizations.css")
    (include-js-with-fallback "http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js" "window.jQuery" "/js/jquery.min.js")
    (include-js "/js/jquery.cookie.js"
-               "/js/jquery.blockUI.js")
+               "/js/jquery.blockUI.js"
+               "/js/common.js")
    
    [:link {:rel "shortcut icon" :href "img/favicon.ico"}]])
 

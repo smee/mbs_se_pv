@@ -8,7 +8,7 @@
   )
 
 ;; initialize database settings
-(when (not *compile-files*) 
+(when (not *compile-files*)
   (let [url  (get (System/getenv) "DB-URL" "localhost:5029/psm")
         user (get (System/getenv) "DB-USER" "root")
         pw (get (System/getenv) "DB-PW" "")

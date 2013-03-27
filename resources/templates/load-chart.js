@@ -21,18 +21,21 @@
     });
     
     function readParameters(){
-        var params = {};
-        // load all values from form fields (text, checkbox, select)
-        $('form input').each(function(){params[$(this).attr('name')]=$(this).val()});
-        $('form input[type="checkbox"]').each(function(){params[$(this).attr('name')]=$(this).is(':checked')});
-        $('form select').each(function(){params[$(this).attr('id')]=$(this).val()});
+    	// load all values from form fields (text, checkbox, select)
+        var params = $('form').values();
         // overwrite dates
         var startDate = $('#startDate').DatePickerGetDate(false);
         var endDate = $('#endDate').DatePickerGetDate(false);
         params.startDate = startDate;
         params.endDate = endDate;
-        // add array of selected series names
-        params.selectedSeries = $.map($('#series-tree').dynatree('getSelectedNodes'), function(node) { return node.data.series; });
+        // add array of selected series names        
+        var selectedSeries = $.map($('#series-tree').dynatree('getSelectedNodes'), function(node) { return node.data.series; });
+        // there could be duplicates
+        var uniqueSeries = [];
+        $.each(selectedSeries, function(i,el){
+        	if($.inArray(el, uniqueSeries) === -1) uniqueSeries.push(el);
+        });
+        params.selectedSeries = uniqueSeries;
         return params;
     }
     

@@ -157,7 +157,7 @@
   [:ul {:style "display:none;"} ; will be replaced by the jquery tree plugin 
    (for [[k vs] nested]
      (if (and (sequential? vs) (= 1 (count vs)))
-       [:li {:data (format "{series: '%s'}" (first vs))} k]
+       [:li {:data (format "{series: '%s', select: false}" (first vs))} k]
        [:li.folder k (make-nested-list vs)]))])
 
 (defpartial series-tree [id names elem-id]
