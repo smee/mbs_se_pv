@@ -10,17 +10,6 @@
         [org.clojars.smee.util :only (s2i)]
         [clojure.string :only [split]]))
 
-(defpage "/data/:id/names.json" {:keys [id]}
-  (let [all-names (db/all-series-names-of-plant id)]
-    (json (map (fn [[id {:keys [name component type]}]] 
-                 {:value id,
-                  :name name
-                  :component component
-                  :type type
-                  :tokens (distinct (concat [component type] 
-                                  (split name #" ")
-                                  (split (clojure.core/name id) #"(\.|/)")))}) all-names)))) 
-
 (defn- search-for 
   "Filter for id substrings matching the search term"
   [search-term metadata]

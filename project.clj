@@ -5,6 +5,7 @@
             :hooks [leiningen.resource]
             :dependencies [[org.clojure/clojure "1.5.1"]
                            [noir "1.3.0-beta10"]
+                           [ring/ring-json "0.2.0"]
                            [org.clojars.smee/common "1.2.7-SNAPSHOT"]
                            [mbs-db "1.1.0-SNAPSHOT"]
                            [solar-datamining "1.0.0-SNAPSHOT"]

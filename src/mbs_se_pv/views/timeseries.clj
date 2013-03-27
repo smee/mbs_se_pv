@@ -18,7 +18,8 @@
           [ring.util.codec :only (url-encode)]
           [org.clojars.smee 
            [time :only (as-date)] 
-           [util :only (s2i)]]
+           [util :only (s2i)]
+           [map :only (map-values)]]
           [clojure.walk :only [postwalk]]))
 
 (declare toolbar-links)
@@ -153,14 +154,14 @@
         labels-and-names (map #(vector (get-in names [% :name]) %) iec)] 
     (util/restore-hierarchy (map #(into (vec %1) %2) splitted labels-and-names))))
 
-(defn- make-nested-list [nested]
+(defn- make-nested-list [selected? nested]
   [:ul {:style "display:none;"} ; will be replaced by the jquery tree plugin 
    (for [[k vs] nested]
      (if (and (sequential? vs) (= 1 (count vs)))
-       [:li {:data (format "{series: '%s', select: false}" (first vs))} k]
-       [:li.folder k (make-nested-list vs)]))])
+       [:li {:data (format "{series: '%s', select: %b}" (first vs) (selected? (first vs)))} k]
+       [:li.folder k (make-nested-list selected? vs)]))])
 
-(defpartial series-tree [id names elem-id]
+(defpartial series-tree [id names elem-id selected?]
   (let [;not-all-caps (partial every? #(Character/isUpperCase %))
         by-phys {"nach Bauteil" (restore-physical-hierarchy names)}
         by-type {"nach Datenart" (cluster-by-type names)} 
@@ -171,7 +172,7 @@
                                                  (if (and (map? v) (= 1 (count (keys v))) #_(not-all-caps k))
                                                    (apply assoc (dissoc m k) (first v))
                                                    m)) % (seq %)) %)) 
-               make-nested-list)]
+               (make-nested-list selected?))]
     [:div {:id elem-id} 
       tree
       ;; render tree via jquery plugin
@@ -185,12 +186,29 @@
            minExpandLevel: 1})});"
           elem-id))]))
 
-(defpage all-series "/series-of/:id" {:keys [id selected-date]}
+(def ^:private default-series-settings
+  {:visType "dygraph.json"
+   :maintenance true
+   :zero false
+   :rank false
+   :negative false
+   :confidence 0.9999
+   :maxLevel 2
+   :minHist 0.05
+   :maxHist 2
+   :bins 500
+   :days 30
+   :skipMissing true
+   :sensor ""
+   :width 950
+   :height 600})
+
+(defn- render-series-page [id {:keys [startDate endDate] :as params}]
   (let [c (db/count-all-series-of-plant id)
         names (db/all-series-names-of-plant id)
         {:keys [min max]} (db/min-max-time-of id (ffirst names))
-        selected-date (when selected-date (as-date (.parse (util/dateformatrev) selected-date))) 
-        date (.format (util/dateformat) (or selected-date max))
+        startDate (or startDate (.format (util/dateformat) max)) 
+        endDate (or endDate (.format (util/dateformat) max)) 
         base-url (util/base-url)]
 
     (common/layout-with-links
@@ -202,10 +220,10 @@
          [:h4 "Datum"]
          [:div.input-prepend 
           [:span.add-on "von: "] 
-          (text-field {:placeholder "Startdatum" :class "input-small"} "startDate" date)]
+          (text-field {:placeholder "Startdatum" :class "input-small"} "startDate" startDate)]
          [:div.input-prepend
           [:span.add-on "bis: "]
-          (text-field {:placeholder "Enddatum" :class "input-small"} "endDate" date)]
+          (text-field {:placeholder "Enddatum" :class "input-small"} "endDate" endDate)]
          [:div
           [:a.btn.btn-mini {:href "#" :onclick "DateSelector.shiftTime(-1,0,0,0)"} "< Tag"]
           [:a.btn.btn-mini {:href "#" :onclick "DateSelector.shiftTime(-7,0,0)"} "< Woche"]
@@ -219,7 +237,7 @@
          [:label.checkbox (check-box "rerender" true) "automatisch neu zeichnen"]]
         [:div
          [:h4 "Datenreihen"]
-         (series-tree id names "series-tree")]
+         (series-tree id names "series-tree" (set (params :selectedSeries)))]
         [:div
          [:h4 "Art der Anzeige:"]
          [:div.controls
@@ -231,44 +249,44 @@
                                    ["Verhaltensänderung" "changepoints.png"]
                                    ["Ungewöhnlicher Tag" "discord.png"]
                                    ["Korrelationen" "correlation.png"]]
-                     "dygraph")]]
+                     (params :visType))]]
         [:div#changepoint-parameter
          [:h4 "Weitere Parameter"]
          [:div.controls
-          [:label.checkbox (check-box :rank false) "Rang statt Rohwerten verwenden"]
-          [:label.checkbox (check-box :zero false) "Nullwerte löschen"]
-          [:label.checkbox (check-box :negative false) "Nur Verschlechterungen anzeigen"]
-          [:label.checkbox (check-box :maintenance true) "Wartungstage ignorieren"]]
+          [:label.checkbox (check-box :rank (params :rank)) "Rang statt Rohwerten verwenden"]
+          [:label.checkbox (check-box :zero (params :zero)) "Nullwerte löschen"]
+          [:label.checkbox (check-box :negative (params :negative)) "Nur Verschlechterungen anzeigen"]
+          [:label.checkbox (check-box :maintenance (params :maintenance)) "Wartungstage ignorieren"]]
          [:div.input-prepend
           [:span.add-on "CI: "]
-          (text-field {:placeholder "p-Wert" :class "input-small"} "confidence" 0.9999)]
+          (text-field {:placeholder "p-Wert" :class "input-small"} "confidence" (params :confidence))]
          [:div.input-prepend
           [:span.add-on "lvl: "]
-          (text-field {:placeholder "Max. level" :class "input-small"} "maxLevel" 2)]]
-        [:div#entropy-parameter
+          (text-field {:placeholder "Max. level" :class "input-small"} "maxLevel" (params :maxLevel))]]
+        [:div#entropy-parameter {:style (str "display:" (if (= (params :visType) "entropy.json") "block" "none"))} 
          [:h4 "Weitere Parameter"]
          [:div.input-prepend
           [:span.add-on "min: "]
-          (text-field {:class "input-small"} "minHist" 0.05)]
+          (text-field {:class "input-small"} "minHist" (params :minHist))]
          [:div.input-prepend
           [:span.add-on "max: "]
-          (text-field {:class "input-small"} "maxHist" 2)]
+          (text-field {:class "input-small"} "maxHist" (params :maxHist))]
          [:div.input-prepend
           [:span.add-on "bins: "]
-          (text-field {:class "input-small"} "bins" 500)]
+          (text-field {:class "input-small"} "bins" (params :bins))]
          [:div.input-prepend
           [:span.add-on "Tage: "]
-          (text-field {:class "input-small"} "days" 30)]
+          (text-field {:class "input-small"} "days" (params :days))]
          [:div.controls
-          [:label.checkbox (check-box :skipMissing true) "Ignoriere lückenhafte Tage"]]         
+          [:label.checkbox (check-box :skipMissing (params :skipMissing)) "Ignoriere lückenhafte Tage"]]         
          [:div.input-prepend
           [:span.add-on "Sensor: "]
-          (text-field {:class "input-large" :placeholder "Welche Messreihe?"} "sensor" "")]] 
+          (text-field {:class "input-large" :placeholder "Welche Messreihe?"} "sensor" (params :sensor))]] 
         [:div
          [:h4 "Größe:"]
-         (text-field {:type "number" :class "input-mini"} "width" 950)
+         (text-field {:type "number" :class "input-mini"} "width" (params :width))
          [:span "X"]
-         (text-field {:type "number" :class "input-mini"} "height" 600)
+         (text-field {:type "number" :class "input-mini"} "height" (params :height))
          [:span "px"]]
         [:button#render-chart.btn-primary.btn-large 
          [:i.icon-picture.icon-white]
@@ -287,8 +305,8 @@
                               "/js/hogan-2.0.0.js"
                               "/js/typeahead.js")
       (hiccup.page/include-css "/css/dynatree/ui.dynatree.css" "/css/datepicker.css" "/css/typeahead.css") 
-      (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#startDate" date min max))
-      (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#endDate" date min max))
+      (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#startDate" startDate min max))
+      (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#endDate" endDate min max))
       (javascript-tag (util/render-javascript-template "templates/load-chart.js" "#render-chart" base-url id))
       (javascript-tag "$('#visType').change(function(){
                             var params=$('#changepoint-parameter'); 
@@ -305,6 +323,12 @@
                             limit: 10,
                          template: '<p>{{component}}/{{name}}</p><p>({{type}})</p>'})"
                         (resolve-url (format "/data/%s/names.json" id)))))))
+
+(defpage [:post "/series-of/:id"] {:keys [id] :as params}
+  (render-series-page id (merge default-series-settings (map-values keyword identity params))))
+
+(defpage all-series "/series-of/:id" {:keys [id params]}
+  (render-series-page id (merge default-series-settings (map-values keyword identity (json/parse-string params)))))
 
 ;;;;;;;;;;;;;;;;;; components of a plant ;;;;;;;;;;;;;;;;;;;;;;
 (defn- convert-node [node]
@@ -392,7 +416,7 @@ text.active {
   /*visibility: hidden;*/
 }
 .cell {
-  cursor: pointer;
+  /*cursor: pointer;*/
   fill-opacity: 0.5;
 }"]
      (hiccup.page/include-js "/js/chart/d3.v2.min.js")

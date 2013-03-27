@@ -8,8 +8,7 @@
 	var day = function(d){ return (d.getDay()+6)%%7; },
 	    week = d3.time.format("%%W"),
 	    percent = d3.format(".1%%"),
-	    format = d3.time.format("%%d.%%m.%%Y"),
-	    revdate = d3.time.format("%%Y%%m%%d");
+	    format = d3.time.format("%%d.%%m.%%Y");
 
 	//var svg = d3.select(selector).selectAll("svg");
 	
@@ -41,7 +40,7 @@
 		    .attr("height", cellSize)
 		    .attr("x", function(d) { return week(d) * cellSize; })
 		    .attr("y", function(d) { return day(d) * cellSize; })
-		    .attr("date",function(d){ return revdate(d); })
+		    .attr("date",function(d){ return format(d); })
 		    .datum(format);
 
 		newrect.append("title")
@@ -97,10 +96,11 @@
 		});
 	}
 	 $(document).on('click','svg', function(e){
-	 var elem = e.target;
-	 if(elem.nodeName='rect' && elem.hasAttribute('date')){
-		 window.location=linkTemplate+'?selected-date='+elem.getAttribute('date');
-	 }
+	   var elem = e.target;
+	   if(elem.nodeName='rect' && elem.hasAttribute('date')){
+		   var date = elem.getAttribute('date');
+		   window.location=linkTemplate+'?params={"startDate":"'+date+'","endDate":"'+date+'"}';
+	   };
 	 });
 	 var cb=$(cbSelector);
 	 loadAndRender(cb.val());

@@ -13,8 +13,9 @@ var g = svg.append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 var slider = d3.select(selector)
                .append("input")
-               .attr("type", "range")
-               .attr("min","0");
+               .attr("type", "number")
+               .attr("min",0)
+               .attr("value",0);
 
 function populate(day){
 	var matrix = [],
@@ -128,7 +129,7 @@ d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json", function(json) {
         d3.selectAll(".column text.matrixlabel").classed("active", function(d, i) { return i == p.x; });
         d3.selectAll("text.cellLabel").classed("active", function(d, i) { return d.x==p.x && d.y == p.y; });
         d3.selectAll("text.problabel").classed("active", function(d, i) { return i==p.y; });
-        $('#entropyText').text("Fehlerwahrscheinlichkeit von \""+names[p.y]+"\": "+(data.probabilities[p.y] * 100).toFixed(1)+"%%");
+        $('#entropyText').text("Wahrscheinlichkeit einer Verhaltensänderung von \""+names[p.y]+"\": "+(data.probabilities[p.y] * 100).toFixed(1)+"%%");
     }
 
     function mouseout() {
@@ -141,7 +142,7 @@ d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json", function(json) {
         var day=days[n];
         if(!day) return;        
         
-        var data = populate(day);
+        data = populate(day);
     	var rows = svg.selectAll(".row").data(data.matrix);
     	
     	rows.selectAll('.cell rect').style("fill", function(d) { return  c(data.matrix[d.x][d.y].z);});

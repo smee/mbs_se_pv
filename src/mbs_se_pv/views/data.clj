@@ -4,12 +4,24 @@
             [mbs-se-pv.algorithms :as alg]
             [mbs-db.core :as db]
             [clojure.math.combinatorics :as combo]
+            [clojure.string :refer [split]]
             [org.clojars.smee 
              [map :refer (mapp)] 
              [util :refer (s2i s2d s2b)]]
             [noir.response :refer (content-type json)]
             [noir.core :refer [defpage]]
             [timeseries.functions :as f]))
+
+(defpage "/data/:id/names.json" {:keys [id]}
+  (let [all-names (db/all-series-names-of-plant id)]
+    (json (map (fn [[id {:keys [name component type]}]] 
+                 {:value id,
+                  :name name
+                  :component component
+                  :type type
+                  :tokens (distinct (concat [component type] 
+                                  (split name #" ")
+                                  (split (clojure.core/name id) #"(\.|/)")))}) all-names)))) 
 
 (chart/def-chart-page "data.json" []
   (let [width (s2i width nil)
@@ -92,25 +104,29 @@ Use this function for all dygraph data."
            :threshold threshold
            :stepPlot true})))
 
-
-(require '[org.clojars.smee.seq :refer [find-where]])
-(require 'bayesian) 
-(def res (into {} (for [f (file-seq (java.io.File. "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\invu2\\20130326 full-days\\"))
-                            :when (.isFile f)
-                            :let [x (:results (deserialize f))]]
-                        [(:name (first x)) x])))
-
-(def ps (time (doall (bayesian/calc-failure-probabilities res 1.3))))
-
-
 (defn series-index [s]
-  (let [[_ st inv] (re-find #".*STRING(\d)_MMDC(\d).*" s)
-        st (s2i st)
-        inv (s2i inv)]
-    (+ st (* inv 4))))
+    (let [[_ st inv] (re-find #".*STRING(\d)_MMDC(\d).*" s)
+          st (s2i st)
+          inv (s2i inv)]
+      (+ st (* inv 4))))
 
 (defpage "/data/:id/entropy-bulk.json" {:keys [id]}
-  (let [names (sort-by series-index (keys res))
+  (let [result (deserialize "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\invu1\\scenario-invu2.clj")]
+    (json result))
+  )
+
+(comment
+  (require '[org.clojars.smee.seq :refer [find-where]])
+  (require 'bayesian) 
+  (def res (into {} (for [f (file-seq (java.io.File. "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\invu1\\20130326 full-days\\"))
+                          :when (.isFile f)
+                          :let [x (:results (deserialize f))]]
+                      [(:name (first x)) x])))
+  
+  (def ps (time (doall (bayesian/calc-failure-probabilities (sort-by series-index (keys res)) res 1.3))))
+  
+  (defn construct-matrices []
+    (let [names (sort-by series-index (keys res))
         all-names  (db/all-series-names-of-plant id)
         pretty-names (for [name names :let [{label :name device :component} (all-names name)]] (str device "/" label) )
         index (into {} (map-indexed #(vector %2 %1) names))
@@ -118,9 +134,10 @@ Use this function for all dygraph data."
         entropies-per-combo (into {} (apply concat
                                             (for [[n1 n2] name-combos] 
                                               [[[n1 n2] (:entropies (find-where #(= (:denominator %) n2) (get res n1)))]
-                                               [[n2 n1] (:entropies (find-where #(= (:denominator %) n1) (get res n2)))]])))]
-    (json
+                                               [[n2 n1] (:entropies (find-where #(= (:denominator %) n1) (get res n2)))]])))
+        ]
       {:names pretty-names
+       :ids names
        :days 
        (for [n (range (-> res first second first :x count))
              :let [date (-> res first second first :x (nth n))]]
@@ -128,5 +145,5 @@ Use this function for all dygraph data."
                    :probabilities (for [name names] (-> ps (nth n) (nth (index name))))
                    :entropies (for [a names]
                                 (for [b names :let [e (get entropies-per-combo [a b])]]
-                                  (when e (nth e n))))))}))
+                                  (when e (nth e n))))))})) 
   )
