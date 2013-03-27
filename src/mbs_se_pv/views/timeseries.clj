@@ -250,7 +250,7 @@
                                    ["Ungewöhnlicher Tag" "discord.png"]
                                    ["Korrelationen" "correlation.png"]]
                      (params :visType))]]
-        [:div#changepoint-parameter
+        [:div#changepoint-parameter {:style (str "display:" (if (= (params :visType) "changepoints.png") "block" "none"))}
          [:h4 "Weitere Parameter"]
          [:div.controls
           [:label.checkbox (check-box :rank (params :rank)) "Rang statt Rohwerten verwenden"]
@@ -322,7 +322,9 @@
                          prefetch: '%s',
                             limit: 10,
                          template: '<p>{{component}}/{{name}}</p><p>({{type}})</p>'})"
-                        (resolve-url (format "/data/%s/names.json" id)))))))
+                        (resolve-url (format "/data/%s/names.json" id))))
+      (if (params :run) 
+        (javascript-tag "$(document).ready(function(){$('#render-chart').trigger('click');})")))))
 
 (defpage [:post "/series-of/:id"] {:keys [id] :as params}
   (render-series-page id (merge default-series-settings (map-values keyword identity params))))

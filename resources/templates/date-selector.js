@@ -20,32 +20,5 @@
 	});
 	// set calendar value from string after manual change.
 	$(dateField).change(function(){df.val($(this).val())});
-
-	DateSelector.shiftTime = function(days, months, years){
-		// FIXME hard coded selectors
-		var sf = $('#startDate');
-		var ef = $('#endDate');
-		
-		var startdate = sf.DatePickerGetDate(false);
-		var enddate = ef.DatePickerGetDate(false);
-		
-		startdate.addDays(days);
-		startdate.addMonths(months);
-		startdate.addYears(years);
-		enddate.addDays(days);
-		enddate.addMonths(months);
-		enddate.addYears(years);
-		
-		sf.DatePickerSetDate(startdate,true);
-		sf.val(sf.DatePickerGetDate(true));
-		ef.DatePickerSetDate(enddate,true);
-		ef.val(ef.DatePickerGetDate(true));
-		// FIXME hard coded selectors		
-		if($('#rerender').attr('checked')){
-			$('#render-chart').trigger('click');
-		}
-		
-		return false;
-	}
 	
 })(window.DateSelector = window.DateSelector || {}, jQuery, "%s","%s",%s, %s);

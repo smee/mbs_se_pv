@@ -73,6 +73,7 @@ Use this function for all dygraph data."
 
 (chart/def-chart-page "dygraph-ratios.json" []
   (let [[num dem] names
+        e (if (= e s) (+ e util/ONE-DAY) e) 
         vs (db/rolled-up-ratios-in-time-range id num dem s e width)
         [name1 name2] (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) [num dem])]
     (json {:labels (list "Datum" (str "Verhältnis von " name1 " und " name2)) 

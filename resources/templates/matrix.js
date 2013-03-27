@@ -33,6 +33,7 @@ function populate(day){
 
 d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json", function(json) {
     var names = json.names,
+        ids = json.ids,
         n = names.length,
         days = json.days;
 
@@ -108,7 +109,8 @@ d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json", function(json) {
         var cell = d3.select(this).selectAll(".cell")
             .data(row.filter(function(d) { return d.z; }))
             .enter().append("g")
-              .attr("class","cell");
+              .attr("class","cell")
+              .on("click",loadDetailChart);
         cell.append("rect")
               .attr("x", function(d) { return x(d.x); })
               .attr("width", x.rangeBand())
@@ -122,6 +124,14 @@ d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json", function(json) {
         cell.on("mouseover", mouseover)
             .on("mouseout", mouseout);
 
+    }
+    function loadDetailChart(d,i){
+    	var params = {startDate:data.date, 
+    			      endDate:data.date,
+    			      visType: "dygraph-ratios.json",
+    			      selectedSeries: [ids[d.x], ids[d.y]],
+    			      run: true};
+    	window.location=baseUrl+'/series-of/'+plantId+'?params='+JSON.stringify(params);
     }
 
     function mouseover(p) {
@@ -149,7 +159,7 @@ d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json", function(json) {
     	rows.selectAll('.cell text.cellLabel').text(function(d) { return data.matrix[d.x][d.y].z.toFixed(2); });
     	svg.select(".datelabel").text(data.date);
     	svg.selectAll("text.problabel").data(data.probabilities).text(function(d){return (d*100).toFixed(0)+"%%";});
-    };    
+    }
 
 });
 
