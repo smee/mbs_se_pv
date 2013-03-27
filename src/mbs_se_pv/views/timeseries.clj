@@ -418,7 +418,7 @@ text.active {
   /*visibility: hidden;*/
 }
 .cell {
-  /*cursor: pointer;*/
+  cursor: pointer;
   fill-opacity: 0.5;
 }"]
      (hiccup.page/include-js "/js/chart/d3.v2.min.js")

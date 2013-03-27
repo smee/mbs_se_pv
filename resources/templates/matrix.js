@@ -80,7 +80,8 @@ d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json", function(json) {
         .attr("dy", ".32em")
         .attr("text-anchor", "end")
         .attr("class","matrixlabel")
-        .text(function(d, i) { return names[i]; });
+        .text(function(d, i) { return names[i]; })
+        .on("click",loadDetailChart);
 
     var column = g.selectAll(".column")
         .data(data.matrix)
@@ -126,12 +127,20 @@ d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json", function(json) {
 
     }
     function loadDetailChart(d,i){
+    	var elem = d3.select(this); 
     	var params = {startDate:data.date, 
     			      endDate:data.date,
-    			      visType: "dygraph-ratios.json",
-    			      selectedSeries: [ids[d.x], ids[d.y]],
     			      run: true};
-    	window.location=baseUrl+'/series-of/'+plantId+'?params='+JSON.stringify(params);
+    	if(elem.classed("matrixlabel")){ // clicked on label
+    		params.visType = "dygraph.json";
+    		params.selectedSeries = [];
+    		d.forEach(function(entry){params.selectedSeries.push(ids[entry.x]);});    			
+    	}else{ // clicked on cell		      
+    		params.visType = "dygraph-ratios.json";
+    		params.selectedSeries = [ids[d.x], ids[d.y]];
+    	}
+    	console.log(params);
+    	window.open(baseUrl+'/series-of/'+plantId+'?params='+JSON.stringify(params));
     }
 
     function mouseover(p) {
