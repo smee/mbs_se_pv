@@ -8,6 +8,7 @@
                            [org.clojars.smee/common "1.2.7-SNAPSHOT"]
                            [mbs-db "1.1.0-SNAPSHOT"]
                            [solar-datamining "1.0.0-SNAPSHOT"]
+                           [org.clojure/math.combinatorics "0.0.3"]
                            [chart-utils "1.0.2-SNAPSHOT"]
                            [incanter/incanter-core "1.3.0"]
                            [incanter/incanter-charts "1.3.0"]
