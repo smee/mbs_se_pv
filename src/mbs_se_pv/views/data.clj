@@ -3,6 +3,7 @@
             [mbs-se-pv.views.util :as util]
             [mbs-se-pv.algorithms :as alg]
             [mbs-db.core :as db]
+            [clojure.math.combinatorics :as combo]
             [org.clojars.smee 
              [map :refer (mapp)] 
              [util :refer (s2i s2d s2b)]]
@@ -76,9 +77,9 @@ Use this function for all dygraph data."
         min-hist (s2d min-hist 0.05) 
         max-hist (s2d max-hist 0.2)
         skip-missing (s2b skip-missing) 
-;        {:keys [results]} (deserialize (str "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\invu2\\20130325 full-days\\" (.replaceAll sensor "/" "_") ".clj"))
-        results (map #(alg/calculate-entropies id sensor % s e :days n :bins bins :min-hist min-hist :max-hist max-hist :skip-missing? skip-missing) names)
-        _ (serialize (str "d:/Dropbox/temp/" (.replaceAll sensor "/" "_") ".clj") {:results results})
+        {:keys [results]} (deserialize (str "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\invu1\\20130326 full-days\\" (.replaceAll sensor "/" "_") ".clj"))
+;        results (map #(alg/calculate-entropies id sensor % s e :days n :bins bins :min-hist min-hist :max-hist max-hist :skip-missing? skip-missing) names)
+;        _ (serialize (str "d:/Dropbox/temp/" (.replaceAll sensor "/" "_") ".clj") {:results results})
         title (format "Signifikante Veränderungen im Verlauf von \"%s\" (%s)" (get-in all-names [sensor :name]) sensor)
         entropies (map :entropies results)
         ]
@@ -92,41 +93,40 @@ Use this function for all dygraph data."
            :stepPlot true})))
 
 
-(comment
-    (def res
-    (into {} (for [f (file-seq (java.io.File. "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\invu2\\20130325 full-days\\"))
-          :when (.isFile f)
-          :let [x (:results (deserialize f))]]
-      [(:name (first x)) x])))
-  
-  (def ps (time
-              (doall (bayes.bayesian/calc-failure-probabilities res 1.3))))
-  (require '[org.clojars.smee.seq :refer [find-where]])
-  )
-(defpage "/data/:id/entropy-bulk.json" {:keys [id n]}
-  (let [names (sort (keys res))
+(require '[org.clojars.smee.seq :refer [find-where]])
+(require 'bayesian) 
+(def res (into {} (for [f (file-seq (java.io.File. "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\invu2\\20130326 full-days\\"))
+                            :when (.isFile f)
+                            :let [x (:results (deserialize f))]]
+                        [(:name (first x)) x])))
+
+(def ps (time (doall (bayesian/calc-failure-probabilities res 1.3))))
+
+
+(defn series-index [s]
+  (let [[_ st inv] (re-find #".*STRING(\d)_MMDC(\d).*" s)
+        st (s2i st)
+        inv (s2i inv)]
+    (+ st (* inv 4))))
+
+(defpage "/data/:id/entropy-bulk.json" {:keys [id]}
+  (let [names (sort-by series-index (keys res))
         all-names  (db/all-series-names-of-plant id)
+        pretty-names (for [name names :let [{label :name device :component} (all-names name)]] (str device "/" label) )
         index (into {} (map-indexed #(vector %2 %1) names))
-        n (s2i n)
-        name-combos (clojure.math.combinatorics/combinations names 2)
+        name-combos (combo/combinations names 2)
         entropies-per-combo (into {} (apply concat
                                             (for [[n1 n2] name-combos] 
                                               [[[n1 n2] (:entropies (find-where #(= (:denominator %) n2) (get res n1)))]
                                                [[n2 n1] (:entropies (find-where #(= (:denominator %) n1) (get res n2)))]])))]
-    (json {:date (.format (util/dateformat) (-> res first second first :x (nth n)))
-           :nodes (for [name names 
-                        :let [[_ st inv] (re-find #".*STRING(\d)_MMDC(\d).*" name)
-                              st (s2i st)
-                              inv (s2i inv)
-                              idx (+ st (* inv 4))
-                              {label :name device :component} (all-names name)]]
-                    {:name (str device "/" label) 
-                     :group idx
-                     :probability (-> ps (nth n) (nth (index name)))}) 
-           :links (apply concat
-                         (for [[a b] name-combos 
-                               :let [e1 (get entropies-per-combo [a b])
-                                     e2 (get entropies-per-combo [b a])]]
-                           [{:source (index a) :target (index b) :value (nth e1 n)}
-                            {:source (index b) :target (index a) :value (nth e2 n)}]))}))
+    (json
+      {:names pretty-names
+       :days 
+       (for [n (range (-> res first second first :x count))
+             :let [date (-> res first second first :x (nth n))]]
+         (hash-map :date (.format (util/dateformat) date)
+                   :probabilities (for [name names] (-> ps (nth n) (nth (index name))))
+                   :entropies (for [a names]
+                                (for [b names :let [e (get entropies-per-combo [a b])]]
+                                  (when e (nth e n))))))}))
   )

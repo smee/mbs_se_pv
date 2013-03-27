@@ -372,8 +372,7 @@
     [:div.span6
      [:div#matrix]]
     [:div.span4
-     [:span#entropyText]
-     [:input#daterange {:type "range" :min 0 :max 371 :value 92}]]
+     [:span#entropyText]]
     [:style ".background {
   fill: #eee;
 }
@@ -397,6 +396,4 @@ text.active {
   fill-opacity: 0.5;
 }"]
      (hiccup.page/include-js "/js/chart/d3.v2.min.js")
-     (javascript-tag (util/render-javascript-template "templates/matrix.js" (util/base-url) "#matrix" id 92))
-     (javascript-tag "$('#daterange').change(function(){
-d3.json('/data/Ourique PV-Anlage/entropy-bulk.json?n='+$(this).val(), function(json) {EntropyChart.redraw(json)})})")))
+     (javascript-tag (util/render-javascript-template "templates/matrix.js" (util/base-url) "#matrix" id))))

@@ -1,9 +1,9 @@
-(function (EntropyChart, $, baseUrl, selector, plantId, n, undefined){
+(function (EntropyChart, $, baseUrl, selector, plantId, undefined){
 
 var margin = {top: 200, right: 100, bottom: 10, left: 200},
     width = height = 400;
 var x = d3.scale.ordinal().rangeBands([0, width]),
-    c = d3.scale.linear().domain([0,1,3]).range(["green","yellow","red"]);
+    c = d3.scale.linear().domain([0,0.001,1,3]).range(["red","green","yellow","red"]);
 
 var svg = d3.select(selector)
             .append("svg")
@@ -11,28 +11,33 @@ var svg = d3.select(selector)
               .attr("height", height + margin.top + margin.bottom);
 var g = svg.append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+var slider = d3.select(selector)
+               .append("input")
+               .attr("type", "range")
+               .attr("min","0");
 
-d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json?n="+n, function(json) {
-    var matrix = [],
-        nodes = json.nodes,
-        n = nodes.length,
-        date = json.date;
+function populate(day){
+	var matrix = [],
+    	n = day.probabilities.length;
+	
+	for(var i=0;i<n;i++){
+		var es = day.entropies[i];
+        matrix[i] = d3.range(n).map(function(j) { return {x: j, y: i, z: es[j] || 0}; });
+    };
+    
+    return {matrix: matrix,
+    	    probabilities: day.probabilities,
+    	    date: day.date};
+}
 
-    // Compute index per node.
-    nodes.forEach(function(node, i) {
-        node.index = i;
-        matrix[i] = d3.range(n).map(function(j) { return {x: j, y: i, z: 0}; });
-    });
+d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json", function(json) {
+    var names = json.names,
+        n = names.length,
+        days = json.days;
 
-    // Convert links to matrix; count character occurrences.
-    json.links.forEach(function(link) {
-        matrix[link.source][link.target].z = link.value;
-//        matrix[link.target][link.source].z = link.value;
-    });
-    // The default sort order.
-//    x.domain(d3.range(n));
-    // sort by group
-    x.domain(d3.range(n).sort(function(a, b) { return nodes[a].group - nodes[b].group; }));
+    var data = populate(days[0]);
+    
+    x.domain(d3.range(n));
 
     g.append("rect")
         .attr("class", "background")
@@ -43,21 +48,21 @@ d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json?n="+n, function(json) {
        .attr("x", 20)
        .attr("y", 20)
        .attr("class","datelabel")
-       .text(date)
+       .text(data.date)
        .style("font-weight", "bold")
        .style("font-size", "large");
 
-    g.selectAll("text.problabel").data(nodes)
+    g.selectAll("text.problabel").data(data.probabilities)
        .enter()
        .append("text")
          .attr("class","problabel")
          .attr("x",width+x.rangeBand())
          .attr("y", function(d,i){return x(i)+x.rangeBand()/2;})
          .attr("dy", ".32em")
-         .text(function(d){return (d.probability*100).toFixed(0)+"%%";});
+         .text(function(d){return (d*100).toFixed(0)+"%%";});
     
     var rows = g.selectAll(".row")
-        .data(matrix);
+        .data(data.matrix);
         
     var row = rows.enter().append("g")
           .attr("class", "row")
@@ -73,10 +78,10 @@ d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json?n="+n, function(json) {
         .attr("dy", ".32em")
         .attr("text-anchor", "end")
         .attr("class","matrixlabel")
-        .text(function(d, i) { return nodes[i].name; });
+        .text(function(d, i) { return names[i]; });
 
     var column = g.selectAll(".column")
-        .data(matrix)
+        .data(data.matrix)
         .enter().append("g")
           .attr("class", "column")
           .attr("transform", function(d, i) { return "translate(" + x(i) + ")rotate(-90)"; });
@@ -90,8 +95,14 @@ d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json?n="+n, function(json) {
         .attr("dy", ".32em")
         .attr("text-anchor", "start")
         .attr("class","matrixlabel")
-        .text(function(d, i) { return nodes[i].name; });
+        .text(function(d, i) { return names[i]; });
 
+    
+    slider.data(d3.range(n))
+          .attr("max",days.length)
+          .attr("value",0)
+          .on("change", redraw);
+    
     function drawrow(row) {
         var cell = d3.select(this).selectAll(".cell")
             .data(row.filter(function(d) { return d.z; }))
@@ -101,7 +112,7 @@ d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json?n="+n, function(json) {
               .attr("x", function(d) { return x(d.x); })
               .attr("width", x.rangeBand())
               .attr("height", x.rangeBand())
-              .style("fill", function(d) { return c(matrix[d.x][d.y].z);});//return nodes[d.x].group == nodes[d.y].group ? c(nodes[d.x].group) : null;})
+              .style("fill", function(d) { return c(d.z);});
         cell.append("text")
               .text(function(d, i) { return d.z.toFixed(2); })
               .attr("x", function(d) { return x(d.x)+2; })
@@ -116,9 +127,8 @@ d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json?n="+n, function(json) {
         d3.selectAll(".row text.matrixlabel").classed("active", function(d, i) { return i == p.y; });
         d3.selectAll(".column text.matrixlabel").classed("active", function(d, i) { return i == p.x; });
         d3.selectAll("text.cellLabel").classed("active", function(d, i) { return d.x==p.x && d.y == p.y; });
-        d3.selectAll("text.problabel").classed("active", function(d, i) { return d.index==p.y; });
-        $('#entropyText').text("Fehlerwahrscheinlichkeit von \""+nodes[p.y].name+"\": "+(nodes[p.y].probability * 100).toFixed(1)+"%%");
-        //''+nodes[p.x].name+' vs. '+nodes[p.y].name+': '+p.z);
+        d3.selectAll("text.problabel").classed("active", function(d, i) { return i==p.y; });
+        $('#entropyText').text("Fehlerwahrscheinlichkeit von \""+names[p.y]+"\": "+(data.probabilities[p.y] * 100).toFixed(1)+"%%");
     }
 
     function mouseout() {
@@ -126,21 +136,20 @@ d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json?n="+n, function(json) {
     }
     
     
-    EntropyChart.redraw = function(json){
-        json.links.forEach(function(link) {
-            matrix[link.source][link.target].z = link.value;
-            matrix[link.target][link.source].z = link.value;
-        });
-        for(var i=0;i<nodes.length;i++)
-        	nodes[i].probability=json.nodes[i].probability;
+     function redraw(){
+    	var n = +this.value;
+        var day=days[n];
+        if(!day) return;        
         
-    	var rows = svg.selectAll(".row").data(matrix);    	
-    	rows.selectAll('.cell rect').style("fill", function(d) { return c(matrix[d.x][d.y].z);});
-    	rows.selectAll('.cell text.cellLabel').text(function(d) { return matrix[d.x][d.y].z.toFixed(2); });
-    	svg.select(".datelabel").text(json.date);
-    	svg.selectAll("text.problabel").data(nodes).text(function(d){return (d.probability*100).toFixed(0)+"%%";});
+        var data = populate(day);
+    	var rows = svg.selectAll(".row").data(data.matrix);
+    	
+    	rows.selectAll('.cell rect').style("fill", function(d) { return  c(data.matrix[d.x][d.y].z);});
+    	rows.selectAll('.cell text.cellLabel').text(function(d) { return data.matrix[d.x][d.y].z.toFixed(2); });
+    	svg.select(".datelabel").text(data.date);
+    	svg.selectAll("text.problabel").data(data.probabilities).text(function(d){return (d*100).toFixed(0)+"%%";});
     };    
 
 });
 
-}( window.EntropyChart = window.EntropyChart || {}, jQuery, "%s", "%s", "%s", "%d"));
+}( window.EntropyChart = window.EntropyChart || {}, jQuery, "%s", "%s", "%s"));
