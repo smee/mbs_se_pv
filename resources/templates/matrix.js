@@ -161,10 +161,10 @@ d3.json(dataUrl, function(json) {
     }
 
     function mouseover(p) {
-        d3.selectAll(".row text.matrixlabel").classed("active", function(d, i) { return i == p.y; });
-        d3.selectAll(".column text.matrixlabel").classed("active", function(d, i) { return i == p.x; });
-        d3.selectAll("text.cellLabel").classed("active", function(d, i) { return d.x==p.x && d.y == p.y; });
-        d3.selectAll("text.problabel").classed("active", function(d, i) { return i==p.y; });
+        svg.selectAll(".row text.matrixlabel").classed("active", function(d, i) { return i == p.y; });
+        svg.selectAll(".column text.matrixlabel").classed("active", function(d, i) { return i == p.x; });
+        svg.selectAll("text.cellLabel").classed("active", function(d, i) { return d.x==p.x && d.y == p.y; });
+        svg.selectAll("text.problabel").classed("active", function(d, i) { return i==p.y; });
         summary.text("Wahrscheinlichkeit einer Verhaltensänderung von \""+names[p.y]+"\": "+(data.probabilities[p.y] * 100).toFixed(1)+"%%");
     }
 
