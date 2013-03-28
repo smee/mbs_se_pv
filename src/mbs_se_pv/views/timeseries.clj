@@ -212,7 +212,7 @@
         base-url (util/base-url)]
 
     (common/layout-with-links
-      (toolbar-links id 3)
+      (toolbar-links id 4)
       ;; sidebar
       [:div.span3
        [:form.form-vertical.well 
@@ -356,7 +356,7 @@
 (defpage structure-page "/structure/:id" {:keys [id]}
   (let [structure (db/structure-of id)]
     (common/layout-with-links
-      (toolbar-links id 2)
+      (toolbar-links id 3)
       [:div.span3
        [:h4 "Komponentenstammbaum"]
        [:div#components-tree
@@ -387,19 +387,23 @@
   [active-idx
    (link-to "/" "&Uuml;bersicht")
    (link-to (url-for metadata-page {:id (url-encode id)}) "Allgemeines")
+   (link-to (url-for string-status {:id (url-encode id)}) "Zustand")
    (link-to (url-for structure-page {:id (url-encode id)}) "Komponenten")
    (link-to (url-for all-series {:id (url-encode id)}) "Messwerte")]
   )
 
 (defpage string-status "/status/:id" {:keys [id]}
-  (common/layout-with-links 
-    (toolbar-links id nil)
-    [:div.span2]
-    [:div.span6
-     [:div#matrix]]
-    [:div.span4
-     [:span#entropyText]]
-    [:style ".background {
+  (let [scenarios (db/get-scenarios id)]
+    (common/layout-with-links 
+      (toolbar-links id 2)
+      [:div.span2]
+      [:div.span12
+       (map-indexed  
+         #(list
+            [:h1 (str "Analyse: " (:name %2))]
+            [:div {:id (str "matrix-" %1)}])
+         scenarios)]
+      [:style ".background {
   fill: #eee;
 }
 
@@ -417,9 +421,21 @@ text.active {
   font-size:smaller;
   /*visibility: hidden;*/
 }
+.matrixlabel {
+  cursor: pointer;
+}
 .cell {
   cursor: pointer;
   fill-opacity: 0.5;
 }"]
-     (hiccup.page/include-js "/js/chart/d3.v2.min.js")
-     (javascript-tag (util/render-javascript-template "templates/matrix.js" (util/base-url) "#matrix" id))))
+      (hiccup.page/include-js "/js/chart/d3.v2.min.js")
+      (map-indexed 
+        (fn [idx scenario] 
+          (javascript-tag 
+            (util/render-javascript-template 
+              "templates/matrix.js"
+              (util/base-url)
+              (format "%s/series-of/%s/%s/20000101-20131231/entropy-bulk.json" (util/base-url) id (string/join "|" (-> scenario :settings :ids))) 
+              (str "#matrix-" idx) 
+              id)))
+        scenarios))))

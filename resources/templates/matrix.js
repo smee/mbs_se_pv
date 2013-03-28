@@ -1,21 +1,27 @@
-(function (EntropyChart, $, baseUrl, selector, plantId, undefined){
+(function (EntropyChart, $, baseUrl, dataUrl, selector, plantId, undefined){
 
 var margin = {top: 200, right: 100, bottom: 10, left: 200},
     width = height = 400;
 var x = d3.scale.ordinal().rangeBands([0, width]),
     c = d3.scale.linear().domain([0,0.001,1,3]).range(["red","green","yellow","red"]);
 
-var svg = d3.select(selector)
+var maindiv = d3.select(selector);
+
+var svg = maindiv
             .append("svg")
               .attr("width", width + margin.left + margin.right)
               .attr("height", height + margin.top + margin.bottom);
 var g = svg.append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-var slider = d3.select(selector)
-               .append("input")
-               .attr("type", "number")
-               .attr("min",0)
-               .attr("value",0);
+var tooltip = maindiv.append("div").attr("class","input-prepend");
+tooltip.append("span").attr("class","add-on").text("Zustand am");
+
+//var slider = tooltip.append("input")
+//               .attr("type", "number")
+//               .attr("min",0)
+//               .attr("value",0);
+var slider = tooltip.append("select");
+var summary = maindiv.append("div");
 
 function populate(day){
 	var matrix = [],
@@ -31,21 +37,30 @@ function populate(day){
     	    date: day.date};
 }
 
-d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json", function(json) {
+d3.json(dataUrl, function(json) {
     var names = json.names,
         ids = json.ids,
         n = names.length,
         days = json.days;
 
-    var data = populate(days[0]);
+    var data = populate(days[days.length-1]);
     
     x.domain(d3.range(n));
-
+    // date slider/dropdown
+    slider.on("change", redraw)
+          .selectAll("option")
+          .data(days.map(function(d){return d.date}))
+          .enter()
+            .append("option")
+            .text(function(d){return d;});
+    slider.node().selectedIndex=days.length-1;
+    
     g.append("rect")
         .attr("class", "background")
         .attr("width", width)
         .attr("height", height);
 
+    // date label top left
     svg.append("text")
        .attr("x", 20)
        .attr("y", 20)
@@ -54,6 +69,7 @@ d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json", function(json) {
        .style("font-weight", "bold")
        .style("font-size", "large");
 
+    // probabilities
     g.selectAll("text.problabel").data(data.probabilities)
        .enter()
        .append("text")
@@ -63,6 +79,14 @@ d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json", function(json) {
          .attr("dy", ".32em")
          .text(function(d){return (d*100).toFixed(0)+"%%";});
     
+    g.append("text")
+      .attr("x", 6)
+      .attr("y", width+x.rangeBand())
+      .attr("dx", ".32em")
+      .attr("transform", "translate(" + x(data.probabilities.length) + ")rotate(-90)")
+      .text("Gesamtwahrscheinlichkeit");
+    
+    // rows of cells
     var rows = g.selectAll(".row")
         .data(data.matrix);
         
@@ -83,6 +107,7 @@ d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json", function(json) {
         .text(function(d, i) { return names[i]; })
         .on("click",loadDetailChart);
 
+    // column labels
     var column = g.selectAll(".column")
         .data(data.matrix)
         .enter().append("g")
@@ -99,12 +124,6 @@ d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json", function(json) {
         .attr("text-anchor", "start")
         .attr("class","matrixlabel")
         .text(function(d, i) { return names[i]; });
-
-    
-    slider.data(d3.range(n))
-          .attr("max",days.length)
-          .attr("value",0)
-          .on("change", redraw);
     
     function drawrow(row) {
         var cell = d3.select(this).selectAll(".cell")
@@ -124,7 +143,6 @@ d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json", function(json) {
               .attr("class","cellLabel");
         cell.on("mouseover", mouseover)
             .on("mouseout", mouseout);
-
     }
     function loadDetailChart(d,i){
     	var elem = d3.select(this); 
@@ -139,7 +157,6 @@ d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json", function(json) {
     		params.visType = "dygraph-ratios.json";
     		params.selectedSeries = [ids[d.x], ids[d.y]];
     	}
-    	console.log(params);
     	window.open(baseUrl+'/series-of/'+plantId+'?params='+JSON.stringify(params));
     }
 
@@ -148,7 +165,7 @@ d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json", function(json) {
         d3.selectAll(".column text.matrixlabel").classed("active", function(d, i) { return i == p.x; });
         d3.selectAll("text.cellLabel").classed("active", function(d, i) { return d.x==p.x && d.y == p.y; });
         d3.selectAll("text.problabel").classed("active", function(d, i) { return i==p.y; });
-        $('#entropyText').text("Wahrscheinlichkeit einer Verhaltensänderung von \""+names[p.y]+"\": "+(data.probabilities[p.y] * 100).toFixed(1)+"%%");
+        summary.text("Wahrscheinlichkeit einer Verhaltensänderung von \""+names[p.y]+"\": "+(data.probabilities[p.y] * 100).toFixed(1)+"%%");
     }
 
     function mouseout() {
@@ -157,7 +174,7 @@ d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json", function(json) {
     
     
      function redraw(){
-    	var n = +this.value;
+    	var n = +this.value || this.selectedIndex;
         var day=days[n];
         if(!day) return;        
         
@@ -172,4 +189,4 @@ d3.json(baseUrl+"/data/"+plantId+"/entropy-bulk.json", function(json) {
 
 });
 
-}( window.EntropyChart = window.EntropyChart || {}, jQuery, "%s", "%s", "%s"));
+}( window.EntropyChart = window.EntropyChart || {}, jQuery, "%s", "%s", "%s", "%s"));

@@ -7,7 +7,8 @@
             [clojure.string :refer [split]]
             [org.clojars.smee 
              [map :refer (mapp)] 
-             [util :refer (s2i s2d s2b)]]
+             [util :refer (s2i s2d s2b)]
+             [time :refer [as-sql-timestamp]]]
             [noir.response :refer (content-type json)]
             [noir.core :refer [defpage]]
             [timeseries.functions :as f]))
@@ -111,15 +112,27 @@ Use this function for all dygraph data."
           inv (s2i inv)]
       (+ st (* inv 4))))
 
-(defpage "/data/:id/entropy-bulk.json" {:keys [id]}
-  (let [result (deserialize "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\invu1\\scenario-invu2.clj")]
-    (json result))
+(chart/def-chart-page "entropy-bulk.json" [n bins min-hist max-hist] ;; TODO create background job that calculates these scenarios each day
+  (let [ids (sort-by series-index names)
+        settings (into (sorted-map) 
+                       {:n (s2i n 30) 
+                        :bins (s2i bins 500 ) 
+                        :min-hist (s2d min-hist 0.05) 
+                        :max-hist (s2d max-hist 2)
+                        :ids ids})
+        sid (db/get-scenario-id id settings)
+        days (db/get-analysis-results id s e sid)        
+        names (for [name ids :let [{label :name device :component} (all-names name)]] (str device "/" label) )]
+    
+    (json {:names names
+           :ids ids
+           :days days}))
   )
 
 (comment
   (require '[org.clojars.smee.seq :refer [find-where]])
   (require 'bayesian) 
-  (def res (into {} (for [f (file-seq (java.io.File. "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\invu1\\20130326 full-days\\"))
+  (def res (into {} (for [f (file-seq (java.io.File. "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\invu2\\20130326 full-days\\"))
                           :when (.isFile f)
                           :let [x (:results (deserialize f))]]
                       [(:name (first x)) x])))
@@ -147,4 +160,10 @@ Use this function for all dygraph data."
                    :entropies (for [a names]
                                 (for [b names :let [e (get entropies-per-combo [a b])]]
                                   (when e (nth e n))))))})) 
+  (let [result (deserialize "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\invu1\\scenario-invu1.clj")
+        settings (into (sorted-map) {:min-hist 0.05 :bins 500 :max-hist 2 :n 30 :ids (:ids result)})
+        {sid :generated_key} (db/insert-scenario "Ourique PV-Anlage" "Stringvergleich INVU1" settings)]
+    
+    (doseq [day (:days result) :let [date (.parse (util/dateformat) (:date day))]] (def d day)
+      (db/insert-scenario-result "Ourique PV-Anlage" date sid day)))
   )

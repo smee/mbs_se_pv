@@ -211,7 +211,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
   `(defpage ~(format "/series-of/:id/*/:times/%s" file-name) {:keys [~'id ~'* ~'times ~'width ~'height ~@additional-keys]}
      (if-let [[~'s ~'e] (parse-times ~'times)]
        (let [~'all-names  (db/all-series-names-of-plant ~'id)
-             ~'names (map #(or (label->series-name ~'all-names %) %)(distinct (re-seq #"[^\|]+" ~'*))) ;; split at any minus
+             ~'names (map #(or (label->series-name ~'all-names %) %)(distinct (re-seq #"[^\|]+" ~'*))) ;; split at any | chars
              ~'* clojure.core/*
              ~'height (s2i ~'height 850)
              ~'width (s2i ~'width 700)]
