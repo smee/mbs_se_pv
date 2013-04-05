@@ -396,13 +396,11 @@
   (let [scenarios (db/get-scenarios id)]
     (common/layout-with-links 
       (toolbar-links id 2)
-      [:div.span2]
-      [:div.span12
-       (map-indexed  
-         #(list
+      (map-indexed  
+         #(vector :div.pull-left.widget
             [:h1 (str "Analyse: " (:name %2))]
             [:div {:id (str "matrix-" %1)}])
-         scenarios)]
+         scenarios)
       [:style ".background {
   fill: #eee;
 }
@@ -435,7 +433,7 @@ text.active {
             (util/render-javascript-template 
               "templates/matrix.js"
               (util/base-url)
-              (format "%s/series-of/%s/%s/20000101-20131231/entropy-bulk.json" (util/base-url) id (string/join "|" (-> scenario :settings :ids))) 
+              (format "%s/series-of/%s/%d/20000101-20131231/entropy-bulk.json" (util/base-url) id (-> scenario :id)) 
               (str "#matrix-" idx) 
               id)))
         scenarios))))

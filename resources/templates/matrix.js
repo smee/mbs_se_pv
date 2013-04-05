@@ -2,7 +2,7 @@
 
 var margin = {top: 200, right: 100, bottom: 10, left: 200},
     width = height = 400;
-var x = d3.scale.ordinal().rangeBands([0, width]),
+var //x = d3.scale.ordinal().rangeBands([0, width]),
     c = d3.scale.linear().domain([0,0.001,1,3]).range(["red","green","yellow","red"]);
 
 var maindiv = d3.select(selector);
@@ -45,11 +45,15 @@ d3.json(dataUrl, function(json) {
 
     var data = populate(days[days.length-1]);
     
-    x.domain(d3.range(n));
+    var x=d3.scale.ordinal().domain(d3.range(n)).rangeBands([0, Math.min(width,n*40)]);
+    var xlen=x.rangeBand()*n;
+    svg.attr("width", xlen + margin.left + margin.right)
+       .attr("height", xlen + margin.top + margin.bottom);
+    
     // date slider/dropdown
     slider.on("change", redraw)
           .selectAll("option")
-          .data(days.map(function(d){return d.date}))
+          .data(days.map(function(d){return d.date;}))
           .enter()
             .append("option")
             .text(function(d){return d;});
@@ -57,8 +61,8 @@ d3.json(dataUrl, function(json) {
     
     g.append("rect")
         .attr("class", "background")
-        .attr("width", width)
-        .attr("height", height);
+        .attr("width", xlen)
+        .attr("height", xlen);
 
     // date label top left
     svg.append("text")
@@ -74,14 +78,14 @@ d3.json(dataUrl, function(json) {
        .enter()
        .append("text")
          .attr("class","problabel")
-         .attr("x",width+x.rangeBand())
+         .attr("x",xlen+x.rangeBand())
          .attr("y", function(d,i){return x(i)+x.rangeBand()/2;})
          .attr("dy", ".32em")
          .text(function(d){return (d*100).toFixed(0)+"%%";});
     
     g.append("text")
       .attr("x", 6)
-      .attr("y", width+x.rangeBand())
+      .attr("y", xlen+x.rangeBand())
       .attr("dx", ".32em")
       .attr("transform", "translate(" + x(data.probabilities.length) + ")rotate(-90)")
       .text("Gesamtwahrscheinlichkeit");
@@ -96,7 +100,7 @@ d3.json(dataUrl, function(json) {
           .each(drawrow);
     
     row.append("line")
-        .attr("x2", width);
+        .attr("x2", xlen);
 
     row.append("text")
         .attr("x", -6)
@@ -115,7 +119,7 @@ d3.json(dataUrl, function(json) {
           .attr("transform", function(d, i) { return "translate(" + x(i) + ")rotate(-90)"; });
 
     column.append("line")
-        .attr("x1", -width);
+        .attr("x1", -xlen);
 
     column.append("text")
         .attr("x", 6)

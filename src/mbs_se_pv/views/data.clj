@@ -91,8 +91,8 @@ Use this function for all dygraph data."
         min-hist (s2d min-hist 0.05) 
         max-hist (s2d max-hist 0.2)
         skip-missing (s2b skip-missing) 
-        {:keys [results]} (deserialize (str "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\invu1\\20130326 full-days\\" (.replaceAll sensor "/" "_") ".clj"))
-;        results (map #(alg/calculate-entropies id sensor % s e :days n :bins bins :min-hist min-hist :max-hist max-hist :skip-missing? skip-missing) names)
+;        {:keys [results]} (deserialize (str "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\invu1\\20130326 full-days\\" (.replaceAll sensor "/" "_") ".clj"))
+        results (map #(alg/calculate-entropies id sensor % s e {:n n :bins bins :min-hist min-hist :max-hist max-hist :skip-missing? skip-missing}) names)
 ;        _ (serialize (str "d:/Dropbox/temp/" (.replaceAll sensor "/" "_") ".clj") {:results results})
         title (format "Signifikante Veränderungen im Verlauf von \"%s\" (%s)" (get-in all-names [sensor :name]) sensor)
         entropies (map :entropies results)
@@ -112,16 +112,10 @@ Use this function for all dygraph data."
           inv (s2i inv)]
       (+ st (* inv 4))))
 
-(chart/def-chart-page "entropy-bulk.json" [n bins min-hist max-hist] ;; TODO create background job that calculates these scenarios each day
-  (let [ids (sort-by series-index names)
-        settings (into (sorted-map) 
-                       {:n (s2i n 30) 
-                        :bins (s2i bins 500 ) 
-                        :min-hist (s2d min-hist 0.05) 
-                        :max-hist (s2d max-hist 2)
-                        :ids ids})
-        sid (db/get-scenario-id id settings)
-        days (db/get-analysis-results id s e sid)        
+(chart/def-chart-page "entropy-bulk.json" [] ;; TODO create background job that calculates these scenarios each day
+  (let [sid (first names)
+        {{ids :ids} :settings, name :name} (db/get-scenario sid)
+        days (db/get-analysis-results id s e sid)
         names (for [name ids :let [{label :name device :component} (all-names name)]] (str device "/" label) )]
     
     (json {:names names
@@ -141,15 +135,15 @@ Use this function for all dygraph data."
   
   (defn construct-matrices []
     (let [names (sort-by series-index (keys res))
-        all-names  (db/all-series-names-of-plant id)
-        pretty-names (for [name names :let [{label :name device :component} (all-names name)]] (str device "/" label) )
-        index (into {} (map-indexed #(vector %2 %1) names))
-        name-combos (combo/combinations names 2)
-        entropies-per-combo (into {} (apply concat
-                                            (for [[n1 n2] name-combos] 
-                                              [[[n1 n2] (:entropies (find-where #(= (:denominator %) n2) (get res n1)))]
-                                               [[n2 n1] (:entropies (find-where #(= (:denominator %) n1) (get res n2)))]])))
-        ]
+          all-names  (db/all-series-names-of-plant id)
+          pretty-names (for [name names :let [{label :name device :component} (all-names name)]] (str device "/" label) )
+          index (into {} (map-indexed #(vector %2 %1) names))
+          name-combos (combo/combinations names 2)
+          entropies-per-combo (into {} (apply concat
+                                              (for [[n1 n2] name-combos] 
+                                                [[[n1 n2] (:entropies (find-where #(= (:denominator %) n2) (get res n1)))]
+                                                 [[n2 n1] (:entropies (find-where #(= (:denominator %) n1) (get res n2)))]])))
+          ]
       {:names pretty-names
        :ids names
        :days 
@@ -160,9 +154,9 @@ Use this function for all dygraph data."
                    :entropies (for [a names]
                                 (for [b names :let [e (get entropies-per-combo [a b])]]
                                   (when e (nth e n))))))})) 
-  (let [result (deserialize "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\invu1\\scenario-invu1.clj")
-        settings (into (sorted-map) {:min-hist 0.05 :bins 500 :max-hist 2 :n 30 :ids (:ids result)})
-        {sid :generated_key} (db/insert-scenario "Ourique PV-Anlage" "Stringvergleich INVU1" settings)]
+  (let [result (deserialize "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\invu1\\scenario-invu2.clj")
+        settings (into (sorted-map) {:threshold 1.3 :skip-missing? true :min-hist 0.05 :bins 500 :max-hist 2 :n 30 :ids (:ids result)})
+        {sid :generated_key} (db/insert-scenario "Ourique PV-Anlage" "Stringvergleich INVU2" settings)]
     
     (doseq [day (:days result) :let [date (.parse (util/dateformat) (:date day))]] (def d day)
       (db/insert-scenario-result "Ourique PV-Anlage" date sid day)))
