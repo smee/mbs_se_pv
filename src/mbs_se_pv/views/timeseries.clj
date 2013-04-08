@@ -168,7 +168,7 @@
         tree (->> by-phys
                (merge by-type)               
                (postwalk #(if (map? %) (into (sorted-map) %) %))
-               (postwalk #(if (map? %) (reduce (fn [m[k v]] 
+               #_(postwalk #(if (map? %) (reduce (fn [m[k v]] 
                                                  (if (and (map? v) (= 1 (count (keys v))) #_(not-all-caps k))
                                                    (apply assoc (dissoc m k) (first v))
                                                    m)) % (seq %)) %)) 
@@ -317,12 +317,12 @@
                             if(val.slice(0,7)=='entropy'){ params.slideDown();} else{ params.slideUp();}})")
       (javascript-tag (format 
                         "$('#sensor').typeahead({
-                             name: 'sensor-numerator',
+                             name: 'sensor-numerator-%s',
                            engine: Hogan,
                          prefetch: '%s',
                             limit: 10,
                          template: '<p>{{component}}/{{name}}</p><p>({{type}})</p>'})"
-                        (resolve-url (format "/data/%s/names.json" id))))
+                        id (resolve-url (format "/data/%s/names.json" id))))
       (if (params :run) 
         (javascript-tag "$(document).ready(function(){$('#render-chart').trigger('click');})")))))
 
