@@ -210,7 +210,8 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 (defmacro def-chart-page [file-name additional-keys & body]
   `(defpage ~(format "/series-of/:id/*/:times/%s" file-name) {:keys [~'id ~'* ~'times ~'width ~'height ~@additional-keys]}
      (if-let [[~'s ~'e] (parse-times ~'times)]
-       (let [~'all-names  (db/all-series-names-of-plant ~'id)
+       (let [~'e (if (re-matches #"\d{8}-\d{8}" ~'times) (+ ~'e util/ONE-DAY) ~'e) 
+             ~'all-names  (db/all-series-names-of-plant ~'id)
              ~'names (map #(or (label->series-name ~'all-names %) %)(distinct (re-seq #"[^\|]+" ~'*))) ;; split at any | chars
              ~'* clojure.core/*
              ~'height (s2i ~'height 850)
@@ -334,7 +335,6 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;; render change points in a chart
 (def-chart-page "changepoints.png" [rank negative zero confidence max-level maintainance] 
   (let [name (first names)
-        e (if (= s e) (+ e util/ONE-DAY) e) 
         ranks? (Boolean/parseBoolean rank)
         negative? (Boolean/parseBoolean negative) 
         zeroes? (Boolean/parseBoolean zero)
