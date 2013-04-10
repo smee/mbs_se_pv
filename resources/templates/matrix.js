@@ -52,6 +52,7 @@ d3.json(dataUrl, function(json) {
     
     // date slider/dropdown
     slider.on("change", redraw)
+          .on("keyup", redraw)
           .selectAll("option")
           .data(days.map(function(d){return d.date;}))
           .enter()
