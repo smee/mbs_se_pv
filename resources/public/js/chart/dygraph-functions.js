@@ -222,8 +222,18 @@
 			  zoomCallback: function(minX, maxX, yRanges) {
 				  foo(minX,maxX,config, yRanges);
 	              },
-			  underlayCallback: renderHighlights(response.highlights, response.threshold)			  
-			}
+			  underlayCallback: renderHighlights(response.highlights, response.threshold),
+			  axes:{
+                y: {
+                    valueFormatter: function(y) {
+                	    return ""+y.toPrecision(3);
+                    },
+                    axisLabelFormatter: function(y) {
+                	    return ""+y.toPrecision(3);
+                    }
+                  }
+			   }
+			};
 	  }
 	  var lastMinX=-1;
 	  var lastMaxX=-1;
