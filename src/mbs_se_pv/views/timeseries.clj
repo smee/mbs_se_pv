@@ -396,8 +396,10 @@
   (let [scenarios (db/get-scenarios id)]
     (common/layout-with-links 
       (toolbar-links id 2)
+      (unordered-list (map-indexed #(vector :a {:href (str "#analysis-" %)} (:name %2)) scenarios))
       (map-indexed  
          #(vector :div.pull-left.widget
+            [:a {:name (str "analysis-" %1)}]
             [:h1 (str "Analyse: " (:name %2))]
             [:div {:id (str "matrix-" %1)}])
          scenarios)
