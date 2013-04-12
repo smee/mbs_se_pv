@@ -4,7 +4,7 @@
     ring.middleware.json
     [mbs-db.core :as db]
     ;; view namespaces need to be required explicitely for tomcat
-    [mbs-se-pv.views common calendar charts data timeseries welcome metadata])
+    [mbs-se-pv.views common calendar charts data timeseries analysis welcome metadata])
   ;(:gen-class)
   )
 

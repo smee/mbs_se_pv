@@ -38,7 +38,7 @@
           [:td hppostleitzahl]
           [:td hppostleitzahl]])]]]
     (hiccup.page/include-js "/js/jquery.dataTables.min.js" "/js/dataTables.paging.bootstrap.js") 
-    (javascript-tag (render-javascript-template "templates/render-datatable.js" (base-url)))))
+    (javascript-tag (render-javascript-template "templates/render-datatable.js" "#names" (str (base-url) "/data/metadata.json")))))
 
 (defpage "/" []
   (redirect (resolve-url (url-for start-page))))

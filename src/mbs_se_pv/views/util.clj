@@ -78,7 +78,7 @@ SI unit prefixes"
   ([format-string suffix]
     (let [nf (java.text.DecimalFormat. format-string)] 
       (proxy [java.text.NumberFormat] []
-        (format [n sb fp]
+        (format [n ^StringBuffer sb fp]
                 (if-let [[n prefix] (convert-si-unit n) ] 
                   (.append sb (str (.format nf n) prefix suffix))
                   (do  (.format nf n sb fp) (.append sb suffix))))))))

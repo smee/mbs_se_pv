@@ -356,7 +356,7 @@
 (defpage structure-page "/structure/:id" {:keys [id]}
   (let [structure (db/structure-of id)]
     (common/layout-with-links
-      (toolbar-links id 3)
+      (toolbar-links id 2)
       [:div.span3
        [:h4 "Komponentenstammbaum"]
        [:div#components-tree
@@ -384,58 +384,11 @@
 (defn toolbar-links 
   "Links for the toolbar, see common/eumonis-topbar or common/layout-with-links for details"
   [id active-idx]
-  [active-idx
-   (link-to "/" "&Uuml;bersicht")
-   (link-to (url-for metadata-page {:id (url-encode id)}) "Allgemeines")
-   (link-to (url-for string-status {:id (url-encode id)}) "Zustand")
-   (link-to (url-for structure-page {:id (url-encode id)}) "Komponenten")
-   (link-to (url-for all-series {:id (url-encode id)}) "Messwerte")]
-  )
+  (let [ps {:id (url-encode id)}] 
+    [active-idx
+     (link-to "/" "&Uuml;bersicht")
+     (link-to (url-for metadata-page ps) "Allgemeines")
+     (link-to (url-for structure-page ps) "Komponenten")
+     (link-to {:class "btn-info"} (str(util/base-url) "/status/" (url-encode id)) "Zustand")
+     (link-to (url-for all-series ps) "Messwerte")]))
 
-(defpage string-status "/status/:id" {:keys [id]}
-  (let [scenarios (db/get-scenarios id)]
-    (common/layout-with-links 
-      (toolbar-links id 2)
-      (unordered-list (map-indexed #(vector :a {:href (str "#analysis-" %)} (:name %2)) scenarios))
-      (map-indexed  
-         #(vector :div.pull-left.widget
-            [:a {:name (str "analysis-" %1)}]
-            [:h1 (str "Analyse: " (:name %2))]
-            [:div {:id (str "matrix-" %1)}])
-         scenarios)
-      [:style ".background {
-  fill: #eee;
-}
-
-line {
-  stroke: #fff;
-}
-
-text.active {
-  fill: red;
-  font-weight: bold;
-  visibility: inherit;
-  fill-opacity: 1;
-}
-.cellLabel {
-  font-size:smaller;
-  /*visibility: hidden;*/
-}
-.matrixlabel {
-  cursor: pointer;
-}
-.cell {
-  cursor: pointer;
-  fill-opacity: 0.5;
-}"]
-      (hiccup.page/include-js "/js/chart/d3.v2.min.js")
-      (map-indexed 
-        (fn [idx scenario] 
-          (javascript-tag 
-            (util/render-javascript-template 
-              "templates/matrix.js"
-              (util/base-url)
-              (format "%s/series-of/%s/%d/20000101-20131231/entropy-bulk.json" (util/base-url) id (-> scenario :id)) 
-              (str "#matrix-" idx) 
-              id)))
-        scenarios))))
