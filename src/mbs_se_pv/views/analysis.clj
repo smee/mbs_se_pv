@@ -31,15 +31,16 @@
                                   sort-dir :sSortDir_0
                                   id :id
                                   :as query}
-  (let [today (System/currentTimeMillis)
+  (let [ONE-MINUTE 60000
+        today (* ONE-MINUTE (long (/ (System/currentTimeMillis) ONE-MINUTE))) ; ignore everything within one minute so we do not trash the cache further down the call stack
         one-year-ago (- today (* 365 24 60 60 1000))
         len (s2i len 10)
         start (s2i start 1)
         col-id (s2i sort-col 1)
         scenario2anchor (into {} (map-indexed #(vector (:name %2) (str "#matrix-" %)) (db/get-scenarios id)))
         results  (->> today
-                   (alg/find-most-recent-anomalies id one-year-ago)
-                   flatten-analysis-results
+                   (alg/find-most-recent-anomalies id one-year-ago) 
+                   flatten-analysis-results 
                    (sort-by #(nth % col-id)))
         df (java.text.SimpleDateFormat. "dd.MM.yyyy")
         results (for [s results] 
