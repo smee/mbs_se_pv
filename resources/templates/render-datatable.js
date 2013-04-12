@@ -1,15 +1,15 @@
-(function(baseUrl) {
+(function(selector, url) {
 	$(document).ready(function() {
 				// compatibility between datatables and bootstrap
 				// see http://www.datatables.net/blog/Twitter_Bootstrap
 				$.extend($.fn.dataTableExt.oStdClasses, {
 					'sWrapper' : 'dataTables_wrapper form-inline'
 				});
-				$('#names').dataTable({
+				$(selector).dataTable({
 					'sDom' : "<'row'<'span6'l><'span6'f>r>t<'row'<'span3'i><'span9'p>>",
 					'bProcessing' : true,
 					'bServerSide' : true,
-					'sAjaxSource' : baseUrl + '/data/metadata.json',
+					'sAjaxSource' : url,
 					'bPaginate' : true,
 					'sPaginationType' : 'bootstrap',
 					'bStateSave' : true,
@@ -25,8 +25,8 @@
 							'sPrevious' : 'Vorherige',
 							'sNext' : 'Nächste'
 						}
-					},
-					'aoColumns' : [ {}, {sClass : 'alignRight'}, {sClass : 'alignRight'}, {} ]
+					}//,
+					//'aoColumns' : [ {}, {sClass : 'alignRight'}, {sClass : 'alignRight'}, {} ]
 				});
 	});
-})("%s")
+})("%s", "%s");
