@@ -53,6 +53,7 @@ d3.json(dataUrl, function(json) {
     // date slider/dropdown
     slider.on("change", redraw)
           .on("keyup", redraw)
+          .attr("class","matrixDateSelector")
           .selectAll("option")
           .data(days.map(function(d){return d.date;}))
           .enter()
@@ -174,12 +175,12 @@ d3.json(dataUrl, function(json) {
     }
 
     function mouseout() {
-        d3.selectAll("text").classed("active", false);
+        svg.selectAll("text").classed("active", false);
     }
     
     
      function redraw(){
-    	var n = +this.value || this.selectedIndex;
+    	var n = +slider.node().value || slider.node().selectedIndex;
         var day=days[n];
         if(!day) return;        
         
@@ -191,6 +192,30 @@ d3.json(dataUrl, function(json) {
     	svg.select(".datelabel").text(data.date);
     	svg.selectAll("text.problabel").data(data.probabilities).text(function(d){return (d*100).toFixed(0)+"%%";});
     }
+     // store reference to the redraw function of this matrix plot.
+     var cs=EntropyChart.redrawFns=EntropyChart.redrawFns || {};
+     cs[selector]=redraw;
+     
+     // redraw all charts on the current page by calling each redraw function
+     EntropyChart.redrawAll=function(){
+    	 for(f in EntropyChart.redrawFns) 
+    		 EntropyChart.redrawFns[f]();
+     };
+     // set all dropdowns to the given date string, redraw all matrices
+     EntropyChart.selectByText=function(s){
+    	 var selects=$("select.matrixDateSelector");
+    	 for(var i=0;i<selects.length;i++){
+    		 var options=selects[i];
+    		 inner:
+    		 for(var j=0;j<options.length;j++){
+    			 if(options[j].text == s){
+    				 options.selectedIndex = j;
+    				 break;
+    		     }
+    		 }    		 
+    	 }
+    	 EntropyChart.redrawAll();
+     };
 
 });
 

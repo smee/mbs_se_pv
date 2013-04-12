@@ -45,7 +45,7 @@
         results (for [s results] 
                   (-> s 
                     (update-in [0] #(html [:a {:href (scenario2anchor %)} %])) 
-                    (update-in [1] #(.format df %))
+                    (update-in [1] #(html [:a {:href "#" :onclick (str "EntropyChart.selectByText('" (.format df %) "')")} (.format df %)]))
                     (update-in [4] #(format "%.1f" (* 100 %)))))
         sorted (if (= "asc" sort-dir) results (reverse results))
         filtered (filter #(.contains (.toLowerCase ^String (apply str %)) (.toLowerCase search-term)) sorted)
