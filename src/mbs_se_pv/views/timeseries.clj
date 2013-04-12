@@ -389,6 +389,6 @@
      (link-to "/" "&Uuml;bersicht")
      (link-to (url-for metadata-page ps) "Allgemeines")
      (link-to (url-for structure-page ps) "Komponenten")
-     (link-to {:class "btn-info"} (str(util/base-url) "/status/" (url-encode id)) "Zustand")
+     (link-to {:class "btn-info"} (str "/status/" (url-encode id)) "Zustand")
      (link-to (url-for all-series ps) "Messwerte")]))
 
