@@ -13,6 +13,7 @@
 					'bPaginate' : true,
 					'sPaginationType' : 'bootstrap',
 					'bStateSave' : true,
+					'aaSorting': [[ 1, "desc" ]],
 					'oLanguage' : {
 						'sLengthMenu' : 'Zeige _MENU_ Einträge pro Seite',
 						'sZeroRecords' : 'Kein Eintrag gefunden!',
