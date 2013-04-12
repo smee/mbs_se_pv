@@ -201,7 +201,7 @@
 			  title: response.title,
 			  customBars: d.length > 0 && $.isArray(d[0][1]) && d[0][1].length == 3, // customBars if there are three values per series (min, mean, max),
 			  avoidMinZero: true,
-			  showRoller: true,
+			  showRoller: false,//does not seem to work very well
 			  labelsKMB :true,
 			  animatedZooms: true,
 			  labelsSeparateLines: true,
