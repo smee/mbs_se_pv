@@ -35,7 +35,8 @@
         one-year-ago (- today (* 365 24 60 60 1000))
         len (s2i len 10)
         start (s2i start 1)
-        col-id (s2i sort-col 1)      
+        col-id (s2i sort-col 1)
+        scenario2anchor (into {} (map-indexed #(vector (:name %2) (str "#matrix-" %)) (db/get-scenarios id)))
         results  (->> today
                    (alg/find-most-recent-anomalies id one-year-ago)
                    flatten-analysis-results
@@ -43,6 +44,7 @@
         df (java.text.SimpleDateFormat. "dd.MM.yyyy")
         results (for [s results] 
                   (-> s 
+                    (update-in [0] #(html [:a {:href (scenario2anchor %)} %])) 
                     (update-in [1] #(.format df %))
                     (update-in [4] #(format "%.1f" (* 100 %)))))
         sorted (if (= "asc" sort-dir) results (reverse results))
