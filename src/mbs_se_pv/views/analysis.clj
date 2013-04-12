@@ -77,37 +77,13 @@
         [:tbody]]]
       (hiccup.page/include-js "/js/jquery.dataTables.min.js" "/js/dataTables.paging.bootstrap.js") 
       (javascript-tag (util/render-javascript-template "templates/render-datatable.js" "#anomalies" (str (util/base-url) "/data/" id "/events.json")))
-      (map-indexed  
-         #(vector :div.widget.pull-left
-            [:a {:name (str "analysis-" %1)}]
-            [:h1 (str "Analyse: " (:name %2))]
-            [:div {:id (str "matrix-" %1)}])
-         scenarios)
-      [:style ".background {
-  fill: #eee;
-}
-
-line {
-  stroke: #fff;
-}
-
-text.active {
-  fill: red;
-  font-weight: bold;
-  visibility: inherit;
-  fill-opacity: 1;
-}
-.cellLabel {
-  font-size:smaller;
-  /*visibility: hidden;*/
-}
-.matrixlabel {
-  cursor: pointer;
-}
-.cell {
-  cursor: pointer;
-  fill-opacity: 0.5;
-}"]
+      [:div.row-fluid
+       (map-indexed  
+         #(vector :div.widget
+                  [:a {:name (str "analysis-" %1)}]
+                  [:h1 (str "Analyse: " (:name %2))]
+                  [:div {:id (str "matrix-" %1)}])
+         scenarios)]
       (hiccup.page/include-js "/js/chart/d3.v2.min.js")
       (map-indexed 
         (fn [idx scenario] 

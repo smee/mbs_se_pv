@@ -137,4 +137,30 @@ table {
           background-clip: padding-box;
   padding: 10px;
   margin: 10px;
+  display: inline-block;
+}
+.widget .background {
+  fill: #eee;
+}
+
+.widget line {
+  stroke: #fff;
+}
+
+.widget text.active {
+  fill: red;
+  font-weight: bold;
+  visibility: inherit;
+  fill-opacity: 1;
+}
+.widget .cellLabel {
+  font-size:smaller;
+  /*visibility: hidden;*/
+}
+.widget .matrixlabel {
+  cursor: pointer;
+}
+.widget .cell {
+  cursor: pointer;
+  fill-opacity: 0.5;
 }
