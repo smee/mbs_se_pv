@@ -150,15 +150,25 @@ d3.json(dataUrl, function(json) {
         cell.on("mouseover", mouseover)
             .on("mouseout", mouseout);
     }
+    
+    var df = d3.time.format("%%d.%%M.%%Y");
+    
+    function parseAndIncrementDateString(s, numberOfDaysToAdd){
+    	var date = df.parse(s);
+    	date.setDate(date.getDate() + numberOfDaysToAdd);
+    	return df(date);
+    }
+    
     function loadDetailChart(d,i){
     	var elem = d3.select(this); 
-    	var params = {startDate:data.date, 
+    	var params = {startDate:parseAndIncrementDateString(data.date,-1), 
     			      endDate:data.date,
     			      run: true};
     	if(elem.classed("matrixlabel")){ // clicked on label
     		params.visType = "dygraph.json";
     		params.selectedSeries = [];
-    		d.forEach(function(entry){params.selectedSeries.push(ids[entry.x]);});    			
+    		d.forEach(function(entry){params.selectedSeries.push(ids[entry.x]);});
+    		params.highlightSeries=names[d[0].y];
     	}else{ // clicked on cell		      
     		params.visType = "dygraph-ratios.json";
     		params.selectedSeries = [ids[d.x], ids[d.y]];

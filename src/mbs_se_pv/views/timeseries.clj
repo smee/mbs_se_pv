@@ -281,7 +281,8 @@
           [:label.checkbox (check-box :skipMissing (params :skipMissing)) "Ignoriere lückenhafte Tage"]]         
          [:div.input-prepend
           [:span.add-on "Sensor: "]
-          (text-field {:class "input-large" :placeholder "Welche Messreihe?"} "sensor" (params :sensor))]] 
+          (text-field {:class "input-large" :placeholder "Welche Messreihe?"} "sensor" (params :sensor))]]
+        (hidden-field "highlightSeries" (:highlightSeries params)) 
         [:div
          [:h4 "Größe:"]
          (text-field {:type "number" :class "input-mini"} "width" (params :width))
