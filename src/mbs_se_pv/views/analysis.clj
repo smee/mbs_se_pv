@@ -76,7 +76,7 @@
           [:th "ID des Sensors"]
           [:th "Wahrscheinlichkeit"]]]
         [:tbody]]]
-      (hiccup.page/include-js "/js/jquery.dataTables.min.js" "/js/dataTables.paging.bootstrap.js") 
+      (common/include-js "/js/jquery.dataTables.min.js" "/js/dataTables.paging.bootstrap.js") 
       (javascript-tag (util/render-javascript-template "templates/render-datatable.js" "#anomalies" (str (util/base-url) "/data/" id "/events.json")))
       [:div.row-fluid
        (map-indexed  
@@ -85,7 +85,7 @@
                   [:h1 (str "Analyse: " (:name %2))]
                   [:div {:id (str "matrix-" %1)}])
          scenarios)]
-      (hiccup.page/include-js "/js/chart/d3.v2.min.js")
+      (common/include-js "/js/chart/d3.v2.min.js")
       (map-indexed 
         (fn [idx scenario] 
           (javascript-tag 

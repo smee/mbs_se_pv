@@ -1,9 +1,32 @@
 (ns mbs-se-pv.views.common
-  (:use noir.core
-        [hiccup core
+  (:use [hiccup core
          [element]
-         [page :only (html5 include-css include-js)]])
-  (:require [mbs-se-pv.views.util :as util]))
+         [page :only (html5)]])
+  (:require [noir.core :refer [defpartial]] 
+            [mbs-se-pv.views.util :as util]
+            [clojure.java.io :as io]
+            [org.clojars.smee.util :refer [md5]]))
+
+
+(defn- add-versions 
+  "create javascript and css links with a timestamp query parameter
+to fix caching (cache files but reload if there are any changes, resembled by new timestamp query)"
+  [uris]
+  (for [local-uri uris] 
+    (if (.startsWith local-uri "/")
+      (let [contents (-> (str "public" local-uri) io/resource slurp)
+            hash (md5 (.getBytes contents))]
+        (str local-uri "?v=" hash))
+      local-uri)))
+
+(defpartial include-js [& uris] (println (pr-str uris))
+  (apply hiccup.page/include-js (add-versions uris)))
+
+(defpartial include-css [& uris] (println (pr-str uris))
+  (apply hiccup.page/include-css (add-versions uris)))
+
+(alter-var-root #'include-js memoize)
+(alter-var-root #'include-css memoize)
 
 (defpartial include-js-with-fallback 
   "Include a javascript file from a content delivery network (CDN). Tests if `dom-element` is available after loading the url.

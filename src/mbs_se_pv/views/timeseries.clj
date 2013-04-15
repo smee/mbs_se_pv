@@ -111,8 +111,8 @@
         (render-gain-image plant one-year-ago today w h "week")
         [:h4 "Gesamtertrag pro Monat"]
         (render-gain-image plant one-year-ago today w h "month")]
-       (hiccup.page/include-css "/css/colorbrewer.css")
-       (hiccup.page/include-js "/js/chart/d3.v2.min.js") 
+       (common/include-css "/css/colorbrewer.css")
+       (common/include-js "/js/chart/d3.v2.min.js") 
        (javascript-tag (util/render-javascript-template 
                          "templates/calendar.js"
                          (util/base-url)
@@ -298,14 +298,14 @@
        [:h2 "Chart"]
        [:div#current-chart "Bitte wählen Sie links die zu visualisierenden Daten und ein Zeitinterval aus."]]
       ;; render calendar input via jquery plugin
-      (hiccup.page/include-js "/js/jquery-ui.min.js" 
+      (common/include-js "/js/jquery-ui.min.js" 
                               "/js/jquery.dynatree.min.js" 
                               "/js/datepicker.js"
                               "/js/chart/dygraph-combined-dev.js"
                               "/js/chart/dygraph-functions.js"
                               "/js/hogan-2.0.0.js"
                               "/js/typeahead.js")
-      (hiccup.page/include-css "/css/dynatree/ui.dynatree.css" "/css/datepicker.css" "/css/typeahead.css") 
+      (common/include-css "/css/dynatree/ui.dynatree.css" "/css/datepicker.css" "/css/typeahead.css") 
       (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#startDate" startDate min max))
       (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#endDate" endDate min max))
       (javascript-tag (util/render-javascript-template "templates/load-chart.js" "#render-chart" base-url id))
@@ -366,8 +366,8 @@
       [:div.span9
        [:h4 "Detailangaben"]
        [:table#details]]
-      (hiccup.page/include-js "/js/jquery-ui.min.js" "/js/jquery.dynatree.min.js")
-      (hiccup.page/include-css "/css/dynatree/ui.dynatree.css")
+      (common/include-js "/js/jquery-ui.min.js" "/js/jquery.dynatree.min.js")
+      (common/include-css "/css/dynatree/ui.dynatree.css")
       (javascript-tag  
         "$(document).ready(function() { 
            $('#components-tree').dynatree({
