@@ -19,10 +19,10 @@ to fix caching (cache files but reload if there are any changes, resembled by ne
         (str local-uri "?v=" hash))
       local-uri)))
 
-(defpartial include-js [& uris] (println (pr-str uris))
+(defpartial include-js [& uris]
   (apply hiccup.page/include-js (add-versions uris)))
 
-(defpartial include-css [& uris] (println (pr-str uris))
+(defpartial include-css [& uris]
   (apply hiccup.page/include-css (add-versions uris)))
 
 (alter-var-root #'include-js memoize)
