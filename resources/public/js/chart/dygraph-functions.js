@@ -327,7 +327,7 @@
 			  dygraphChart.setSelection(false, hls, true);
 		  }
 		  // button to remove highlight
-		  chartDiv.after($("<input type='button' id='"+id+"-no-hl-button' class='btn btn-info' value='Highlight löschen' onclick='dygraphFunctions.charts[\""+id+"\"].clearSelection()'>"));
+		  chartDiv.after($("<input type='button' id='"+id+"-no-hl-button' class='btn btn-warning' value='Highlight löschen' onclick='dygraphFunctions.charts[\""+id+"\"].clearSelection()'>"));
 		  // button to reset zoom for this chart
 		  chartDiv.after($("<input type='button' id='"+id+"-button' class='btn btn-info' value='Position wiederherstellen' onclick='dygraphFunctions.restorePositioning(dygraphFunctions.charts[\""+id+"\"])'>"));
 		  return dygraphChart;
