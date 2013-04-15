@@ -92,7 +92,7 @@
             (util/render-javascript-template 
               "templates/matrix.js"
               (util/base-url)
-              (format "%s/series-of/%s/%d/20120101-20131231/entropy-bulk.json" (util/base-url) id (-> scenario :id)) 
+              (format "%s/series-of/%s/%d/20120101-" (.format (util/dateformatrev) (System/currentTimeMillis)) "/entropy-bulk.json" (util/base-url) id (-> scenario :id)) 
               (str "#matrix-" idx) 
               id)))
         scenarios))))
