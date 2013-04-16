@@ -203,6 +203,7 @@
 			  avoidMinZero: true,
 			  showRoller: false,//does not seem to work very well
 			  labelsKMB :true,
+			  sigFigs: 3,
 			  animatedZooms: true,
 			  labelsSeparateLines: true,
 			  highlightSeriesOpts: {
@@ -222,17 +223,7 @@
 			  zoomCallback: function(minX, maxX, yRanges) {
 				  foo(minX,maxX,config, yRanges);
 	              },
-			  underlayCallback: renderHighlights(response.highlights, response.threshold),
-			  axes:{
-                y: {
-                    valueFormatter: function(y) {
-                	    return ""+y.toPrecision(3);
-                    },
-                    axisLabelFormatter: function(y) {
-                	    return ""+y.toPrecision(3);
-                    }
-                  }
-			   }
+			  underlayCallback: renderHighlights(response.highlights, response.threshold)
 			};
 	  }
 	  var lastMinX=-1;
