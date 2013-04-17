@@ -203,7 +203,7 @@
 			  avoidMinZero: true,
 			  showRoller: false,//does not seem to work very well
 			  labelsKMB :true,
-			  sigFigs: 3,
+			  digitsAfterDecimal: 3,
 			  animatedZooms: true,
 			  labelsSeparateLines: true,
 			  highlightSeriesOpts: {
@@ -298,6 +298,7 @@
 			  dygraphChart.destroy(); 
 			  dygraphFunctions.charts[id] = null;
 			  $('#'+id+'-button').remove();
+			  $('#'+id+'-no-hl-button').remove();
 		  }
 		  // create chart configuration
 		  var chartSettings = createSettings(config, response);
