@@ -236,9 +236,10 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 (def-chart-page "discord.png" [num]
   (let [num (s2i num 1)
         name (first names) 
-        data (get-series-values id name s e)
+        data (get-series-values id name s e)  
         days (partition-by day-number data)
-        discords (discord/find-discords-in-seqs (map (partial map :value) days) num)
+        daily-date (map #(f/resample (map :value %) 100) days)
+        discords (discord/find-discords-in-seqs daily-date num)
         discord-days (->> discords
                        (map #(nth days (first %)))
                        (map vec)
