@@ -130,9 +130,6 @@
 	    });
 	}
 
-	var v4Active = false;
-	var v4Canvas = null;
-
 	function downV4(event, g, context) {
 	  context.initializeMouseDown(event, g, context);
 	  v4Active = true;

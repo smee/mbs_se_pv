@@ -59,7 +59,7 @@ Use this function for all dygraph data."
 (chart/def-chart-page "dygraph.json" [] 
   (let [values (->> names
                  (pmap #(chart/get-series-values id % s e width))
-                 (map (mapp #(vector (:timestamp %) [(:min %) (:value %) (:max %)]))))
+                 (pmap (mapp #(vector (:timestamp %) [(:min %) (:value %) (:max %)]))))
         ;; if one series has no value for a timestamp, the number of entries in 
         ;; the returned row is too low, need to insert [nil nil nil] instead!
         ; problem: not all lines have the same number of values
@@ -91,7 +91,7 @@ Use this function for all dygraph data."
         max-hist (s2d max-hist 0.2)
         skip-missing (s2b skip-missing) 
 ;        {:keys [results]} (deserialize (str "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\invu1\\20130326 full-days\\" (.replaceAll sensor "/" "_") ".clj"))
-        results (map #(alg/calculate-entropies id sensor % s e {:n n :bins bins :min-hist min-hist :max-hist max-hist :skip-missing? skip-missing}) names)
+        results (pmap #(alg/calculate-entropies id sensor % s e {:n n :bins bins :min-hist min-hist :max-hist max-hist :skip-missing? skip-missing}) names)
 ;        _ (serialize (str "d:/Dropbox/temp/" (.replaceAll sensor "/" "_") ".clj") {:results results})
         title (format "Signifikante Veränderungen im Verlauf von \"%s\" (%s)" (get-in all-names [sensor :name]) sensor)
         entropies (map :entropies results)

@@ -95,7 +95,7 @@
             endDate.addDays(3);                                                                  
             params.startDate=startDate;
             params.endDate=endDate;
-              
+            
             dygraphFunctions.createChart({id: detailChartId, 
                 link: createLink(baseUrl, plantId, params), 
                 params: params,

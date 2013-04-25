@@ -13,12 +13,12 @@
   (when (not *compile-files*)
     (do
       (server/add-middleware ring.middleware.json/wrap-json-params)
-      (db/use-db-settings {:classname   "com.mysql.jdbc.Driver"
-                           :subprotocol "mysql"
-                           :user         "{{db-user}}"
-                           :password     "{{db-password}}"
-                           :subname      "//{{db-url}}"
-                           :connection-name "{{db-name}}"})))
+      (db/use-db-settings (merge db/mysql-config-psm
+                                 {:classname   "com.mysql.jdbc.Driver"
+                                  :user         "{{db-user}}"
+                                  :password     "{{db-password}}"
+                                  :subname      "//{{db-url}}"
+                                  :connection-name "{{db-name}}"}))))
 
 
 ;;;;;;;;;;;;;;; production settings ;;;;;;;;;;;;;;;;;;;;;;;;;;;
