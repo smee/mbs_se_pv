@@ -1,9 +1,9 @@
 (function (baseUrl, selector, cbSelector, colorSelector, linkTemplate){
 
 		var margin = {top: 10, right: 10, bottom: 10, left: 10},
-	    width = 460 - margin.right - margin.left, // width
-	    height = 56 - margin.top - margin.bottom, // height
-	    cellSize = 7; // cell size
+	    width = 550 - margin.right - margin.left, // width
+	    height = 70 - margin.top - margin.bottom, // height
+	    cellSize = 9; // cell size
 
 	var day = function(d){ return (d.getDay()+6)%%7; },
 	    week = d3.time.format("%%W"),

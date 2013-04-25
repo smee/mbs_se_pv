@@ -76,8 +76,8 @@
         now (System/currentTimeMillis)
         today (.format (util/dateformatrev) now)
         one-year-ago (.format (util/dateformatrev) (- now (* 365 util/ONE-DAY)))
-        w 400
-        h 250]
+        w 600
+        h 300]
     (common/layout-with-links 
       (toolbar-links plant 1)
       nil

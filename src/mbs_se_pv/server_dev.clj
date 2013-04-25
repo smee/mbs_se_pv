@@ -22,12 +22,12 @@
           user (get (System/getenv) "DB-USER" "root")
           pw (get (System/getenv) "DB-PW" "")
           name (get (System/getenv) "DB-NAME" "default")] 
-      (db/use-db-settings {:classname   "com.mysql.jdbc.Driver"
-                           :subprotocol "mysql"
-                           :user         user
-                           :password     pw
-                           :subname      (str "//" url)
-                           :connection-name name}))))
+      (db/use-db-settings (merge db/mysql-config-psm
+                                 {:classname   "com.mysql.jdbc.Driver"
+                                  :user         user
+                                  :password     pw
+                                  :subname      (str "//" url)
+                                  :connection-name name})))))
 
 (defn -main [& m]
   (let [mode (keyword (or (first m) :dev))
