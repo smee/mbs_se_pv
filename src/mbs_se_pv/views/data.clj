@@ -44,9 +44,9 @@ that distance, inserts an artificial entry of shape `[(inc last-x)...]`
 Use this function for all dygraph data."
   [data]
   (let [max-gap (->> data (map first) (partition 2 1) (map #(- (second %) (first %))) sort)
-        max-gap (if (not-empty max-gap) (* 2 (f/mean max-gap)) max-gap)
+        max-gap (if (not-empty max-gap) (* 3 (f/mean max-gap)) max-gap) 
         v1 (second (first data))
-        nothing (if (coll? v1) (repeat (count v1) nil) nil)] 
+        nothing (if (coll? v1) (repeat (count v1) Double/NaN) Double/NaN)] 
     (concat
       (apply concat
              (for [[[x1 & vs] [x2 _]] (partition 2 1 data)
@@ -74,7 +74,7 @@ Use this function for all dygraph data."
 
 (chart/def-chart-page "dygraph-ratios.json" []
   (let [[num dem] names
-        vs (db/rolled-up-ratios-in-time-range id num dem s e width)
+        vs (db/rolled-up-ratios-in-time-range id num dem s e width) 
         [name1 name2] (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) [num dem])]
     (json {:labels (list "Datum" (str "Verhältnis von " name1 " und " name2)) 
            :data (insert-nils (map (juxt :timestamp :value) vs)) 

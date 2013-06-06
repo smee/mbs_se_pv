@@ -29,7 +29,7 @@ function populate(day){
 	
 	for(var i=0;i<n;i++){
 		var es = day.entropies[i];
-        matrix[i] = d3.range(n).map(function(j) { return {x: j, y: i, z: es[j] || 0}; });
+        matrix[i] = d3.range(n).map(function(j) { return {x: j, y: i, z: es[j] || undefined}; });
     };
     
     return {matrix: matrix,
@@ -132,7 +132,7 @@ d3.json(dataUrl, function(json) {
     
     function drawrow(row) {
         var cell = d3.select(this).selectAll(".cell")
-            .data(row.filter(function(d) { return d.z; }))
+            .data(row.filter(function(d) { return d.z!=undefined; }))//may be zero, should not be interpreted as false
             .enter().append("g")
               .attr("class","cell")
               .on("click",loadDetailChart);
@@ -142,7 +142,7 @@ d3.json(dataUrl, function(json) {
               .attr("height", x.rangeBand())
               .style("fill", function(d) { return c(d.z);});
         cell.append("text")
-              .text(function(d, i) { return d.z.toFixed(2); })
+              .text(function(d, i) { if(!isNaN(d.z)) return d.z.toFixed(2); else return d.z;})
               .attr("x", function(d) { return x(d.x)+2; })
               .attr("y",x.rangeBand()/2+2)
               .attr("class","cellLabel");

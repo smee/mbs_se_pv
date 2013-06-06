@@ -110,6 +110,9 @@ table {
 #entropy-parameter {
 	display: none;
 }
+.dygraph-legend {
+	/*background-color: transparent !important; /* the element has a hardcoded value of 'white', see https://github.com/danvk/dygraphs/blob/master/plugins/legend.js#L68 */
+}
 
 .dygraph-legend span {
 	font-size: small;

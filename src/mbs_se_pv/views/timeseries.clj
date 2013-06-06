@@ -129,9 +129,11 @@
     (map #(apply str (reverse %)) [prefix-rev ln-name-rev digits-rev])))
 
 (defn- split-iec-name [n]
-  (let [[ld-name ln-name & _] (string/split n #"/|\.")
-        [prefix ln-name id] (extract-ln-name ln-name)]
-    (remove empty? [ld-name ln-name id prefix])))
+  (if (re-matches #"\w+/\w+\w{4}\d*\..*" n) 
+    (let [[ld-name ln-name & _] (string/split n #"/|\.")
+          [prefix ln-name id] (extract-ln-name ln-name)]
+      (remove empty? [ld-name ln-name id prefix]))
+    (remove empty? (string/split n #"/"))))
 
 (defn- restore-physical-hierarchy [names] 
   (let [iec (keys names)
@@ -139,18 +141,16 @@
         labels-and-names (map #(vector (get-in names [% :name]) %) iec)] 
     (util/restore-hierarchy (map #(into (vec %1) %2) splitted labels-and-names))))
 
-(defn- phys-type-of [name]
-  (let [[_ _ type] (string/split name #"/|\.")]
-    (names/type-names type type)))
-
-(defn- split-iec-name-typed [n]
-  (let [[ld-name ln-name type & _] (string/split n #"/|\.")
-        [prefix ln-name id] (extract-ln-name ln-name)]
-    (remove empty? [(names/type-names type type) ld-name id prefix])))
+(defn- split-iec-name-typed [[n {type :type}]] 
+  (if (re-matches #"\w+/\w+\w{4}\d*\..*" n)
+    (let [[ld-name ln-name & _] (string/split n #"/|\.")
+          [prefix ln-name id] (extract-ln-name ln-name)]
+      (remove empty? [type ld-name id prefix]))
+    (remove empty? (cons (if (or (nil? type) (= "" type)) "unbekannt" type) (string/split n #"/")))))
 
 (defn- cluster-by-type [names]
   (let [iec (keys names)
-        splitted (map split-iec-name-typed iec)
+        splitted (map split-iec-name-typed names)
         labels-and-names (map #(vector (get-in names [% :name]) %) iec)] 
     (util/restore-hierarchy (map #(into (vec %1) %2) splitted labels-and-names))))
 

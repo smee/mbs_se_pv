@@ -124,12 +124,11 @@
 sequence of value sequences (seq. of maps with keys :timestamp and :value)."
   ([plant-name series-id start-time end-time] (get-series-values plant-name series-id start-time end-time nil))
   ([plant-name series-id start-time end-time width]
-    (let [end-time (if (= end-time start-time) (+ end-time util/ONE-DAY) end-time)
-          s (as-sql-timestamp start-time) 
+    (let [s (as-sql-timestamp start-time) 
           e (as-sql-timestamp end-time)]
       (if width
         (db/rolled-up-values-in-time-range plant-name series-id s e width)
-        (db/all-values-in-time-range plant-name series-id s e)))))
+        (db/rolled-up-values-in-time-range plant-name series-id s e)))))
 
 ;;;;;;;;;;;;;;;; Functions for rendering nice physical time series data ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- set-axis 
@@ -344,7 +343,9 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
         maintainance-date? (fn [t] (some #(and (>= t (:start %)) (<= t (:end %))) maintainance-dates))
         confidence (s2d confidence 0.999999) 
         max-level (s2i max-level 2)
-        insol-name (if (re-matches #"INVU1.*" name) "INVU1/MMET1.HorInsol.mag.f" "INVU2/MMET1.HorInsol.mag.f")
+        insol-name (cond (re-matches #"INVU1.*" name) "INVU1/MMET1.HorInsol.mag.f" 
+                     (re-matches #"INVU2.*" name) "INVU2/MMET1.HorInsol.mag.f"
+                     :else (second names))
         values (db/db-max-current-per-insolation id name insol-name s e) ;todo make configurable
         hours (sort (distinct (map :hour values)))
         charts (for [hour hours] 

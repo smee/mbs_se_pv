@@ -200,8 +200,16 @@
 			  avoidMinZero: true,
 			  showRoller: false,//does not seem to work very well
 			  labelsKMB :true,
+//			  labelsDivStyles: {
+//	                'backgroundColor': 'rgba(255, 255, 255, 0.65)',
+//	                'padding': '4px',
+//	                'border': '1px solid black',
+//	                'borderRadius': '10px',
+//	                'boxShadow': '4px 4px 4px #888'
+//	              },
 			  digitsAfterDecimal: 3,
 			  animatedZooms: true,
+			  connectSeparatedPoints: true,
 			  labelsSeparateLines: true,
 			  highlightSeriesOpts: {
 				  strokeWidth: 2,
