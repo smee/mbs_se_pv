@@ -53,7 +53,7 @@ If not, it loads a copy of the js file from a local uri."
   [:div.navbar
    [:div.navbar-inner
     [:div.container
-     [:a.brand {:href "http://labs.eumonis.org"} "EUMONIS-Lab"]
+     [:a.brand {:href "http://lab.eumonis.org"} "EUMONIS-Lab"]
      [:ul.nav
       (map-indexed #(if (= % active-idx) 
                       [:li.active %2] 
