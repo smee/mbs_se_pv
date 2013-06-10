@@ -61,7 +61,8 @@
 
 
 (defpage string-status "/status/:id" {:keys [id]}
-  (let [scenarios (db/get-scenarios id)]
+  (let [scenarios (db/get-scenarios id)
+        b-u (util/base-url)]
     (common/layout-with-links 
       (ts/toolbar-links id 3)
 ;      (unordered-list (map-indexed #(vector :a {:href (str "#analysis-" %)} (:name %2)) scenarios))
@@ -76,8 +77,10 @@
           [:th "ID des Sensors"]
           [:th "Wahrscheinlichkeit"]]]
         [:tbody]]]
-      (common/include-js "/js/jquery.dataTables.min.js" "/js/dataTables.paging.bootstrap.js") 
-      (javascript-tag (util/render-javascript-template "templates/render-datatable.js" "#anomalies" (str (util/base-url) "/data/" id "/events.json")))
+      (common/include-js "/js/jquery.dataTables.min.js" 
+                         "/js/dataTables.paging.bootstrap.js"
+                         "/js/chart/matrix.js") 
+      (javascript-tag (util/render-javascript-template "templates/render-datatable.js" "#anomalies" (str b-u "/data/" id "/events.json")))
       [:div.row-fluid
        (map-indexed  
          #(vector :div.widget
@@ -88,11 +91,9 @@
       (common/include-js "/js/chart/d3.v2.min.js")
       (map-indexed 
         (fn [idx scenario] 
-          (javascript-tag 
-            (util/render-javascript-template 
-              "templates/matrix.js"
-              (util/base-url)
-              (format "%s/series-of/%s/%d/20120101-%s/entropy-bulk.json" (util/base-url) id (-> scenario :id) (.format (util/dateformatrev) (System/currentTimeMillis))) 
-              (str "#matrix-" idx) 
-              id)))
+          (javascript-tag (format "EntropyChart.createMatrix('%s','%s','%s','%s')" 
+                                  b-u 
+                                  (format "%s/series-of/%s/%d/20120101-%s/entropy-bulk.json" b-u id (-> scenario :id) (.format (util/dateformatrev) (System/currentTimeMillis)))
+                                  (str "#matrix-" idx)
+                                  id)))
         scenarios))))
