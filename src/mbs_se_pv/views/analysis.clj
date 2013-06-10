@@ -79,6 +79,7 @@
         [:tbody]]]
       (common/include-js "/js/jquery.dataTables.min.js" 
                          "/js/dataTables.paging.bootstrap.js"
+                         "/js/chart/d3.v2.min.js"
                          "/js/chart/matrix.js") 
       (javascript-tag (util/render-javascript-template "templates/render-datatable.js" "#anomalies" (str b-u "/data/" id "/events.json")))
       [:div.row-fluid
@@ -88,7 +89,6 @@
                   [:h1 (str "Analyse: " (:name %2))]
                   [:div {:id (str "matrix-" %1)}])
          scenarios)]
-      (common/include-js "/js/chart/d3.v2.min.js")
       (map-indexed 
         (fn [idx scenario] 
           (javascript-tag (format "EntropyChart.createMatrix('%s','%s','%s','%s')" 

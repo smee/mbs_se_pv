@@ -6,7 +6,7 @@
             [clojure.math.combinatorics :as combo]
             [clojure.string :refer [split]]
             [org.clojars.smee 
-             [map :refer (mapp)] 
+             [map :refer (mapp map-values)] 
              [util :refer (s2i s2d s2b)]
              [time :refer [as-sql-timestamp]]]
             [noir.response :refer (content-type json)]
@@ -111,16 +111,26 @@ Use this function for all dygraph data."
           inv (s2i inv)]
       (+ st (* inv 4))))
 
-(chart/def-chart-page "entropy-bulk.json" [] ;; TODO create background job that calculates these scenarios each day
-  (let [sid (first names)
-        {{ids :ids} :settings, name :name} (db/get-scenario sid)
-        days (db/get-analysis-results id s e sid)
-        names (for [name ids :let [{label :name device :component} (all-names name)]] (str device "/" label) )]
-    
-    (json {:names names
-           :ids ids
-           :days days}))
-  )
+
+
+(chart/def-chart-page "entropy-bulk.json" [adhoc]
+  (if (not-empty adhoc)
+    (let [settings (cheshire.core/parse-string adhoc)
+          settings (map-values keyword identity settings)
+          {:keys [ids] :as settings} (merge {:n 30 :bins 500 :min-hist 0.05 :max-hist 2 :skip-missing? true :threshold 1.3} settings)
+          days (alg/calculate-entropy-matrices id s e settings)
+          names (for [name ids :let [{label :name device :component} (all-names name)]] (str device "/" label) )]
+      (json {:names names
+             :ids ids
+             :days days}))
+    (let [sid (first names)
+          ids (-> sid (db/get-scenario) :settings :ids)
+          days (db/get-analysis-results id s e sid)
+          names (for [name ids :let [{label :name device :component} (all-names name)]] (str device "/" label) )]
+      (json {:names names
+             :ids ids
+             :days days}))))
+
 
 (comment
   (require '[org.clojars.smee.seq :refer [find-where]])

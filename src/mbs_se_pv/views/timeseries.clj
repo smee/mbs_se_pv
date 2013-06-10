@@ -245,7 +245,8 @@
                                    ["Statische Ansicht" "chart.png"]
                                    ["Heatmap" "heat-map.png"]
                                    ["Verhältnis" "dygraph-ratios.json"] 
-                                   ["Entropieänderung" "entropy.json"]
+                                   ["Entropieänderung (einfach)" "entropy.json"]
+                                   ["Entropieänderung (Matrix)" "entropy-bulk.json"]
                                    ["Verhaltensänderung" "changepoints.png"]
                                    ["Ungewöhnlicher Tag" "discord.png"]
                                    ["Korrelationen" "correlation.png"]]
@@ -303,6 +304,8 @@
                               "/js/datepicker.js"
                               "/js/chart/dygraph-combined-dev.js"
                               "/js/chart/dygraph-functions.js"
+                              "/js/chart/d3.v2.min.js"
+                              "/js/chart/matrix.js"
                               "/js/hogan-2.0.0.js"
                               "/js/typeahead.js")
       (common/include-css "/css/dynatree/ui.dynatree.css" "/css/datepicker.css" "/css/typeahead.css") 
@@ -310,12 +313,12 @@
       (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#endDate" endDate min max))
       (javascript-tag (util/render-javascript-template "templates/load-chart.js" "#render-chart" base-url id))
       (javascript-tag "$('#visType').change(function(){
-                            var params=$('#changepoint-parameter'); 
-                            if('changepoints.png'==$(this).val()){ params.slideDown();} else{ params.slideUp();}})")
-      (javascript-tag "$('#visType').change(function(){
-                            var params=$('#entropy-parameter');
                             var val=$(this).val(); 
-                            if(val.slice(0,7)=='entropy'){ params.slideDown();} else{ params.slideUp();}})")
+                            var entropyparams=$('#entropy-parameter');
+                            var cpparams=$('#changepoint-parameter'); 
+
+                            if('changepoints.png'==val){ cpparams.slideDown(); }else{ cpparams.slideUp();};
+                            if(val.slice(0,7)=='entropy'){ entropyparams.slideDown(); }else{ entropyparams.slideUp();}})")
       (javascript-tag (format 
                         "$('#sensor').typeahead({
                              name: 'sensor-numerator-%s',

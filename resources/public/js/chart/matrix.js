@@ -22,7 +22,7 @@
 		EntropyChart.redrawAll();
 	};
 
-	EntropyChart.createMatrix = function(baseUrl, dataUrl, selector, plantId) {
+	EntropyChart.createMatrix = function(baseUrl, dataUrl, selector, plantId,afterLoadCallback) {
 		var margin = {
 			top : 200,
 			right : 100,
@@ -220,6 +220,8 @@
 			}
 			// store reference to the redraw function of this matrix plot.
 			cs[selector] = redraw;
+			if(afterLoadCallback)
+				afterLoadCallback(this);
 		});
 	};
 }(window.EntropyChart = window.EntropyChart || {}, jQuery, undefined));

@@ -13,7 +13,7 @@
     // hide loading indicator faster
     $.blockUI.defaults.fadeOut = 0;
     $.blockUI.defaults.fadeIn = 0;
-    $.blockUI.defaults.message = "<h1>Bitte warten, Daten werden geladen...</h1>"
+    $.blockUI.defaults.message = "<h1>Bitte warten, Daten werden geladen...</h1>";
         
     // hide loading indicator if loading an image does not work
     $('#chart-image').error(function(){ 
@@ -59,6 +59,16 @@
                  + '&days=' + params.days
                  + '&skip-missing=' + params.skipMissing
                  + '&sensor=' + params.sensor;
+        }else if(v == 'entropy-bulk.json'){
+        	link += '&adhoc='
+        		 + JSON.stringify(
+        				 {'n': parseInt(params.days),
+           				  'ids': params.selectedSeries,
+           				  'min-hist': parseFloat(params.minHist),
+           				  'max-hist':  parseFloat(params.maxHist),
+           				  'bins': parseInt(params.bins),
+           				  'skip-missing?': params.skipMissing,
+           				  'threshold':1.3});
         }
         return link;
     }
@@ -151,7 +161,11 @@
 							settings.stackedGraph= true;
 							settings.clickCallback = createCBFunction(chartDiv, {visType: 'dygraph-ratios.json', selectedSeries: [response.numerator]}, 'dygraph-chart-entropy-ratios'+selectionHash);
 						});
-					} else if (visType.slice(-5) == '.json') {
+					} else if (visType== 'entropy-bulk.json') {
+						chartDiv.append($("<div id='" + chartId + "' class='widget'/>"));
+						
+						EntropyChart.createMatrix(baseUrl,link,"#"+chartId,plantId,function(){chartDiv.unblock();});
+					}else{
 						chartDiv.append($("<div id='" + chartId + "'/>"));
 						dygraphFunctions.createChart({
 							id : chartId,
