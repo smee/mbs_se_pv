@@ -55,12 +55,10 @@
 					return {
 						x : j,
 						y : i,
-						z : es[j] || undefined
+						z : es[j]==null? undefined:es[j]//0 would be interpreted as false, can't just say "es[j] || undefined"
 					};
 				});
 			}
-			;
-
 			return {
 				matrix : matrix,
 				probabilities : day.probabilities,
@@ -218,7 +216,7 @@
 					return (d * 100).toFixed(0) + "%";
 				});
 			}
-			// store reference to the redraw function of this matrix plot.
+			// store reference to the redraw function of this matrix plot. XXX potential memory leak!
 			cs[selector] = redraw;
 			if(afterLoadCallback)
 				afterLoadCallback(this);
