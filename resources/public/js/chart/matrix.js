@@ -30,7 +30,7 @@
 			left : 200
 		}, width = height = 400;
 		var //x = d3.scale.ordinal().rangeBands([0, width]),
-		c = d3.scale.linear().domain([ 0, 0.001, 1, 3 ]).range([ "red", "green", "yellow", "red" ]);
+		c = d3.scale.linear().domain([ -1, 1, 3 ]).range(["green", "yellow", "red" ]);
 
 		var maindiv = d3.select(selector);
 
@@ -157,7 +157,7 @@
 			function loadDetailChart(d, i) {
 				var elem = d3.select(this);
 				var params = {
-					startDate : parseAndIncrementDateString(data.date, -1),
+					startDate : parseAndIncrementDateString(data.date, -2),
 					endDate : data.date,
 					run : true
 				};
