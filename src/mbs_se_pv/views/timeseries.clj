@@ -196,12 +196,16 @@
    :maxLevel 2
    :minHist 0.05
    :maxHist 2
+   :minHour 8
+   :maxHour 16
    :bins 500
    :days 30
    :skipMissing true
    :sensor ""
    :width 950
-   :height 600})
+   :height 600
+   :threshold 1.3
+   :num 2})
 
 (defn- render-series-page [id {:keys [startDate endDate] :as params}]
   (let [c (db/count-all-series-of-plant id)
@@ -264,6 +268,10 @@
          [:div.input-prepend
           [:span.add-on "lvl: "]
           (text-field {:placeholder "Max. level" :class "input-small"} "maxLevel" (params :maxLevel))]]
+        [:div#discord-parameter {:style (str "display:" (if (= (params :visType) "discord.png") "block" "none"))}
+         [:div.input-prepend
+          [:span.add-on "Anzahl: "]
+          (text-field {:class "input-small"} "num" (params :num))]] 
         [:div#entropy-parameter {:style (str "display:" (if (= (params :visType) "entropy.json") "block" "none"))} 
          [:h4 "Weitere Parameter"]
          [:div.input-prepend
@@ -273,11 +281,20 @@
           [:span.add-on "max: "]
           (text-field {:class "input-small"} "maxHist" (params :maxHist))]
          [:div.input-prepend
+          [:span.add-on "ab Stunde: "]
+          (text-field {:class "input-small"} "minHour" (params :minHour))]
+         [:div.input-prepend
+          [:span.add-on "bis Stunde: "]
+          (text-field {:class "input-small"} "maxHour" (params :maxHour))]
+         [:div.input-prepend
           [:span.add-on "bins: "]
           (text-field {:class "input-small"} "bins" (params :bins))]
          [:div.input-prepend
           [:span.add-on "Tage: "]
           (text-field {:class "input-small"} "days" (params :days))]
+         [:div.input-prepend
+          [:span.add-on "Schwellwert: "]
+          (text-field {:class "input-small"} "threshold" (params :threshold))]
          [:div.controls
           [:label.checkbox (check-box :skipMissing (params :skipMissing)) "Ignoriere lückenhafte Tage"]]         
          [:div.input-prepend
@@ -316,9 +333,11 @@
                             var val=$(this).val(); 
                             var entropyparams=$('#entropy-parameter');
                             var cpparams=$('#changepoint-parameter'); 
+                            var discordparams=$('#discord-parameter'); 
 
                             if('changepoints.png'==val){ cpparams.slideDown(); }else{ cpparams.slideUp();};
-                            if(val.slice(0,7)=='entropy'){ entropyparams.slideDown(); }else{ entropyparams.slideUp();}})")
+                            if(val.slice(0,7)=='entropy'){ entropyparams.slideDown(); }else{ entropyparams.slideUp();}
+                            if('discord.png'==val){ discordparams.slideDown(); }else{ discordparams.slideUp();}})")
       (javascript-tag (format 
                         "$('#sensor').typeahead({
                              name: 'sensor-numerator-%s',

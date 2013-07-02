@@ -45,7 +45,9 @@
         var v = params.visType;
 
         var link = baseUrl + '/series-of/' + plantId + '/' + series + '/' + dates + '/' + v + '?width=' + params.width + '&height=' + params.height;
-        if(v == 'changepoints.png'){
+        if(v == 'discord.png'){
+           link += "&num="+params.num;	
+        }else if(v == 'changepoints.png'){
             link += '&rank='+params.rank
                    +'&zero='+params.zero
                    +'&negative='+params.negative
@@ -68,7 +70,9 @@
            				  'max-hist':  parseFloat(params.maxHist),
            				  'bins': parseInt(params.bins),
            				  'skip-missing?': params.skipMissing,
-           				  'threshold':1.3});
+           				  'threshold':parseFloat(params.threshold),
+           				  'min-hour': parseFloat(params.minHour),
+           				  'max-hour': parseFloat(params.maxHour)});
         }
         return link;
     }
