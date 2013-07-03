@@ -146,7 +146,7 @@
 				cell.on("mouseover", mouseover).on("mouseout", mouseout);
 			}
 
-			var df = d3.time.format("%d.%M.%Y");
+			var df = d3.time.format("%d.%m.%Y");
 
 			function parseAndIncrementDateString(s, numberOfDaysToAdd) {
 				var date = df.parse(s);
