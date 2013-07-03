@@ -62,7 +62,8 @@
 			return {
 				matrix : matrix,
 				probabilities : day.probabilities,
-				date : day.date
+				date : day.date,
+				since: day.since
 			};
 		}
 
@@ -96,9 +97,19 @@
 					}).attr("dy", ".32em").text(function(d) {
 						return (d * 100).toFixed(0) + "%";
 					});
-
 			g.append("text").attr("x", 6).attr("y", xlen + x.rangeBand()).attr("dx", ".32em").attr("transform",
 					"translate(" + x(data.probabilities.length) + ")rotate(-90)").text("Gesamtwahrscheinlichkeit");
+			
+			// since
+			g.selectAll("text.sinceLabel").data(data.since).enter().append("text").attr("class", "sinceLabel").attr("x", xlen + 60)
+			.attr("y", function(d, i) {
+				return x(i) + x.rangeBand() / 2;
+			}).attr("dy", ".32em").text(function(d) {
+				if (d>0) return d + " Tage"; else return "";
+			});
+			g.append("text").attr("x", 6).attr("y", xlen + 70).attr("dx", ".32em").attr("transform",
+					"translate(" + x(data.probabilities.length) + ")rotate(-90)").text("Fehler seit");
+	
 
 			// rows of cells
 			var rows = g.selectAll(".row").data(data.matrix);
@@ -157,7 +168,7 @@
 			function loadDetailChart(d, i) {
 				var elem = d3.select(this);
 				var params = {
-					startDate : parseAndIncrementDateString(data.date, -2),
+					startDate : parseAndIncrementDateString(data.date, - (data.since[i]+1)),
 					endDate : data.date,
 					run : true
 				};
@@ -215,6 +226,10 @@
 				svg.selectAll("text.problabel").data(data.probabilities).text(function(d) {
 					return (d * 100).toFixed(0) + "%";
 				});
+				svg.selectAll("text.sinceLabel").data(data.since).text(function(d) {
+					if (d>0) return d + " Tage"; else return "";
+				});
+
 			}
 			// store reference to the redraw function of this matrix plot. XXX potential memory leak!
 			cs[selector] = redraw;

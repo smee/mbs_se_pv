@@ -121,6 +121,7 @@ Use this function for all dygraph data."
           settings (map-values keyword identity settings)
           {:keys [ids] :as settings} (merge {:n 30 :bins 500 :min-hist 0.05 :max-hist 2 :skip-missing? true :threshold 1.3 :use-raw-entropy? true} settings)
           days (alg/calculate-entropy-matrices id s e settings)
+          days (alg/add-anomaly-durations days)
           names (for [name ids :let [{label :name device :component} (all-names name)]] (str device "/" label) )]
       (json {:names names
              :ids ids
@@ -128,6 +129,7 @@ Use this function for all dygraph data."
     (let [sid (first names)
           ids (-> sid (db/get-scenario) :settings :ids)
           days (db/get-analysis-results id s e sid)
+          days (alg/add-anomaly-durations days)
           names (for [name ids :let [{label :name device :component} (all-names name)]] (str device "/" label) )]
       (json {:names names
              :ids ids
