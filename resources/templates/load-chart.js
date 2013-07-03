@@ -72,7 +72,8 @@
            				  'skip-missing?': params.skipMissing,
            				  'threshold':parseFloat(params.threshold),
            				  'min-hour': parseFloat(params.minHour),
-           				  'max-hour': parseFloat(params.maxHour)});
+           				  'max-hour': parseFloat(params.maxHour),
+           				  'use-raw-entropy?': params.useRawEntropy});
         }
         return link;
     }

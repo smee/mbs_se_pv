@@ -80,6 +80,10 @@ Use this function for all dygraph data."
            :data (insert-nils (map (juxt :timestamp :value) vs)) 
            :title (str  "Verhältnis von " name1 " und " name2 "<br/>" (.format (util/dateformat) s) " bis " (.format (util/dateformat) e))})))
 
+#_(chart/def-chart-page "histograms.json" []
+  (let [histograms (db/all-values-in-time-range plant-id ids s e
+                         (fn [slices]
+                           ))]))
 ;;;;;;;;;;;;;;;;;; relative entropy comparison between daily ratios of time series
 
 (use 'org.clojars.smee.serialization)
@@ -111,13 +115,11 @@ Use this function for all dygraph data."
           inv (s2i inv)]
       (+ st (* inv 4))))
 
-
-
 (chart/def-chart-page "entropy-bulk.json" [adhoc]
   (if (not-empty adhoc)
     (let [settings (cheshire.core/parse-string adhoc)
           settings (map-values keyword identity settings)
-          {:keys [ids] :as settings} (merge {:n 30 :bins 500 :min-hist 0.05 :max-hist 2 :skip-missing? true :threshold 1.3} settings)
+          {:keys [ids] :as settings} (merge {:n 30 :bins 500 :min-hist 0.05 :max-hist 2 :skip-missing? true :threshold 1.3 :use-raw-entropy? true} settings)
           days (alg/calculate-entropy-matrices id s e settings)
           names (for [name ids :let [{label :name device :component} (all-names name)]] (str device "/" label) )]
       (json {:names names
