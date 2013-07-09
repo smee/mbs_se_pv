@@ -80,6 +80,14 @@ Use this function for all dygraph data."
            :data (insert-nils (map (juxt :timestamp :value) vs)) 
            :title (str  "Verhältnis von " name1 " und " name2 "<br/>" (.format (util/dateformat) s) " bis " (.format (util/dateformat) e))})))
 
+(chart/def-chart-page "dygraph-differences.json" []
+  (let [[num dem] names
+        vs (alg/calculate-diffs id num dem s e) 
+        [name1 name2] (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) [num dem])]
+    (json {:labels (list "Datum" (str "Differenz von " name1 " und " name2)) 
+           :data (insert-nils (map (juxt :timestamp :value) vs)) 
+           :title (str  "Differenz von " name1 " und " name2 "<br/>" (.format (util/dateformat) s) " bis " (.format (util/dateformat) e))})))
+
 #_(chart/def-chart-page "histograms.json" []
   (let [histograms (db/all-values-in-time-range plant-id ids s e
                          (fn [slices]

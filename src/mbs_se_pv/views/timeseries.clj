@@ -250,6 +250,7 @@
                                    ["Statische Ansicht" "chart.png"]
                                    ["Heatmap" "heat-map.png"]
                                    ["Verhältnis" "dygraph-ratios.json"] 
+                                   ["Differenz" "dygraph-differences.json"] 
                                    ["Entropieänderung (einfach)" "entropy.json"]
                                    ["Entropieänderung (Matrix)" "entropy-bulk.json"]
                                    ["Verhaltensänderung" "changepoints.png"]
