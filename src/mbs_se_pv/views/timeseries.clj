@@ -249,6 +249,7 @@
           (drop-down "visType" [["Interaktive Ansicht", "dygraph.json"] 
                                    ["Statische Ansicht" "chart.png"]
                                    ["Heatmap" "heat-map.png"]
+                                   ["Heatmap (paarweise)" "relative-heat-map.png"]
                                    ["Verhältnis" "dygraph-ratios.json"] 
                                    ["Differenz" "dygraph-differences.json"] 
                                    ["Entropieänderung (einfach)" "entropy.json"]

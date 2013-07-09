@@ -237,7 +237,10 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
         name (first names) 
         data (get-series-values id name s e)  
         days (partition-by day-number data)
+        days (remove #(< (count %) 1000) days)
         daily-date (map #(f/resample (map :value %) 100) days)
+        _ (println (frequencies (map count daily-date)))
+        daily-date (remove #(< (count %) 90) daily-date) 
         discords (discord/find-discords-in-seqs daily-date num)
         discord-days (->> discords
                        (map #(nth days (first %)))
@@ -321,6 +324,54 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
     (.. chart getPlot (setDomainAxis (org.jfree.chart.axis.DateAxis.)))
     (.. chart getPlot (setRangeAxis time-axis))
     (return-image chart :height height :width width)))
+
+(def-chart-page "relative-heat-map.png" [] ; TODO configurable ranges, configurable color scales
+  (let [[name2 name1] names
+        [power wind-speed] [(map :value (get-series-values id name1 s e)) 
+                            (map :value (get-series-values id name2 s e))] 
+        [min-p max-p] (apply (juxt min max) power)
+        [min-w max-w] (apply (juxt min max) wind-speed)
+        ;      [min-p max-p] [0 1000000]
+        ;      [min-w max-w] [0 15] 
+        x-steps 160
+        y-steps 200
+        x-bin-width (/ (- max-w min-w) x-steps)
+        y-bin-width (/ (- max-p min-p) y-steps)
+        bin (fn [min max step] 
+              (let [steps (partition 2 1 (range min max step))] 
+                (fn [v] (org.clojars.smee.seq/find-where (fn [[a b]] (<= a v b)) steps))))
+        bin-w (bin min-w max-w x-bin-width)
+        bin-p (bin min-p max-p y-bin-width)
+        bins (->> (map vector wind-speed power)
+               (sort-by first)
+               (partition-by #(int (/ (first %) x-bin-width)))
+               (reduce #(assoc % (bin-w (ffirst %2)) %2) {}) 
+               (org.clojars.smee.map/map-values 
+                 (fn [bin] (->> bin 
+                             (sort-by second)
+                             (partition-by #(int (/ (second %) y-bin-width)))
+                             (reduce #(assoc % (bin-p (second (first %2))) %2) {})
+                             (org.clojars.smee.map/map-values count))))
+               time)
+        f (fn [x y] ;(println [x y]) 
+            (if-let [v (get-in bins [(bin-w x) (bin-p y)])] v 0))
+        color-scale (cjf/create-color-scale [0 [0 0 0]] 
+                                            [1 [0 255 0]]
+                                            [10 [0 255 255]]
+                                            [1000 [0 0 255]] 
+                                            [3000 [255 0 0]])
+        fixed-color-scale (cjf/fixed-color-scale color-scale (range 0 1000 5))
+        fixed-color-scale (cjf/fixed-color-scale color-scale [0 1 5 10 50 100 1000 2000 10000])
+        chart (doto (chart-utils.jfreechart/heat-map f min-w max-w min-p max-p :x-step x-steps :y-step y-steps
+                                                     :title (str name1 " vs. " name2) 
+                                                     :colors fixed-color-scale
+                                                     :x-label name1
+                                                     :y-label name2
+                                                     :z-label "Häufigkeit" 
+                                                     )
+                (.. getPlot getRenderer (setBlockHeight (/ (- max-p min-p) y-steps)))
+                (.. getPlot getRenderer (setBlockWidth (/ (- max-w min-w) x-steps))))]
+    (return-image chart :height height :width width))) 
 
 
 
