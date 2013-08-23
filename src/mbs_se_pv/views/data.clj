@@ -1,6 +1,6 @@
 (ns ^{:doc "Generate json data for client side chart generation"} mbs-se-pv.views.data
   (:require [mbs-se-pv.views.charts :as chart]
-            [mbs-se-pv.views.util :as util]
+            [mbs-se-pv.views.util :as util :refer [t]]
             [mbs-se-pv.algorithms :as alg]
             [mbs-db.core :as db]
             [clojure.math.combinatorics :as combo]
@@ -70,23 +70,47 @@ Use this function for all dygraph data."
         all-names (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) names)]
     (json {:labels (cons "Datum" all-names) 
            :data (insert-nils by-time)
-           :title (str "Chart für den Zeitraum " (.format (util/dateformat) s) " bis " (.format (util/dateformat) e))}))) ;values
+           :title (format (t ::line-chart-header) (.format (util/dateformat) s) (.format (util/dateformat) e))}))) ;values
 
 (chart/def-chart-page "dygraph-ratios.json" []
   (let [[num dem] names
         vs (db/rolled-up-ratios-in-time-range id num dem s e width) 
         [name1 name2] (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) [num dem])]
-    (json {:labels (list "Datum" (str "Verhältnis von " name1 " und " name2)) 
+    (json {:labels (list (t ::date) (format (t ::ratio-chart-title) name1 name2)) 
            :data (insert-nils (map (juxt :timestamp :value) vs)) 
-           :title (str  "Verhältnis von " name1 " und " name2 "<br/>" (.format (util/dateformat) s) " bis " (.format (util/dateformat) e))})))
+           :title (format (t ::ratio-chart-header) name1 name2 (.format (util/dateformat) s) (.format (util/dateformat) e))})))
 
 (chart/def-chart-page "dygraph-differences.json" []
   (let [[num dem] names
         vs (alg/calculate-diffs id num dem s e) 
         [name1 name2] (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) [num dem])]
-    (json {:labels (list "Datum" (str "Differenz von " name1 " und " name2)) 
+    (json {:labels (list (t ::date) (format (t ::difference-chart-title) name1 name2)) 
            :data (insert-nils (map (juxt :timestamp :value) vs)) 
-           :title (str  "Differenz von " name1 " und " name2 "<br/>" (.format (util/dateformat) s) " bis " (.format (util/dateformat) e))})))
+           :title (format (t ::difference-chart-header) name1 name2 (.format (util/dateformat) s) (.format (util/dateformat) e))})))
+
+(chart/def-chart-page "relative-heatmap.json" []
+  (let [[name1 name2] names
+        [power wind-speed] [(map :value (chart/get-series-values id name1 s e)) 
+                            (map :value (chart/get-series-values id name2 s e))] 
+        [min-p max-p] (apply (juxt min max) power)
+        [min-w max-w] (apply (juxt min max) wind-speed)
+        ;      [min-p max-p] [0 1000000]
+        ;      [min-w max-w] [0 15] 
+        x-steps 150
+        y-steps 150
+        x-bin-width (/ (- max-w min-w) x-steps)
+        y-bin-width (/ (- max-p min-p) y-steps)
+        bin-w (alg/bin-fn min-w max-w x-bin-width)
+        bin-p (alg/bin-fn min-p max-p y-bin-width)
+        bins ((alg/->bins min-w x-bin-width min-p y-bin-width bin-w bin-p) wind-speed power)
+        f (fn [x y] ;(println [x y]) 
+            (if-let [v (get-in bins [(bin-w x) (bin-p y)])] v 0))
+        data (for [y (range min-p max-p y-bin-width)]  
+               (for [x (range min-w max-w x-bin-width)] (f x y))) 
+        ]
+    (json {:xRange [min-w max-w]
+           :yRange [min-p max-p]
+           :data data})))
 
 #_(chart/def-chart-page "histograms.json" []
   (let [histograms (db/all-values-in-time-range plant-id ids s e
@@ -105,7 +129,7 @@ Use this function for all dygraph data."
 ;        {:keys [results]} (deserialize (str "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\invu1\\20130326 full-days\\" (.replaceAll sensor "/" "_") ".clj"))
         results (pmap #(alg/calculate-entropies id sensor % s e {:n n :bins bins :min-hist min-hist :max-hist max-hist :skip-missing? skip-missing}) names)
 ;        _ (serialize (str "d:/Dropbox/temp/" (.replaceAll sensor "/" "_") ".clj") {:results results})
-        title (format "Signifikante Veränderungen im Verlauf von \"%s\" (%s)" (get-in all-names [sensor :name]) sensor)
+        title (format (t ::entropy-chart-title) (get-in all-names [sensor :name]) sensor)
         entropies (map :entropies results)
         ]
     (json {
@@ -142,43 +166,3 @@ Use this function for all dygraph data."
       (json {:names names
              :ids ids
              :days days}))))
-
-
-(comment
-  (require '[org.clojars.smee.seq :refer [find-where]])
-  (require 'bayesian) 
-  (def res (into {} (for [f (file-seq (java.io.File. "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\invu2\\20130326 full-days\\"))
-                          :when (.isFile f)
-                          :let [x (:results (deserialize f))]]
-                      [(:name (first x)) x])))
-  
-  (def ps (time (doall (bayesian/calc-failure-probabilities (sort-by series-index (keys res)) res 1.3))))
-  
-  (defn construct-matrices []
-    (let [names (sort-by series-index (keys res))
-          all-names  (db/all-series-names-of-plant id)
-          pretty-names (for [name names :let [{label :name device :component} (all-names name)]] (str device "/" label) )
-          index (into {} (map-indexed #(vector %2 %1) names))
-          name-combos (combo/combinations names 2)
-          entropies-per-combo (into {} (apply concat
-                                              (for [[n1 n2] name-combos] 
-                                                [[[n1 n2] (:entropies (find-where #(= (:denominator %) n2) (get res n1)))]
-                                                 [[n2 n1] (:entropies (find-where #(= (:denominator %) n1) (get res n2)))]])))
-          ]
-      {:names pretty-names
-       :ids names
-       :days 
-       (for [n (range (-> res first second first :x count))
-             :let [date (-> res first second first :x (nth n))]]
-         (hash-map :date (.format (util/dateformat) date)
-                   :probabilities (for [name names] (-> ps (nth n) (nth (index name))))
-                   :entropies (for [a names]
-                                (for [b names :let [e (get entropies-per-combo [a b])]]
-                                  (when e (nth e n))))))})) 
-  (let [result (deserialize "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\invu1\\scenario-invu2.clj")
-        settings (into (sorted-map) {:threshold 1.3 :skip-missing? true :min-hist 0.05 :bins 500 :max-hist 2 :n 30 :ids (:ids result)})
-        {sid :generated_key} (db/insert-scenario "Ourique PV-Anlage" "Stringvergleich INVU2" settings)]
-    
-    (doseq [day (:days result) :let [date (.parse (util/dateformat) (:date day))]] (def d day)
-      (db/insert-scenario-result "Ourique PV-Anlage" date sid day)))
-  )

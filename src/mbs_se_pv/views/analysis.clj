@@ -5,7 +5,7 @@
        [analysis :as analysis] 
        [common :as common]
        [timeseries :as ts] 
-       [util :as util]]
+       [util :as util :refer [t]]]
       [mbs-db.core :as db])
     (:use [noir 
            core
@@ -67,15 +67,15 @@
       (ts/toolbar-links id 3)
 ;      (unordered-list (map-indexed #(vector :a {:href (str "#analysis-" %)} (:name %2)) scenarios))
       [:div.span12
-       [:h1 "Auffälligkeiten der Anlage " \" id \"]
+       [:h1 (format (t ::anomaly-header) id)]
        [:table#anomalies.table.table-striped.table-condensed
         [:thead 
          [:tr 
-          [:th "Name des Analyseszenarios"]
-          [:th "Datum"]
-          [:th "Name des Sensors"]
-          [:th "ID des Sensors"]
-          [:th "Wahrscheinlichkeit"]]]
+          [:th (t ::table-title)]
+          [:th (t ::table-date)]
+          [:th (t ::table-sensor-name)]
+          [:th (t ::table-sensor-id)]
+          [:th (t ::table-probability)]]]
         [:tbody]]]
       (common/include-js "/js/jquery.dataTables.min.js" 
                          "/js/dataTables.paging.bootstrap.js"
@@ -86,7 +86,7 @@
        (map-indexed  
          #(vector :div.widget
                   [:a {:name (str "analysis-" %1)}]
-                  [:h1 (str "Analyse: " (:name %2))]
+                  [:h1 (format (t ::matrix-title) (:name %2))]
                   [:div {:id (str "matrix-" %1)}])
          scenarios)]
       (map-indexed 

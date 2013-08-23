@@ -5,7 +5,7 @@
       [mbs-se-pv.views 
        [common :as common]
        [charts :as ch]
-       [util :as util]
+       [util :as util :refer [t]]
        [psm-names :as names]
        [calendar :as cal]]
       [mbs-db.core :as db])
@@ -28,24 +28,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;; show metadata as table ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def ^:private installation-labels
-  [:first-date "Erster Messwert am"
-   :last-date "Letzter Messwert am"
-   :id "Name der Anlage"
-   :anlagenkwp "Installierte Leistung in Wp"
-   :anzahlwr "Anzahl installierter Wechselrichter"
-   :hpmodul "PV-Module" 
-   :hpwr "Wechselrichter"
-   :hpausricht "Ausrichtung der Module"
-   ])
+  [:first-date 
+   :last-date 
+   :id 
+   :anlagenkwp 
+   :anzahlwr 
+   :hpmodul  
+   :hpwr 
+   :hpausricht])
 (def ^:private personal-labels
-  [:hpbetreiber "Betreiber"
-   :verguetung "Vergütung pro kWh"
-   :hpstandort "Standort"
-   :hppostleitzahl "Postleitzahl"
-   :hpemail  "Kontaktemail"
-   :hpinbetrieb "Inbetriebnahme"
-   :serialnr "Seriennummer des Datenloggers"
-   ])
+  [:hpbetreiber 
+   :verguetung 
+   :hpstandort 
+   :hppostleitzahl 
+   :hpemail  
+   :hpinbetrieb 
+   :serialnr])
 
 (defn ^:private metadata-value [k v]
   (case k
@@ -58,10 +56,11 @@
         metadata (dissoc metadata :wr)
         k (sort (keys metadata))]
     [:table.table.table-striped.table-condensed 
-     (for [[k label] (partition 2 labels) 
-           :let [value (metadata k)] 
+     (for [label-key labels 
+           :let [label (t  (->> label-key name (str "mbs-se-pv.views.timeseries/") keyword))
+                 value (metadata label-key)] 
            :when value]
-       [:tr [:th.span4 label] [:td (metadata-value k value)]])]))
+       [:tr [:th.span4 label] [:td (metadata-value label-key value)]])]))
 
 
 (defpartial render-gain-image [name time-ago today w h type]
@@ -82,17 +81,17 @@
       (toolbar-links plant 1)
       nil
       [:div.span6
-        [:h3 "Anlagendaten"]
+        [:h3 (t ::header-plant)]
         (metadata-table metadata installation-labels)
-        [:h3 "Betreiber"]
+        [:h3 (t ::header-operator)]
         (metadata-table metadata personal-labels)
-        [:a.btn.btn-large.btn-success {:href (resolve-url (url-for all-series {:id plant}))} "Messwerte"]
-        [:h3 "Vorhandene Daten pro Tag"]
+        [:a.btn.btn-large.btn-success {:href (resolve-url (url-for all-series {:id plant}))} (t ::measurements)]
+        [:h3 (t ::header-data-per-day)]
         [:div#calendar.span9
          [:div.controls
           (drop-down "calendar-data" 
-                     [["Fehlende Daten" (resolve-url (url-for cal/missing-data {:id (url-encode plant)}))]
-                      ["Wartungsarbeiten" (resolve-url (url-for cal/maintainance-dates {:id (url-encode plant)}))]
+                     [[(t ::missing-data) (resolve-url (url-for cal/missing-data {:id (url-encode plant)}))]
+                      [(t ::maintenance) (resolve-url (url-for cal/maintainance-dates {:id (url-encode plant)}))]
                       ])
           (drop-down "color-scale" 
                      [["Rot-Gelb-Grün" "RdYlGn"]
@@ -104,12 +103,12 @@
                       ["Grau" "Greys"]
                       ["???" "Spectral"]])]]]
        [:div.span6
-        [:h3 "Erträge im letzten Jahr"]
-        [:h4 "Gesamtertrag pro Tag"]
+        [:h3 (t ::header-gain-year)]
+        [:h4 (t ::header-gain-day)]
         (render-gain-image plant one-year-ago today w h "day")
-        [:h4 "Gesamtertrag pro Woche"]
+        [:h4 (t ::header-gain-week)]
         (render-gain-image plant one-year-ago today w h "week")
-        [:h4 "Gesamtertrag pro Monat"]
+        [:h4 (t ::header-gain-month)]
         (render-gain-image plant one-year-ago today w h "month")]
        (common/include-css "/css/colorbrewer.css")
        (common/include-js "/js/chart/d3.v2.min.js") 
@@ -146,7 +145,7 @@
     (let [[ld-name ln-name & _] (string/split n #"/|\.")
           [prefix ln-name id] (extract-ln-name ln-name)]
       (remove empty? [type ld-name id prefix]))
-    (remove empty? (cons (if (or (nil? type) (= "" type)) "unbekannt" type) (string/split n #"/")))))
+    (remove empty? (cons (if (or (nil? type) (= "" type)) (t ::unknown) type) (string/split n #"/")))))
 
 (defn- cluster-by-type [names]
   (let [iec (keys names)
@@ -163,8 +162,8 @@
 
 (defpartial series-tree [id names elem-id selected?]
   (let [;not-all-caps (partial every? #(Character/isUpperCase %))
-        by-phys {"nach Bauteil" (restore-physical-hierarchy names)}
-        by-type {"nach Datenart" (cluster-by-type names)} 
+        by-phys {(t ::by-component) (restore-physical-hierarchy names)}
+        by-type {(t ::by-physical-type) (cluster-by-type names)} 
         tree (->> by-phys
                (merge by-type)               
                (postwalk #(if (map? %) (into (sorted-map) %) %))
@@ -222,104 +221,104 @@
       [:div.span3
        [:form.form-vertical.well 
         [:div
-         [:h4 "Datum"]
+         [:h4 (t ::date)]
          [:div.input-prepend 
-          [:span.add-on "von: "] 
-          (text-field {:placeholder "Startdatum" :class "input-small"} "startDate" startDate)]
+          [:span.add-on (t ::starting)] 
+          (text-field {:placeholder (t ::start-date) :class "input-small"} "startDate" startDate)]
          [:div.input-prepend
-          [:span.add-on "bis: "]
-          (text-field {:placeholder "Enddatum" :class "input-small"} "endDate" endDate)]
+          [:span.add-on (t ::ending)]
+          (text-field {:placeholder (t ::end-date) :class "input-small"} "endDate" endDate)]
          [:div
-          [:a.btn.btn-mini {:href "#" :onclick "DateSelector.shiftTime(-1,0,0,0)"} "< Tag"]
-          [:a.btn.btn-mini {:href "#" :onclick "DateSelector.shiftTime(-7,0,0)"} "< Woche"]
-          [:a.btn.btn-mini {:href "#" :onclick "DateSelector.shiftTime(0,-1,0)"} "< Monat"]
-          [:a.btn.btn-mini {:href "#" :onclick "DateSelector.shiftTime(0,0,-1)"} "< Jahr"]]
+          [:a.btn.btn-mini {:href "#" :onclick "DateSelector.shiftTime(-1,0,0,0)"} (t ::minus-day)]
+          [:a.btn.btn-mini {:href "#" :onclick "DateSelector.shiftTime(-7,0,0)"} (t ::minus-week)]
+          [:a.btn.btn-mini {:href "#" :onclick "DateSelector.shiftTime(0,-1,0)"} (t ::minus-month)]
+          [:a.btn.btn-mini {:href "#" :onclick "DateSelector.shiftTime(0,0,-1)"} (t ::minus-year)]]
          [:div
-          [:a.btn.btn-mini {:href "#" :onclick "DateSelector.shiftTime(1,0,0,0)"} "Tag >"]
-          [:a.btn.btn-mini {:href "#" :onclick "DateSelector.shiftTime(7,0,0)"} "Woche >"]
-          [:a.btn.btn-mini {:href "#" :onclick "DateSelector.shiftTime(0,1,0)"} "Monat >"]
-          [:a.btn.btn-mini {:href "#" :onclick "DateSelector.shiftTime(0,0,1)"} "Jahr >"]]
-         [:label.checkbox (check-box "rerender" true) "automatisch neu zeichnen"]]
+          [:a.btn.btn-mini {:href "#" :onclick "DateSelector.shiftTime(1,0,0,0)"} (t ::plus-day)]
+          [:a.btn.btn-mini {:href "#" :onclick "DateSelector.shiftTime(7,0,0)"} (t ::plus-week)]
+          [:a.btn.btn-mini {:href "#" :onclick "DateSelector.shiftTime(0,1,0)"} (t ::plus-month)]
+          [:a.btn.btn-mini {:href "#" :onclick "DateSelector.shiftTime(0,0,1)"} (t ::plus-year)]]
+         [:label.checkbox (check-box "rerender" true) (t ::draw-automatically)]]
         [:div
-         [:h4 "Datenreihen"]
+         [:h4 (t ::data-series)]
          (series-tree id names "series-tree" (set (params :selectedSeries)))]
         [:div
-         [:h4 "Art der Anzeige:"]
+         [:h4 (t ::kind-of-view)]
          [:div.controls
-          (drop-down "visType" [["Interaktive Ansicht", "dygraph.json"] 
-                                   ["Statische Ansicht" "chart.png"]
-                                   ["Heatmap" "heat-map.png"]
-                                   ["Heatmap (paarweise)" "relative-heat-map.png"]
-                                   ["Verhältnis" "dygraph-ratios.json"] 
-                                   ["Differenz" "dygraph-differences.json"] 
-                                   ["Entropieänderung (einfach)" "entropy.json"]
-                                   ["Entropieänderung (Matrix)" "entropy-bulk.json"]
-                                   ["Verhaltensänderung" "changepoints.png"]
-                                   ["Ungewöhnlicher Tag" "discord.png"]
-                                   ["Korrelationen" "correlation.png"]]
+          (drop-down "visType" [[(t ::interactive-view), "dygraph.json"] 
+                                   [(t ::static-view) "chart.png"]
+                                   [(t ::heatmap) "heat-map.png"]
+                                   [(t ::heatmap-pair) "relative-heat-map.png"]
+                                   [(t ::ratio) "dygraph-ratios.json"] 
+                                   [(t ::difference) "dygraph-differences.json"] 
+                                   [(t ::entropy-change-simple) "entropy.json"]
+                                   [(t ::entropy-change-matrix) "entropy-bulk.json"]
+                                   [(t ::change-point) "changepoints.png"]
+                                   [(t ::unusual-day) "discord.png"]
+                                   [(t ::correlation) "correlation.png"]]
                      (params :visType))]]
         [:div#changepoint-parameter {:style (str "display:" (if (= (params :visType) "changepoints.png") "block" "none"))}
-         [:h4 "Weitere Parameter"]
+         [:h4 (t ::misc-parameters)]
          [:div.controls
-          [:label.checkbox (check-box :rank (params :rank)) "Rang statt Rohwerten verwenden"]
-          [:label.checkbox (check-box :zero (params :zero)) "Nullwerte löschen"]
-          [:label.checkbox (check-box :negative (params :negative)) "Nur Verschlechterungen anzeigen"]
-          [:label.checkbox (check-box :maintenance (params :maintenance)) "Wartungstage ignorieren"]]
+          [:label.checkbox (check-box :rank (params :rank)) (t ::use-ranks)]
+          [:label.checkbox (check-box :zero (params :zero)) (t ::erase-zeroes)]
+          [:label.checkbox (check-box :negative (params :negative)) (t ::show-drops-only)]
+          [:label.checkbox (check-box :maintenance (params :maintenance)) (t ::ignore-maintenances)]]
          [:div.input-prepend
-          [:span.add-on "CI: "]
-          (text-field {:placeholder "p-Wert" :class "input-small"} "confidence" (params :confidence))]
+          [:span.add-on (t ::confidence)]
+          (text-field {:placeholder (t ::p-value) :class "input-small"} "confidence" (params :confidence))]
          [:div.input-prepend
-          [:span.add-on "lvl: "]
-          (text-field {:placeholder "Max. level" :class "input-small"} "maxLevel" (params :maxLevel))]]
+          [:span.add-on (t ::level)]
+          (text-field {:placeholder (t ::max-level) :class "input-small"} "maxLevel" (params :maxLevel))]]
         [:div#discord-parameter {:style (str "display:" (if (= (params :visType) "discord.png") "block" "none"))}
          [:div.input-prepend
-          [:span.add-on "Anzahl: "]
+          [:span.add-on (t ::count)]
           (text-field {:class "input-small"} "num" (params :num))]] 
         [:div#entropy-parameter {:style (str "display:" (if (= (params :visType) "entropy.json") "block" "none"))} 
-         [:h4 "Weitere Parameter"]
+         [:h4 (t ::misc-parameters)]
          [:div.input-prepend
-          [:span.add-on "min: "]
+          [:span.add-on (t ::min)]
           (text-field {:class "input-small"} "minHist" (params :minHist))]
          [:div.input-prepend
-          [:span.add-on "max: "]
+          [:span.add-on (t ::max)]
           (text-field {:class "input-small"} "maxHist" (params :maxHist))]
          [:div.input-prepend
-          [:span.add-on "ab Stunde: "]
+          [:span.add-on (t ::starting-hour)]
           (text-field {:class "input-small"} "minHour" (params :minHour))]
          [:div.input-prepend
-          [:span.add-on "bis Stunde: "]
+          [:span.add-on (t ::ending-hour)]
           (text-field {:class "input-small"} "maxHour" (params :maxHour))]
          [:div.input-prepend
-          [:span.add-on "bins: "]
+          [:span.add-on (t ::bins)]
           (text-field {:class "input-small"} "bins" (params :bins))]
          [:div.input-prepend
-          [:span.add-on "Tage: "]
+          [:span.add-on (t ::days)]
           (text-field {:class "input-small"} "days" (params :days))]
          [:div.input-prepend
-          [:span.add-on "Schwellwert: "]
+          [:span.add-on (t ::threshold)]
           (text-field {:class "input-small"} "threshold" (params :threshold))]
          [:div.controls
-          [:label.checkbox (check-box :useRawEntropy (params :useRawEntropy)) "Rel. Entropy"]]         
+          [:label.checkbox (check-box :useRawEntropy (params :useRawEntropy)) (t ::relative-entropy)]]         
          [:div.controls
-          [:label.checkbox (check-box :skipMissing (params :skipMissing)) "Ignoriere lückenhafte Tage"]]         
+          [:label.checkbox (check-box :skipMissing (params :skipMissing)) (t ::ignore-gaps)]]         
          [:div.input-prepend
-          [:span.add-on "Sensor: "]
-          (text-field {:class "input-large" :placeholder "Welche Messreihe?"} "sensor" (params :sensor))]]
+          [:span.add-on (t ::sensor-name)]
+          (text-field {:class "input-large" :placeholder (t ::sensor-name-hint)} "sensor" (params :sensor))]]
         (hidden-field "highlightSeries" (:highlightSeries params)) 
         [:div
-         [:h4 "Größe:"]
+         [:h4 (t ::size)]
          (text-field {:type "number" :class "input-mini"} "width" (params :width))
          [:span "X"]
          (text-field {:type "number" :class "input-mini"} "height" (params :height))
          [:span "px"]]
         [:button#render-chart.btn-primary.btn-large 
          [:i.icon-picture.icon-white]
-         " Anzeigen"]
+         (t ::show)]
         ]]
       ;; main content
       [:div.span9        
-       [:h2 "Chart"]
-       [:div#current-chart "Bitte wählen Sie links die zu visualisierenden Daten und ein Zeitinterval aus."]]
+       [:h2 (t ::chart-header)]
+       [:div#current-chart (t ::chart-hint)]]
       ;; render calendar input via jquery plugin
       (common/include-js "/js/jquery-ui.min.js" 
                               "/js/jquery.dynatree.min.js" 
@@ -328,6 +327,7 @@
                               "/js/chart/dygraph-functions.js"
                               "/js/chart/d3.v2.min.js"
                               "/js/chart/matrix.js"
+                              "/js/chart/heatmap.js"
                               "/js/hogan-2.0.0.js"
                               "/js/typeahead.js")
       (common/include-css "/css/dynatree/ui.dynatree.css" "/css/datepicker.css" "/css/typeahead.css") 
@@ -386,12 +386,12 @@
     (common/layout-with-links
       (toolbar-links id 2)
       [:div.span3
-       [:h4 "Komponentenstammbaum"]
+       [:h4 (t ::component-tree)]
        [:div#components-tree
         (render-components-tree structure)
         ]]
       [:div.span9
-       [:h4 "Detailangaben"]
+       [:h4 (t ::details)]
        [:table#details]]
       (common/include-js "/js/jquery-ui.min.js" "/js/jquery.dynatree.min.js")
       (common/include-css "/css/dynatree/ui.dynatree.css")
@@ -414,9 +414,9 @@
   [id active-idx]
   (let [ps {:id (url-encode id)}] 
     [active-idx
-     (link-to "/" "&Uuml;bersicht")
-     (link-to (url-for metadata-page ps) "Allgemeines")
-     (link-to (url-for structure-page ps) "Komponenten")
-     (link-to {:class "btn-info"} (str "/status/" (url-encode id)) "Zustand")
-     (link-to (url-for all-series ps) "Messwerte")]))
+     (link-to "/" (t ::overview))
+     (link-to (url-for metadata-page ps) (t ::general))
+     (link-to (url-for structure-page ps) (t ::components))
+     (link-to {:class "btn-info"} (str "/status/" (url-encode id)) (t ::state))
+     (link-to (url-for all-series ps) (t ::measurements))]))
 

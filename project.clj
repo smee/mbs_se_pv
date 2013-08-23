@@ -14,6 +14,8 @@
                            [incanter/incanter-core "1.5.0"]
                            [incanter/incanter-charts "1.5.0"]
                            ;[clj-pdf "0.9.9-SNAPSHOT"] 
+                           [org.clojure/tools.logging "0.2.6"]
+                           [com.taoensso/tower "2.0.0-beta5"] ; i18n
                            ]
             :main mbs-se-pv.server
             :ring {:handler mbs-se-pv.server/handler}

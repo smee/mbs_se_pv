@@ -3,8 +3,9 @@
     [noir.server :as server]
     ring.middleware.json
     [mbs-db.core :as db]
+    [taoensso.tower.ring :refer [wrap-tower-middleware]] 
     ;; view namespaces need to be required explicitely for tomcat
-    [mbs-se-pv.views common calendar charts data timeseries analysis welcome])
+    [mbs-se-pv.views common calendar charts data analysis timeseries welcome])
   ;(:gen-class)
   )
 
@@ -13,6 +14,10 @@
   (when (not *compile-files*)
     (do
       (server/add-middleware ring.middleware.json/wrap-json-params)
+      (server/add-middleware wrap-tower-middleware {:tconfig {:dev-mode? false
+                                                              :fallback-locale :en
+                                                              :dictionary ; Map or named resource containing map
+                                                              "translations.clj"}})
       (db/use-db-settings (merge db/mysql-config-psm
                                  {:classname   "com.mysql.jdbc.Driver"
                                   :user         "{{db-user}}"

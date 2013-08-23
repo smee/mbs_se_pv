@@ -1,7 +1,7 @@
 (ns ^{:doc "Generate static graphics"} mbs-se-pv.views.charts
   (:require
     [clojure.string :as string]
-    [mbs-se-pv.views.util :as util]
+    [mbs-se-pv.views.util :as util :refer [t]]
     [mbs-se-pv.algorithms :as alg]
     [mbs-db.core :as db]
     [incanter 
@@ -94,22 +94,22 @@
            ::Vol.mag.f ::udc
            ::Watt.mag.f ::pac
            ::W.net.instCVal.mag.f ::pac}  
-       m2 {::pac        {:color (Color. 0xC10020) :unit "W" :label "Leistung"} 
-           ::pdc        {:color (Color. 0xC10020) :unit "W" :label "Leistung"}
-           ::temp       {:color (Color. 0xFF6800) :unit "°C" :label "Temperatur"}
-           ::udc        {:color (Color. 0xA6BDD7) :unit "V" :label "Spannung"}
-           ::res        {:color (Color. 0x0000a0) :unit "Ohm" :label "Widerstand"}
-           ::ins        {:color (Color. 0xAAAA00) :unit "W/m²" :label "Einstrahlung"}
-           ::freq       {:color (Color. 0x111111) :unit "Hz" :label "Frequenz" :min 49.9 :max 50.1 
+       m2 {::pac        {:color (Color. 0xC10020) :unit "W" :label (t ::power)} 
+           ::pdc        {:color (Color. 0xC10020) :unit "W" :label (t ::power)}
+           ::temp       {:color (Color. 0xFF6800) :unit "°C" :label (t ::temperature)}
+           ::udc        {:color (Color. 0xA6BDD7) :unit "V" :label (t ::voltage)}
+           ::res        {:color (Color. 0x0000a0) :unit "Ohm" :label (t ::resistance)}
+           ::ins        {:color (Color. 0xAAAA00) :unit "W/m²" :label (t ::insolation)}
+           ::freq       {:color (Color. 0x111111) :unit "Hz" :label (t ::frequency) :min 49.9 :max 50.1 
                          :color-scale (cjf/fixed-color-scale (cjf/create-color-scale [49.9 [0 0 255]] [50 [0 255 0]] [50.05 [255 255 0]] [50.1 [255 0 0]]) (range 49.9 51.1 (/ 0.2 30)))}
-           ::curr       {:color Color/RED         :unit "A" :label "Stromstärke"}
-           ::gain       {:color (Color. 0x803E75) :unit "Wh" :label "Ertrag"} 
-           ::daily-gain {:color (Color. 0x803E75) :unit "Wh" :label "Ertrag"}
-           ::rpm        {:color (Color/BLUE)      :unit "rpm" :label "Umdrehungen"} 
-           ::efficiency {:color (Color. 0x817066) :unit "%" :label "Wirkungsgrad" :min 0 :max 99.999 
+           ::curr       {:color Color/RED         :unit "A" :label (t ::current)}
+           ::gain       {:color (Color. 0x803E75) :unit "Wh" :label (t ::gain)} 
+           ::daily-gain {:color (Color. 0x803E75) :unit "Wh" :label (t ::gain)}
+           ::rpm        {:color (Color/BLUE)      :unit "rpm" :label (t ::rpms)} 
+           ::efficiency {:color (Color. 0x817066) :unit "%" :label (t ::efficiency) :min 0 :max 99.999 
                          :color-scale (concat (cjf/fixed-color-scale (cjf/create-color-scale [0 [100 0 0]] [80 [255 0 0]] [90 [255 255 0]]) (range 0 90 10))
                                               (cjf/fixed-color-scale (cjf/create-color-scale [90 [255 255 0]] [101 [0 255 0]]) (range 90 101 0.1)))}}]
-    (m2 (m1 val) {:color (Color/BLACK) :unit "???" :label "unbekannte Größe"})))
+    (m2 (m1 val) {:color (Color/BLACK) :unit "???" :label (t ::unknown)})))
 
 (defn- get-series-label-solarlog 
   "Unique human readable label."
@@ -219,14 +219,14 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
              ~'width (s2i ~'width 700)]
          ~@body)
        {:status 400
-        :body "Wrong dates!"})))
+        :body (t ::date-error)})))
 
 (def-chart-page "chart.png" [] 
   (let [values (pmap #(get-series-values id % s e width) names)]      
     (-> (create-time-series-chart names values)
-      (ch/set-x-label "Zeit")
+      (ch/set-x-label (t ::time))
       (ch/set-y-label (-> names first get-series-type unit-properties :label))
-      (ch/set-title (str "Chart für den Zeitraum " (.format (util/dateformat) s) " bis " (.format (util/dateformat) e)))
+      (ch/set-title (format (t ::chart-title) (.format (util/dateformat) s) (.format (util/dateformat) e)))
       (enhance-chart names)
         (return-image :height height :width width))))
 
@@ -249,12 +249,12 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                        (map vec)
                        (map (fn [day] (map #(update-in % [:timestamp] mod util/ONE-DAY) day))))]
     (-> (create-time-series-chart 
-          (for [[idx v] discords] (format "Discord am %s: %f" (.format (util/dateformat) (-> days (nth idx) first :timestamp)) v)) 
+          (for [[idx v] discords] (format (t ::discord-title) (.format (util/dateformat) (-> days (nth idx) first :timestamp))  v)) 
           discord-days 
           str)
-      (ch/set-x-label "Zeit")
+      (ch/set-x-label (t ::time))
       (ch/set-y-label (-> name get-series-type unit-properties :label))
-      (ch/set-title (str "Die ungewöhnlichsten Tage"))
+      (ch/set-title (t ::discord-header))
       (enhance-chart [name])
       (return-image :height height :width width))))
 
@@ -271,15 +271,14 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
           data (db-query name (as-sql-timestamp s) (as-sql-timestamp e))
           chart (doto (ch/bar-chart 
                         (map #(.format (util/dateformat) (:time %)) data) (map #(/ (:value %) 1000) data)
-                        ;:title (format "Gesamtertrag für %s WR %s im Zeitraum %s bis %s" id wr-id (.format (util/dateformat) s) (.format (util/dateformat) e))
-                        :x-label "Zeit"
-                        :y-label "Ertrag in kWh"))] 
+                        :x-label (t ::time)
+                        :y-label (t ::gain2)))] 
       (doto (.. chart getPlot getDomainAxis)
         (.setCategoryLabelPositions org.jfree.chart.axis.CategoryLabelPositions/UP_90))
       (return-image chart :height (s2i height 250) :width (s2i width 400)))
     ;; else the dates format was invalid
     {:status 400
-     :body "Wrong dates!"}))
+     :body (t ::date-error)}))
 
 ;;;;;;;;;;;;;;;; heat map overview ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- hm [hours minutes]
@@ -311,9 +310,9 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
         time-axis (doto (org.jfree.chart.axis.DateAxis.) (.setTimeZone (java.util.TimeZone/getTimeZone "UTC"))) 
         chart (doto (cjf/heat-map f s (+ s (clojure.core/* util/ONE-DAY x-max)) daily-start daily-end 
                                   :color? true
-                                  :title (format "Tagesverläufe von %s im Zeitraum %s" name times)
-                                  :x-label "Tag"
-                                  :y-label "Werte"
+                                  :title (format (t ::heatmap-title) name times)
+                                  :x-label (t ::day)
+                                  :y-label (t ::values)
                                   :z-label (props :label) 
                                   :x-step (count days)
                                   :y-step y-max
@@ -351,11 +350,11 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                                               [1000 [62 136 255]]) 
                       [0 1 5 10 30 50 70 100 200 300 400 500 700 1000 1500 2000])
         chart (doto (chart-utils.jfreechart/heat-map f min-w max-w min-p max-p :x-step x-steps :y-step y-steps
-                                                     :title (str name1 " vs. " name2) 
+                                                     :title (format (t ::versus) name1 name2) 
                                                      :colors color-scale
                                                      :x-label name1
                                                      :y-label name2
-                                                     :z-label "Häufigkeit" 
+                                                     :z-label (t ::frequency2) 
                                                      )
                 (.. getPlot getRenderer (setBlockHeight y-bin-width))
                 (.. getPlot getRenderer (setBlockWidth x-bin-width))
@@ -415,9 +414,9 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
                           (map (memfn getPlot))
                           (apply cjf/combined-domain-plot)
                           (org.jfree.chart.JFreeChart.))
-                    (ch/set-title (format "Signifikante Veränderungen im Verlauf von %s\n(%s)" (get-in (db/all-series-names-of-plant id) [name :name]) name))
+                    (ch/set-title (format (t ::change-point-header) (get-in (db/all-series-names-of-plant id) [name :name]) name))
                     (ch/add-subtitle (str (.format (util/dateformat) s) " - " (.format (util/dateformat) e)))
-                    (ch/set-x-label "Datum") 
+                    (ch/set-x-label (t ::date)) 
                     (.removeLegend)
                     ;(enhance-chart names)
                     )

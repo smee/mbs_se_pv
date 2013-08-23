@@ -63,14 +63,11 @@ If not, it loads a copy of the js file from a local uri."
 (defpartial eumonis-footer []
   [:footer
    [:div.span2 [:p "&#169; EUMONIS-Konsortium 2013"]]
-    [:div.span8 [:p "Das Projekt \"EUMONIS\" wird gef&#246;rdert durch das
-			Bundesministerium f&#252;r Bildung und Forschung (BMBF) -
-			F&#246;rderkennzeichen 01IS10033, Laufzeit 01.07.2010 bis
-			30.06.2014."]]
+    [:div.span8 [:p (util/t ::footer)]]
     [:div.span2
      (link-to "http://www.bmbf.de/" 
               [:img {:src (str (util/base-url) "/img/bmbf-ohne-rand.gif") 
-                     :alt "gef&#246;rdert durch das Bundesministerium f&#252;r Bildung und Forschung"
+                     :alt (util/t ::footer-alt) 
                      :width "150px"}])]])
 
 
@@ -86,4 +83,4 @@ If not, it loads a copy of the js file from a local uri."
       (eumonis-footer)]]))
 
 (defn layout [& contents]
-  (apply layout-with-links [0 [:a {:href "#"} "Home"] [:a {:href "#contact"} "Kontakt"]] nil contents))
+  (apply layout-with-links [0 [:a {:href "#"} (util/t ::home)] [:a {:href "#contact"} (util/t ::contact)]] nil contents))

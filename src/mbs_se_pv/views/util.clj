@@ -85,3 +85,8 @@ SI unit prefixes"
 
 (defn base-url []
   (or (noir.options/get :base-url) ""))
+
+(defn t [key]
+  (if-let [t (:t (noir.request/ring-request))]
+    (t key)
+    "ERROR: no translation available!"))

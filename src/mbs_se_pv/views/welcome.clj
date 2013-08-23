@@ -21,17 +21,17 @@
 (defpage start-page "/eumonis" []
   (common/layout-with-links
     [0
-     (link-to (url-for start-page) "&Uuml;bersicht")
+     (link-to (url-for start-page) (t ::overview))
      #_(link-to (url-for maps/maps) "Karten")]
     nil  
     [:div.span12
-     [:h1 "Anlagenübersicht"]
+     [:h1 (t ::title)]
      [:table#names.table.table-striped.table-condensed
       [:thead [:tr 
-               [:th (apply str "Anlagenbezeichnung" (repeat 10 "&nbsp;"))] 
-               [:th "Installierte Leistung (kWp)"]
-               [:th "Anzahl Wechselrichter"]
-               [:th "Postleitzahl"]]]
+               [:th (apply str (t ::plant-name) (repeat 10 "&nbsp;"))] 
+               [:th (t ::power-col)]
+               [:th (t ::inverter-count)]
+               [:th (t ::zipcode)]]]
       [:tbody
        (for [{:keys [id anlagenkwp anzahlwr hppostleitzahl]} (->> (db/get-metadata) vals (take 10))]
          [:tr 
