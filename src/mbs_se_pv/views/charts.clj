@@ -337,9 +337,9 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
         y-steps 100
         x-bin-width (/ (- max-w min-w) x-steps)
         y-bin-width (/ (- max-p min-p) y-steps)
-        bin-w (alg/bin-fn min-w max-w x-bin-width)
-        bin-p (alg/bin-fn min-p max-p y-bin-width)
-        bins ((alg/->bins min-w x-bin-width min-p y-bin-width bin-w bin-p) wind-speed power) 
+        bin-w (cjf/bin-fn min-w max-w x-bin-width)
+        bin-p (cjf/bin-fn min-p max-p y-bin-width)
+        bins ((cjf/->bins min-w x-bin-width min-p y-bin-width bin-w bin-p) wind-speed power) 
         f (fn [x y] ;(println [x y]) 
             (if-let [v (get-in bins [(bin-w x) (bin-p y)])] v 0))
         color-scale (cjf/fixed-color-scale 
