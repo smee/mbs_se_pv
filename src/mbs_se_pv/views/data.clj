@@ -5,6 +5,7 @@
             [mbs-db.core :as db]
             [clojure.math.combinatorics :as combo]
             [clojure.string :refer [split]]
+            [chart-utils.jfreechart :refer [bin-fn]]
             [org.clojars.smee 
              [map :refer (mapp map-values)] 
              [util :refer (s2i s2d s2b)]
@@ -24,27 +25,14 @@
                                   (split name #" ")
                                   (split (clojure.core/name id) #"(\.|/)")))}) all-names)))) 
 
-(chart/def-chart-page "data.json" []
-  (let [width (s2i width nil)
-        values (->> names
-                 (map #(chart/get-series-values id % s e width))
-                 (map (mapp (juxt :timestamp :value)))
-                 (map (mapp (fn [[timestamp value]] {:x (long (/ timestamp 1000)), :y value}))))
-        all-names (db/all-series-names-of-plant id)]
-    (json (map #(hash-map :name (get-in all-names [%1 :name])
-                          :type (get-in all-names [%1 :type])
-                          :unit (-> %1 chart/get-series-type chart/unit-properties :unit)
-                          :key %1 
-                          :data %2) names values))))
-
 (defn- insert-nils 
   "Dygraph needs explicit null values if there should be a gap in the chart.
 Tries to estimate the average x distance between points and whenever there is a gap bigger than two times
 that distance, inserts an artificial entry of shape `[(inc last-x)...]`
 Use this function for all dygraph data."
   [data]
-  (let [max-gap (->> data (map first) (partition 2 1) (map #(- (second %) (first %))) sort)
-        max-gap (if (not-empty max-gap) (* 3 (f/mean max-gap)) max-gap) 
+  (let [gaps (->> data (map first) (partition 2 1) (map #(- (second %) (first %))) sort)
+        max-gap (if (not-empty gaps) (* 5 (f/mean gaps)) 0) 
         v1 (second (first data))
         nothing (if (coll? v1) (repeat (count v1) Double/NaN) Double/NaN)] 
     (concat
@@ -67,8 +55,9 @@ Use this function for all dygraph data."
         timestamps (->> values (apply concat) (map first) distinct sort)
         by-time (for [t timestamps]
                   (apply vector t (map #(get % t [nil nil nil]) vs-maps)))
-        all-names (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) names)]
-    (json {:labels (cons "Datum" all-names) 
+        labels (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) names)]
+    (json {:labels (cons "Datum" labels) 
+           :units (cons nil (map #(get-in all-names [%1 :unit]) names)) 
            :data (insert-nils by-time)
            :title (format (t ::line-chart-header) (.format (util/dateformat) s) (.format (util/dateformat) e))}))) ;values
 
@@ -100,17 +89,10 @@ Use this function for all dygraph data."
         y-steps 150
         x-bin-width (/ (- max-w min-w) x-steps)
         y-bin-width (/ (- max-p min-p) y-steps)
-        bin-w (alg/bin-fn min-w max-w x-bin-width)
-        bin-p (alg/bin-fn min-p max-p y-bin-width)
-        bins ((alg/->bins min-w x-bin-width min-p y-bin-width bin-w bin-p) wind-speed power)
-        f (fn [x y] ;(println [x y]) 
-            (if-let [v (get-in bins [(bin-w x) (bin-p y)])] v 0))
-        data (for [y (range min-p max-p y-bin-width)]  
-               (for [x (range min-w max-w x-bin-width)] (f x y))) 
-        ]
+        data (chart-utils.jfreechart/heat-map-data wind-speed power min-w max-w min-p max-p x-bin-width y-bin-width)] (def data data) 
     (json {:xRange [min-w max-w]
            :yRange [min-p max-p]
-           :data data})))
+           :data (map vec (seq data))})))
 
 #_(chart/def-chart-page "histograms.json" []
   (let [histograms (db/all-values-in-time-range plant-id ids s e

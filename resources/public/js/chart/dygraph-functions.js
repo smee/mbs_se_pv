@@ -193,6 +193,11 @@
 	  function createSettings(config, response){
 		  // create settings map for a new Dygraph instance
 		  var d = response.data;
+		  // store a map of series name to unit
+		  var units = {};
+		  for(var i = 0;i<response.labels.length;i++)
+			  units[response.labels[i]]=response.units[i];
+		  
 		  return { 
 			  labels: response.labels,
 			  title: response.title,
@@ -228,7 +233,18 @@
 			  zoomCallback: function(minX, maxX, yRanges) {
 				  foo(minX,maxX,config, yRanges);
 	              },
-			  underlayCallback: renderHighlights(response.highlights, response.threshold)
+			  underlayCallback: renderHighlights(response.highlights, response.threshold),
+			  axes : {
+                  y : {
+                    valueFormatter: function(y, opts, series_name) {
+                      y = Dygraph.numberValueFormatter(y,opts,series_name);
+                      var unit = units[series_name];
+                      if(unit)
+                    	return ""+y+" "+unit;
+                      return y;
+                    }
+                  }
+                }
 			};
 	  }
 	  var lastMinX=-1;
