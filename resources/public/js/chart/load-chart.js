@@ -1,26 +1,17 @@
-(function (Charting, $, baseUrl, plantId, undefined){
-    String.prototype.hashCode = function(){
-        // from http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
-        var hash = 0, i, char;
-        if (this.length == 0) return hash;
-        for (i = 0; i < this.length; i++) {
-            char = this.charCodeAt(i);
-            hash = ((hash<<5)-hash)+char;
-            hash = hash & hash; // Convert to 32bit integer
-        }
-        return hash;
-    };
-    // hide loading indicator faster
-    $.blockUI.defaults.fadeOut = 0;
-    $.blockUI.defaults.fadeIn = 0;
-    $.blockUI.defaults.message = "<h1>Bitte warten, Daten werden geladen...</h1>";
-        
+(function (Charting, $, undefined){
+	
     // hide loading indicator if loading an image does not work
     $('#chart-image').error(function(){ 
         this.unblock();
     });
     
-    function readParameters(){
+    var baseUrl, plantId;
+    
+    Charting.setParameter = function(url, id){
+    	baseUrl = url;
+    	plantId = id;
+    };
+    Charting.readParameters = function(){
     	// load all values from form fields (text, checkbox, select)
         var params = $('form').values();
         // overwrite dates
@@ -37,7 +28,7 @@
         });
         params.selectedSeries = uniqueSeries;
         return params;
-    }
+    };
     
     function createLink(baseUrl, plantId, params){
         var series = params.selectedSeries.join('|');
@@ -98,7 +89,7 @@
         chartDiv.append($("<div id='"+detailChartId+"'/>"));
         
         return function(e, x, points){
-            var params=readParameters();
+            var params=Charting.readParameters();
             $.extend(params,paramsOverwrite);
             
             if(params.visType == 'dygraph-ratios.json'){
@@ -121,10 +112,10 @@
           };
     }
     // handler for the main button
-    $('%s').click(
+    $('#render-chart').click(
 		function(event) {
 				event.preventDefault();
-				var params = readParameters();
+				var params = Charting.readParameters();
 				// no series selected?
 				if (params.selectedSeries.length == 0)
 					return false;
@@ -187,7 +178,7 @@
 				return false;
 			});
     
-}( window.Charting = window.Charting || {}, jQuery, "%s", "%s"));
+}( window.Charting = window.Charting || {}, jQuery));
 
 
 

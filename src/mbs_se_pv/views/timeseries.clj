@@ -323,6 +323,7 @@
       (common/include-js "/js/jquery-ui.min.js" 
                               "/js/jquery.dynatree.min.js" 
                               "/js/datepicker.js"
+                              "/js/chart/load-chart.js" 
                               "/js/chart/dygraph-combined-dev.js"
                               "/js/chart/dygraph-functions.js"
                               "/js/chart/d3.v2.min.js"
@@ -333,7 +334,7 @@
       (common/include-css "/css/dynatree/ui.dynatree.css" "/css/datepicker.css" "/css/typeahead.css") 
       (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#startDate" startDate min max))
       (javascript-tag (util/render-javascript-template "templates/date-selector.js" "#endDate" endDate min max))
-      (javascript-tag (util/render-javascript-template "templates/load-chart.js" "#render-chart" base-url id))
+      (javascript-tag (format "Charting.setParameter('%s','%s');" base-url id))
       (javascript-tag "$('#visType').change(function(){
                             var val=$(this).val(); 
                             var entropyparams=$('#entropy-parameter');

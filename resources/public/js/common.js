@@ -31,6 +31,25 @@ $.fn.values = function(data) {
         return $(this);
     }
 };
+
+String.prototype.hashCode = function(){
+    // from http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
+    var hash = 0, i, char;
+    if (this.length == 0) return hash;
+    for (i = 0; i < this.length; i++) {
+        char = this.charCodeAt(i);
+        hash = ((hash<<5)-hash)+char;
+        hash = hash & hash; // Convert to 32bit integer
+    }
+    return hash;
+};
+
+// hide loading indicator faster
+$.blockUI.defaults.fadeOut = 0;
+$.blockUI.defaults.fadeIn = 0;
+$.blockUI.defaults.message = "<h1>Bitte warten, Daten werden geladen...</h1>";
+  
+
 window.DateSelector = window.DateSelector || {};
 DateSelector.shiftTime = function(days, months, years){
 	// FIXME hard coded selectors
