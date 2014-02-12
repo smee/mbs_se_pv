@@ -238,7 +238,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
   (let [num (s2i num 1)
         min-length (s2i num 10) 
         name (first names) 
-        data (get-series-values id name s e) 
+        data (get-series-values id name s e 100) 
         days (partition-by day-number data)
         days (remove #(< (count %) min-length) days)
         daily-date (map #(f/resample (map :value %) 100) days)  _ (println (into (sorted-map) (frequencies (map count daily-date))))
