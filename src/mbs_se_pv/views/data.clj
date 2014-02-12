@@ -66,7 +66,8 @@ Use this function for all dygraph data."
         vs (db/rolled-up-ratios-in-time-range id num dem s e width) 
         [name1 name2] (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) [num dem])]
     (json {:labels (list (t ::date) (format (t ::ratio-chart-title) name1 name2)) 
-           :data (insert-nils (map (juxt :timestamp :value) vs)) 
+           :data (insert-nils (map (juxt :timestamp :value) vs))
+           :units (cons nil (map #(get-in all-names [%1 :unit]) names))
            :title (format (t ::ratio-chart-header) name1 name2 (.format (util/dateformat) s) (.format (util/dateformat) e))})))
 
 (chart/def-chart-page "dygraph-differences.json" []

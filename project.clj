@@ -12,7 +12,8 @@
                            [org.clojure/math.combinatorics "0.0.3"]
                            [chart-utils "1.0.2-SNAPSHOT"]
                            [incanter/incanter-core "1.5.4"]
-                           [incanter/incanter-charts "1.5.4"]
+                           [incanter/incanter-charts "1.5.4"
+                            :exclusions [incanter/jfreechart]]
                            ;[clj-pdf "0.9.9-SNAPSHOT"] 
                            [org.clojure/tools.logging "0.2.6"]
                            [com.taoensso/tower "2.0.0-beta5"] ; i18n

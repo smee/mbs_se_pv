@@ -167,3 +167,12 @@ table {
   cursor: pointer;
   fill-opacity: 0.5;
 }
+
+.widget .axis path, .widget .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+.widget .axis path {
+  display: none;
+}
