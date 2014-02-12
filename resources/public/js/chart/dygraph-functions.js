@@ -305,7 +305,6 @@
 	  function renderChart(config, callback, response){
 		  var id = config.id;
 		  var dygraphChart = dygraphFunctions.charts[id];
-		  
 		  // create date instances from unix timestamps
 		  var data = convertDates(response.data);
 		  if(data.length==0){
@@ -323,8 +322,11 @@
 		  }
 		  // create chart configuration
 		  var chartSettings = createSettings(config, response);
-		  chartSettings.width = config.params.width;
-		  chartSettings.height = config.params.height;
+
+		  var parentDiv=$('#'+id);
+		  chartSettings.width = Math.max(parentDiv.width(), config.params.width);
+		  chartSettings.height = Math.max(parentDiv.height(), $(window).height()-200, config.params.height);
+		  
 		  if(defined(config.params.valueRange)) chartSettings.valueRange=config.params.valueRange;
 		  // callback to modify settings
 		  if(defined(callback)){ callback(chartSettings,response);};
