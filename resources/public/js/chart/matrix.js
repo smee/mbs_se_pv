@@ -30,7 +30,7 @@
 			left : 200
 		}, width = height = 400;
 		var //x = d3.scale.ordinal().rangeBands([0, width]),
-		c = d3.scale.linear().domain([ -1, 1, 3 ]).range(["green", "yellow", "red" ]);
+		c = d3.scale.linear().domain([-3,-1, 0, 1, 3 ]).range(["red", "yellow", "green", "yellow", "red" ]);
 
 		var maindiv = d3.select(selector);
 
