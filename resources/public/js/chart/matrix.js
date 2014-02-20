@@ -220,7 +220,10 @@
 					return c(data.matrix[d.x][d.y].z);
 				});
 				rows.selectAll('.cell text.cellLabel').text(function(d) {
-					return data.matrix[d.x][d.y].z.toFixed(2);
+					var z = data.matrix[d.x][d.y].z;
+					if(z)
+						return z.toFixed(2);
+					else return z;
 				});
 				svg.select(".datelabel").text(data.date);
 				svg.selectAll("text.problabel").data(data.probabilities).text(function(d) {
