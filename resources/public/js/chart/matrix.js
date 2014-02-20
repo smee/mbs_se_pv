@@ -34,10 +34,16 @@
 
 		var maindiv = d3.select(selector);
 
-		var svg = maindiv.append("svg").attr("width", width + margin.left + margin.right).attr("height", height + margin.top + margin.bottom);
-		var g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-		var tooltip = maindiv.append("div").attr("class", "input-prepend");
-		tooltip.append("span").attr("class", "add-on").text("Zustand am");
+		var svg = maindiv.append("svg")
+		                   .attr("width", width + margin.left + margin.right)
+		                   .attr("height", height + margin.top + margin.bottom);
+		var g = svg.append("g")
+		             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+		var tooltip = maindiv.append("div")
+		                       .attr("class", "input-prepend");
+		tooltip.append("span")
+		         .attr("class", "add-on")
+		         .text("Zustand am");
 
 		//var slider = tooltip.append("input")
 		//               .attr("type", "number")
@@ -68,93 +74,144 @@
 		}
 
 		d3.json(dataUrl, function(json) {
-			var names = json.names, ids = json.ids, n = names.length, days = json.days;
+			var names = json.names, 
+			      ids = json.ids, 
+			        n = names.length, 
+			     days = json.days;
 
 			var data = populate(days[days.length - 1]);
 
-			var x = d3.scale.ordinal().domain(d3.range(n)).rangeBands([ 0, Math.min(width, n * 40) ]);
+			var x = d3.scale
+			          .ordinal()
+			          .domain(d3.range(n))
+			          .rangeBands([ 0, Math.min(width, n * 40) ]);
+			
 			var xlen = x.rangeBand() * n;
-			svg.attr("width", xlen + margin.left + margin.right).attr("height", xlen + margin.top + margin.bottom);
+			
+			svg.attr("width", xlen + margin.left + margin.right)
+			   .attr("height", xlen + margin.top + margin.bottom);
 
 			// date slider/dropdown
-			slider.on("change", redraw).on("keyup", redraw).attr("class", "matrixDateSelector").selectAll("option").data(days.map(function(d) {
-				return d.date;
-			})).enter().append("option").text(function(d) {
-				return d;
-			});
+			slider.on("change", redraw)
+			      .on("keyup", redraw)
+			      .attr("class", "matrixDateSelector")
+			      .selectAll("option")
+			        .data(days.map(function(d) { return d.date; }))
+			        .enter()
+			          .append("option")
+			            .text(function(d) { return d; });
 			slider.node().selectedIndex = days.length - 1;
 
-			g.append("rect").attr("class", "background").attr("width", xlen).attr("height", xlen);
+			g.append("rect")
+			  .attr("class", "background")
+			  .attr("width", xlen)
+			  .attr("height", xlen);
 
 			// date label top left
-			svg.append("text").attr("x", 20).attr("y", 20).attr("class", "datelabel").text(data.date).style("font-weight", "bold").style("font-size",
-					"large");
+			svg.append("text")
+			     .attr("x", 20)
+			     .attr("y", 20)
+			     .attr("class", "datelabel")
+			     .text(data.date)
+			     .style("font-weight", "bold")
+			     .style("font-size", "large");
 
 			// probabilities
-			g.selectAll("text.problabel").data(data.probabilities).enter().append("text").attr("class", "problabel").attr("x", xlen + x.rangeBand())
-					.attr("y", function(d, i) {
-						return x(i) + x.rangeBand() / 2;
-					}).attr("dy", ".32em").text(function(d) {
-						return (d * 100).toFixed(0) + "%";
-					});
-			g.append("text").attr("x", 6).attr("y", xlen + x.rangeBand()).attr("dx", ".32em").attr("transform",
-					"translate(" + x(data.probabilities.length) + ")rotate(-90)").text("Gesamtwahrscheinlichkeit");
+			g.selectAll("text.problabel").data(data.probabilities)
+			  .enter()
+			    .append("text")
+			      .attr("class", "problabel")
+			      .attr("x", xlen + x.rangeBand())
+				  .attr("y", function(d, i) {	return x(i) + x.rangeBand() / 2; })
+				  .attr("dy", ".32em").text(function(d) {	return (d * 100).toFixed(0) + "%"; });
+			g.append("text")
+			   .attr("x", 6)
+			   .attr("y", xlen + x.rangeBand())
+			   .attr("dx", ".32em")
+			   .attr("transform", "translate(" + x(data.probabilities.length) + ")rotate(-90)")
+			   .text("Gesamtwahrscheinlichkeit");
 			
 			// since
-			g.selectAll("text.sinceLabel").data(data.since).enter().append("text").attr("class", "sinceLabel").attr("x", xlen + 60)
-			.attr("y", function(d, i) {
-				return x(i) + x.rangeBand() / 2;
-			}).attr("dy", ".32em").text(function(d) {
-				if (d>0) return d + " Tage"; else return "";
-			});
-			g.append("text").attr("x", 6).attr("y", xlen + 70).attr("dx", ".32em").attr("transform",
-					"translate(" + x(data.probabilities.length) + ")rotate(-90)").text("Fehler seit");
+			g.selectAll("text.sinceLabel")
+			  .data(data.since)
+			  .enter()
+			    .append("text")
+			      .attr("class", "sinceLabel")
+			      .attr("x", xlen + 60)
+			      .attr("y", function(d, i) { return x(i) + x.rangeBand() / 2; })
+			      .attr("dy", ".32em")
+			      .text(function(d) { if (d>0) return d + " Tage"; else return "";});
+			
+			g.append("text")
+			   .attr("x", 6)
+			   .attr("y", xlen + 70)
+			   .attr("dx", ".32em")
+			   .attr("transform", "translate(" + x(data.probabilities.length) + ")rotate(-90)")
+			   .text("Fehler seit");
 	
 
 			// rows of cells
 			var rows = g.selectAll(".row").data(data.matrix);
 
-			var row = rows.enter().append("g").attr("class", "row").attr("transform", function(d, i) {
-				return "translate(0," + x(i) + ")";
-			}).each(drawrow);
+			var row = rows.enter()
+			              .append("g")
+			                .attr("class", "row")
+			                .attr("transform", function(d, i) { return "translate(0," + x(i) + ")"; })
+			                .each(drawrow);
 
 			row.append("line").attr("x2", xlen);
 
-			row.append("text").attr("x", -6).attr("y", x.rangeBand() / 2).attr("dy", ".32em").attr("text-anchor", "end").attr("class", "matrixlabel")
-					.text(function(d, i) {
-						return names[i];
-					}).on("click", loadDetailChart);
+			row.append("text")
+			   .attr("x", -6)
+			   .attr("y", x.rangeBand() / 2)
+			   .attr("dy", ".32em")
+			   .attr("text-anchor", "end")
+			   .attr("class", "matrixlabel")
+		       .text(function(d, i) { return names[i]; })
+		       .on("click", loadDetailChart);
 
 			// column labels
-			var column = g.selectAll(".column").data(data.matrix).enter().append("g").attr("class", "column").attr("transform", function(d, i) {
-				return "translate(" + x(i) + ")rotate(-90)";
-			});
+			var column = g.selectAll(".column")
+			              .data(data.matrix)
+			              .enter()
+			                .append("g")
+			                  .attr("class", "column")
+			                  .attr("transform", function(d, i) { return "translate(" + x(i) + ")rotate(-90)";});
 
 			column.append("line").attr("x1", -xlen);
 
-			column.append("text").attr("x", 6).attr("y", x.rangeBand() / 2).attr("dy", ".32em").attr("text-anchor", "start").text(function(d, i) {
-				return names[i];
-			});
+			column.append("text")
+			      .attr("x", 6)
+			      .attr("y", x.rangeBand() / 2)
+			      .attr("dy", ".32em")
+			      .attr("text-anchor", "start")
+			      .text(function(d, i) { return names[i]; });
 
 			function drawrow(row) {
-				var cell = d3.select(this).selectAll(".cell").data(row.filter(function(d) {
-					return d.z != undefined;
-				}))//may be zero, should not be interpreted as false
-				.enter().append("g").attr("class", "cell").on("click", loadDetailChart);
-				cell.append("rect").attr("x", function(d) {
-					return x(d.x);
-				}).attr("width", x.rangeBand()).attr("height", x.rangeBand()).style("fill", function(d) {
-					return c(d.z);
-				});
-				cell.append("text").text(function(d, i) {
-					if (!isNaN(d.z))
-						return d.z.toFixed(2);
-					else
-						return d.z;
-				}).attr("x", function(d) {
-					return x(d.x) + 2;
-				}).attr("y", x.rangeBand() / 2 + 2).attr("class", "cellLabel");
-				cell.on("mouseover", mouseover).on("mouseout", mouseout);
+				var cell = d3.select(this)
+				             .selectAll(".cell")
+				             .data(row.filter(function(d) { return d.z != undefined;}))//may be zero, should not be interpreted as false
+				             .enter()
+				               .append("g")
+				               .attr("class", "cell")
+				               .on("click", loadDetailChart);
+				
+				cell.append("rect")
+				    .attr("x", function(d) { return x(d.x);})
+				    .attr("width", x.rangeBand())
+				    .attr("height", x.rangeBand())
+				    .style("fill", function(d) { return c(d.z); });
+				cell.append("text")
+				    .text(function(d, i) {
+					    if (!isNaN(d.z))
+    						return d.z.toFixed(2);
+					    else
+ 						    return d.z;})
+ 			        .attr("x", function(d) { return x(d.x) + 2; })
+ 			        .attr("y", x.rangeBand() / 2 + 2)
+ 			        .attr("class", "cellLabel");
+				cell.on("mouseover", mouseover)
+				    .on("mouseout", mouseout);
 			}
 
 			var df = d3.time.format("%d.%m.%Y");
