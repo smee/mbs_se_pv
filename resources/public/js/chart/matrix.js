@@ -107,112 +107,22 @@
 			  .attr("width", xlen)
 			  .attr("height", xlen);
 
-			// date label top left
-			svg.append("text")
-			     .attr("x", 20)
-			     .attr("y", 20)
-			     .attr("class", "datelabel")
-			     .text(data.date)
-			     .style("font-weight", "bold")
-			     .style("font-size", "large");
-
-			// probabilities
-			g.selectAll("text.problabel").data(data.probabilities)
-			  .enter()
-			    .append("text")
-			      .attr("class", "problabel")
-			      .attr("x", xlen + x.rangeBand())
-				  .attr("y", function(d, i) {	return x(i) + x.rangeBand() / 2; })
-				  .attr("dy", ".32em").text(function(d) {	return (d * 100).toFixed(0) + "%"; });
 			g.append("text")
 			   .attr("x", 6)
 			   .attr("y", xlen + x.rangeBand())
 			   .attr("dx", ".32em")
-			   .attr("transform", "translate(" + x(data.probabilities.length) + ")rotate(-90)")
+			   .attr("transform", "translate(" + x(names.length) + ")rotate(-90)")
 			   .text("Gesamtwahrscheinlichkeit");
-			
-			// since
-			g.selectAll("text.sinceLabel")
-			  .data(data.since)
-			  .enter()
-			    .append("text")
-			      .attr("class", "sinceLabel")
-			      .attr("x", xlen + 60)
-			      .attr("y", function(d, i) { return x(i) + x.rangeBand() / 2; })
-			      .attr("dy", ".32em")
-			      .text(function(d) { if (d>0) return d + " Tage"; else return "";});
-			
+
 			g.append("text")
 			   .attr("x", 6)
 			   .attr("y", xlen + 70)
 			   .attr("dx", ".32em")
-			   .attr("transform", "translate(" + x(data.probabilities.length) + ")rotate(-90)")
+			   .attr("transform", "translate(" + x(names.length) + ")rotate(-90)")
 			   .text("Fehler seit");
-	
-
-			// rows of cells
-			var rows = g.selectAll(".row").data(data.matrix);
-
-			var row = rows.enter()
-			              .append("g")
-			                .attr("class", "row")
-			                .attr("transform", function(d, i) { return "translate(0," + x(i) + ")"; })
-			                .each(drawrow);
-
-			row.append("line").attr("x2", xlen);
-
-			row.append("text")
-			   .attr("x", -6)
-			   .attr("y", x.rangeBand() / 2)
-			   .attr("dy", ".32em")
-			   .attr("text-anchor", "end")
-			   .attr("class", "matrixlabel")
-		       .text(function(d, i) { return names[i]; })
-		       .on("click", loadDetailChart);
-
-			// column labels
-			var column = g.selectAll(".column")
-			              .data(data.matrix)
-			              .enter()
-			                .append("g")
-			                  .attr("class", "column")
-			                  .attr("transform", function(d, i) { return "translate(" + x(i) + ")rotate(-90)";});
-
-			column.append("line").attr("x1", -xlen);
-
-			column.append("text")
-			      .attr("x", 6)
-			      .attr("y", x.rangeBand() / 2)
-			      .attr("dy", ".32em")
-			      .attr("text-anchor", "start")
-			      .text(function(d, i) { return names[i]; });
-
-			function drawrow(row) {
-				var cell = d3.select(this)
-				             .selectAll(".cell")
-				             .data(row.filter(function(d) { return d.z != undefined;}))//may be zero, should not be interpreted as false
-				             .enter()
-				               .append("g")
-				               .attr("class", "cell")
-				               .on("click", loadDetailChart);
-				
-				cell.append("rect")
-				    .attr("x", function(d) { return x(d.x);})
-				    .attr("width", x.rangeBand())
-				    .attr("height", x.rangeBand())
-				    .style("fill", function(d) { return c(d.z); });
-				cell.append("text")
-				    .text(function(d, i) {
-					    if (!isNaN(d.z))
-    						return d.z.toFixed(2);
-					    else
- 						    return d.z;})
- 			        .attr("x", function(d) { return x(d.x) + 2; })
- 			        .attr("y", x.rangeBand() / 2 + 2)
- 			        .attr("class", "cellLabel");
-				cell.on("mouseover", mouseover)
-				    .on("mouseout", mouseout);
-			}
+			
+            redraw();
+            
 
 			var df = d3.time.format("%d.%m.%Y");
 
@@ -244,52 +154,129 @@
 			}
 
 			function mouseover(p) {
-				svg.selectAll(".row text.matrixlabel").classed("active", function(d, i) {
-					return i == p.y;
-				});
-				svg.selectAll(".column text").classed("active", function(d, i) {
-					return i == p.x;
-				});
-				svg.selectAll("text.cellLabel").classed("active", function(d, i) {
-					return d.x == p.x && d.y == p.y;
-				});
-				svg.selectAll("text.problabel").classed("active", function(d, i) {
-					return i == p.y;
-				});
-				summary.text("Wahrscheinlichkeit einer Verhaltensänderung von \"" + names[p.y] + "\": " + (data.probabilities[p.y] * 100).toFixed(1)
-						+ "%");
+				svg.selectAll(".row text.matrixlabel")
+				   .classed("active", function(d, i) { return i == p.y; });
+				svg.selectAll(".column text")
+				   .classed("active", function(d, i) { return i == p.x; });
+				svg.selectAll("text.cellLabel")
+				   .classed("active", function(d, i) { return d.x == p.x && d.y == p.y; });
+				svg.selectAll("text.problabel")
+				   .classed("active", function(d, i) { return i == p.y; });
+				summary.text("Wahrscheinlichkeit einer Verhaltensänderung von \"" + names[p.y] + "\": " + (data.probabilities[p.y] * 100).toFixed(1) + "%");
 			}
 
 			function mouseout() {
 				svg.selectAll("text").classed("active", false);
 			}
-
+			function drawrow(row) {		
+				var cell = d3.select(this)
+				             .selectAll("g.cell")
+				             .data(row.filter(function(d) { return d.z != undefined;}))//may be zero which should not be interpreted as false
+				thisrow=d3.select(this);
+				
+			    var newCellContent = cell.enter()
+			             .append("g")
+				           .attr("class", "cell")
+				           .on("click", loadDetailChart)
+				           .on("mouseover", mouseover)
+					       .on("mouseout", mouseout)
+		        newCellContent.append("rect")
+				           .attr("x", function(d) { return x(d.x);})
+				           .attr("width", x.rangeBand())
+				           .attr("height", x.rangeBand());
+				newCellContent.append("text")
+				         .attr("x", function(d) { return x(d.x) + 2; })
+				         .attr("y", x.rangeBand() / 2 + 2)
+				         .attr("class", "cellLabel");
+				
+				cell.select("rect").style("fill", function(d) { return c(d.z); })
+				cell.select("text")
+				    .text(function(d, i) {
+					    if (!isNaN(d.z))
+    						return d.z.toFixed(2);
+					    else
+ 						    return d.z;})
+			}
+			
 			function redraw() {
 				var n = +slider.node().value || slider.node().selectedIndex;
-				var day = days[n];
-				if (!day)
+				if (!days[n])
 					return;
 
-				data = populate(day);
-				var rows = svg.selectAll(".row").data(data.matrix);
+				data = populate(days[n]);
+				
 
-				rows.selectAll('.cell rect').style("fill", function(d) {
-					return c(data.matrix[d.x][d.y].z);
-				});
-				rows.selectAll('.cell text.cellLabel').text(function(d) {
-					var z = data.matrix[d.x][d.y].z;
-					if(z)
-						return z.toFixed(2);
-					else return z;
-				});
-				svg.select(".datelabel").text(data.date);
-				svg.selectAll("text.problabel").data(data.probabilities).text(function(d) {
-					return (d * 100).toFixed(0) + "%";
-				});
-				svg.selectAll("text.sinceLabel").data(data.since).text(function(d) {
-					if (d>0) return d + " Tage"; else return "";
-				});
+				// date label top left
+				var dateLabel = svg.selectAll("text.datelabel")
+				                   .data([data.date]);
+				
+				dateLabel.enter()
+				         .append("text")
+				           .attr("x", 20)
+				           .attr("y", 20)
+				           .attr("class", "datelabel")
+				           .style("font-weight", "bold")
+				           .style("font-size", "large");
+		        dateLabel.text(function(d){return d;});
+				// probabilities
+				var probLabels = g.selectAll("text.problabel").data(data.probabilities)
+				  
+				probLabels.enter()
+				          .append("text")
+				            .attr("class", "problabel")
+				            .attr("x", xlen + x.rangeBand())
+					        .attr("y", function(d, i) {	return x(i) + x.rangeBand() / 2; })
+					        .attr("dy", ".32em");
+				
+			    probLabels.text(function(d) {	return (d * 100).toFixed(0) + "%"; });
+				
+				// since
+				var sinceLabels = g.selectAll("text.sinceLabel").data(data.since);
+				sinceLabels.enter()
+				           .append("text")
+				             .attr("class", "sinceLabel")
+				             .attr("x", xlen + 60)
+				             .attr("y", function(d, i) { return x(i) + x.rangeBand() / 2; })
+				             .attr("dy", ".32em");
+				sinceLabels.text(function(d) { if (d>0) return d + " Tage"; else return "";})
+					
 
+				// rows of cells
+				var rows = g.selectAll("g.row").data(data.matrix);
+				var row = rows.enter()
+				              .append("g")
+				                .attr("class", "row")
+				                .attr("transform", function(d, i) { return "translate(0," + x(i) + ")"; })
+
+				row.append("line").attr("x2", xlen);
+
+				row.append("text")
+				   .attr("x", -6)
+				   .attr("y", x.rangeBand() / 2)
+				   .attr("dy", ".32em")
+				   .attr("text-anchor", "end")
+				   .attr("class", "matrixlabel")
+			       .text(function(d, i) { return names[i]; })
+			       .on("click", loadDetailChart);
+
+				rows.each(drawrow);
+				
+				// column labels
+				var column = g.selectAll(".column")
+				              .data(data.matrix)
+				              .enter()
+				                .append("g")
+				                  .attr("class", "column")
+				                  .attr("transform", function(d, i) { return "translate(" + x(i) + ")rotate(-90)";});
+
+				column.append("line").attr("x1", -xlen);
+
+				column.append("text")
+				      .attr("x", 6)
+				      .attr("y", x.rangeBand() / 2)
+				      .attr("dy", ".32em")
+				      .attr("text-anchor", "start")
+				      .text(function(d, i) { return names[i]; });
 			}
 			// store reference to the redraw function of this matrix plot. XXX potential memory leak!
 			cs[selector] = redraw;
