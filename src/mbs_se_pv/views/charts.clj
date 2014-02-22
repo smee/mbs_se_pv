@@ -236,19 +236,24 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 ;; show day that represents the biggest discord of a given series.
 (def-chart-page "discord.png" [num min-length]
   (let [num (s2i num 1)
-        min-length (s2i num 10) 
+        min-length (s2i num 50) 
         name (first names) 
-        data (get-series-values id name s e 100) 
-        days (partition-by day-number data)
-        days (remove #(< (count %) min-length) days)
-        daily-date (map #(f/resample (map :value %) 100) days)  _ (println (into (sorted-map) (frequencies (map count daily-date))))
-        discords (discord/find-discords-in-seqs daily-date num)
+        data (db/all-values-in-time-range id [name] s e (* 100 (/ (- e s) util/ONE-DAY))
+                  (fn [slices]
+                    (->> slices
+                      (map first)
+                      (partition-by day-number)
+                      (remove #(< (count %) min-length))
+                      doall))) 
+        data-only (map (partial map :value) data) 
+        discords (discord/find-discords-in-seqs data-only num)
         discord-days (->> discords
-                       (map #(nth days (first %)))
+                       (map #(nth data (first %)))
                        (map vec)
                        (map (fn [day] (map #(update-in % [:timestamp] mod util/ONE-DAY) day))))]
     (-> (create-time-series-chart 
-          (for [[idx v] discords] (format (t ::discord-title) (.format (util/dateformat) (-> days (nth idx) first :timestamp))  v)) 
+          (for [[idx v] discords] 
+            (format (t ::discord-title) (.format (util/dateformat) (-> data (nth idx) first :timestamp))  v)) 
           discord-days 
           str)
       (ch/set-x-label (t ::time))
