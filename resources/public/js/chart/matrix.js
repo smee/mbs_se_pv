@@ -30,7 +30,7 @@
 			left : 200
 		}, width = height = 400;
 		var //x = d3.scale.ordinal().rangeBands([0, width]),
-		c = d3.scale.linear().domain([-3,-1, 0, 1, 3 ]).range(["red", "yellow", "green", "yellow", "red" ]);
+		c = d3.scale.linear().domain([-3,-1, 0,0.2, 0.5 ]).range(["red", "yellow", "green", "yellow", "red" ]);
 
 		var maindiv = d3.select(selector);
 
@@ -39,19 +39,43 @@
 		                   .attr("height", height + margin.top + margin.bottom);
 		var g = svg.append("g")
 		             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-		var tooltip = maindiv.append("div")
+		var dateDropdown = maindiv.append("div")
 		                       .attr("class", "input-prepend");
-		tooltip.append("span")
+		dateDropdown.append("span")
 		         .attr("class", "add-on")
 		         .text("Zustand am");
-
-		//var slider = tooltip.append("input")
+		
+		//var slider = dateDropdown.append("input")
 		//               .attr("type", "number")
 		//               .attr("min",0)
 		//               .attr("value",0);
-		var slider = tooltip.append("select");
+		var slider = dateDropdown.append("select");
 		var summary = maindiv.append("div");
 
+		// color scale editor
+
+		var colorScaleEditor = maindiv.append("div");
+		var domainTextfield = colorScaleEditor.append("input")
+		                  						.attr("type","text")
+		                  						.on("change",updateScale)
+		                  						.property("value",JSON.stringify(c.domain()));
+		var colorsTextfield = colorScaleEditor.append("input")
+        				  						.attr("type","text")        				  						
+        				  						.on("change",updateScale)
+        				  						.property("value",JSON.stringify(c.range()));
+		
+		function updateScale(evt){ dtf = domainTextfield;
+			try{
+		        var domain = JSON.parse(domainTextfield.property("value"));
+		        var colors = JSON.parse(colorsTextfield.property("value"));
+		        c.domain(domain).range(colors);
+		        cs[selector]();	        //redraw();
+		    }catch(e){
+		        console.log(e);
+		    }
+		    
+		}
+		
 		function populate(day) {
 			var matrix = [], n = day.probabilities.length;
 
