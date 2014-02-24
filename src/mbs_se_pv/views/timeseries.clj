@@ -193,16 +193,17 @@
    :negative false
    :confidence 0.9999
    :maxLevel 2
-   :minHist 0.05
-   :maxHist 2
-   :minHour 10
-   :maxHour 15
-   :bins 500
-   :days 30
-   :skipMissing true
+   :minHour 9
+   :maxHour 16
+   :bins 40
+   :win-len 500
+   :win-num 10
+   :rescale-every 1000
+   :gap 0
    :sensor ""
    :width 950
    :height 600
+   :sd-factor 2
    :threshold 1.3
    :num 2
    :useRawEntropy true})
@@ -277,11 +278,14 @@
         [:div#entropy-parameter {:style (str "display:" (if (= (params :visType) "entropy.json") "block" "none"))} 
          [:h4 (t ::misc-parameters)]
          [:div.input-prepend
-          [:span.add-on (t ::min)]
-          (text-field {:class "input-small"} "minHist" (params :minHist))]
+          [:span.add-on (t ::win-len)]
+          (text-field {:class "input-small"} "winLen" (params :win-len))]
          [:div.input-prepend
-          [:span.add-on (t ::max)]
-          (text-field {:class "input-small"} "maxHist" (params :maxHist))]
+          [:span.add-on (t ::win-num)]
+          (text-field {:class "input-small"} "winNum" (params :win-num))]
+         [:div.input-prepend
+          [:span.add-on (t ::gap)]
+          (text-field {:class "input-small"} "gap" (params :gap))]
          [:div.input-prepend
           [:span.add-on (t ::starting-hour)]
           (text-field {:class "input-small"} "minHour" (params :minHour))]
@@ -292,15 +296,16 @@
           [:span.add-on (t ::bins)]
           (text-field {:class "input-small"} "bins" (params :bins))]
          [:div.input-prepend
-          [:span.add-on (t ::days)]
-          (text-field {:class "input-small"} "days" (params :days))]
+          [:span.add-on (t ::sd-factor)]
+          (text-field {:class "input-small"} "sdFactor" (params :sd-factor))]
          [:div.input-prepend
           [:span.add-on (t ::threshold)]
           (text-field {:class "input-small"} "threshold" (params :threshold))]
+         [:div.input-prepend
+          [:span.add-on (t ::rescale-every)]
+          (text-field {:class "input-small"} "rescaleEvery" (params :rescale-every))]
          [:div.controls
-          [:label.checkbox (check-box :useRawEntropy (params :useRawEntropy)) (t ::relative-entropy)]]         
-         [:div.controls
-          [:label.checkbox (check-box :skipMissing (params :skipMissing)) (t ::ignore-gaps)]]         
+          [:label.checkbox (check-box :useRawEntropy (params :useRawEntropy)) (t ::relative-entropy)]]
          [:div.input-prepend
           [:span.add-on (t ::sensor-name)]
           (text-field {:class "input-large" :placeholder (t ::sensor-name-hint)} "sensor" (params :sensor))]]

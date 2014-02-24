@@ -63,7 +63,8 @@ Use this function for all dygraph data."
 
 (chart/def-chart-page "dygraph-ratios.json" []
   (let [[num dem] names
-        vs (db/rolled-up-ratios-in-time-range id num dem s e width) 
+        vs (db/all-values-in-time-range id [num dem] s e width
+               #(doall (map (fn [[{ts :timestamp v1 :value} {v2 :value}]] {:timestamp ts :value (if (zero? v2) Double/NaN (/ v1 v2))}) %))) 
         [name1 name2] (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) [num dem])]
     (json {:labels (list (t ::date) (format (t ::ratio-chart-title) name1 name2)) 
            :data (insert-nils (map (juxt :timestamp :value) vs))
@@ -72,10 +73,11 @@ Use this function for all dygraph data."
 
 (chart/def-chart-page "dygraph-differences.json" []
   (let [[num dem] names
-        vs (alg/calculate-diffs id num dem s e) 
+        vs (alg/calculate-diffs id num dem s e width) 
         [name1 name2] (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) [num dem])]
     (json {:labels (list (t ::date) (format (t ::difference-chart-title) name1 name2)) 
            :data (insert-nils (map (juxt :timestamp :value) vs)) 
+           :units (cons nil (map #(get-in all-names [%1 :unit]) names))
            :title (format (t ::difference-chart-header) name1 name2 (.format (util/dateformat) s) (.format (util/dateformat) e))})))
 
 (chart/def-chart-page "relative-heatmap.json" []
@@ -95,34 +97,7 @@ Use this function for all dygraph data."
            :yRange [min-p max-p]
            :data (map vec (seq data))})))
 
-#_(chart/def-chart-page "histograms.json" []
-  (let [histograms (db/all-values-in-time-range plant-id ids s e
-                         (fn [slices]
-                           ))]))
 ;;;;;;;;;;;;;;;;;; relative entropy comparison between daily ratios of time series
-
-(use 'org.clojars.smee.serialization)
-(chart/def-chart-page "entropy.json" [days bins min-hist max-hist threshold skip-missing sensor]
-  (let [names (remove #{sensor} names)
-        bins (s2i bins 500)
-        n (s2i days 30)
-        min-hist (s2d min-hist 0.05) 
-        max-hist (s2d max-hist 0.2)
-        skip-missing (s2b skip-missing) 
-;        {:keys [results]} (deserialize (str "d:\\projekte\\EUMONIS\\Usecase PSM Solar\\Daten\\entropies\\invu1\\20130326 full-days\\" (.replaceAll sensor "/" "_") ".clj"))
-        results (pmap #(alg/calculate-entropies id sensor % s e {:n n :bins bins :min-hist min-hist :max-hist max-hist :skip-missing? skip-missing}) names)
-;        _ (serialize (str "d:/Dropbox/temp/" (.replaceAll sensor "/" "_") ".clj") {:results results})
-        title (format (t ::entropy-chart-title) (get-in all-names [sensor :name]) sensor)
-        entropies (map :entropies results)
-        ]
-    (json {
-           :data (insert-nils (apply map vector (-> results first :x) entropies))
-           :labels (cons "Datum" (map #(str (get-in all-names [% :component]) "/" (get-in all-names [% :name])) names))
-           :title title
-           :numerator sensor
-           :denominator "all" 
-           :threshold threshold
-           :stepPlot true})))
 
 (defn series-index [s]
     (let [[_ st inv] (re-find #".*STRING(\d)_MMDC(\d).*" s)
@@ -133,9 +108,9 @@ Use this function for all dygraph data."
 (chart/def-chart-page "entropy-bulk.json" [adhoc]
   (if (not-empty adhoc)
     (let [settings (cheshire.core/parse-string adhoc)
-          settings (map-values keyword identity settings)
-          {:keys [ids] :as settings} (merge {:n 30 :bins 500 :min-hist 0.05 :max-hist 2 :skip-missing? true :threshold 1.3 :use-raw-entropy? true} settings)
-          days (alg/calculate-entropy-matrices id s e settings)
+          settings (map-values keyword identity settings) _ (println settings)
+          {:keys [ids] :as settings} settings
+          days (alg/calculate-entropy-matrices-new id s e settings)
           days (alg/add-anomaly-durations days)
           names (for [name ids :let [{label :name device :component} (all-names name)]] (str device "/" label) )]
       (json {:names names

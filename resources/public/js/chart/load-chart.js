@@ -50,20 +50,20 @@
                  + '&min-hist=' + params.minHist
                  + '&max-hist=' + params.maxHist
                  + '&days=' + params.days
-                 + '&skip-missing=' + params.skipMissing
                  + '&sensor=' + params.sensor;
         }else if(v == 'entropy-bulk.json'){
         	link += '&adhoc='
         		 + JSON.stringify(
-        				 {'n': parseInt(params.days),
+        				 {'win-len': parseFloat(params.winLen),
+        			      'win-num': parseFloat(params.winNum),
            				  'ids': params.selectedSeries,
-           				  'min-hist': parseFloat(params.minHist),
-           				  'max-hist':  parseFloat(params.maxHist),
            				  'bins': parseInt(params.bins),
-           				  'skip-missing?': params.skipMissing,
            				  'threshold':parseFloat(params.threshold),
+           				  'sd-factor':parseFloat(params.sdFactor),
            				  'min-hour': parseFloat(params.minHour),
            				  'max-hour': parseFloat(params.maxHour),
+           				  'rescale-every': parseFloat(params.rescaleEvery),
+           				  'gap': parseFloat(params.gap),
            				  'use-raw-entropy?': params.useRawEntropy});
         }
         return link;
