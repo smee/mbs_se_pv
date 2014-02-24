@@ -62,7 +62,7 @@ If not, it loads a copy of the js file from a local uri."
 
 (defpartial eumonis-footer []
   [:footer
-   [:div.span2 [:p "&#169; EUMONIS-Konsortium 2013"]]
+   [:div.span2 [:p "&#169; EUMONIS-Konsortium 2014"]]
     [:div.span8 [:p (util/t ::footer)]]
     [:div.span2
      (link-to "http://www.bmbf.de/" 
