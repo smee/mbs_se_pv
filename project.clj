@@ -7,7 +7,7 @@
                            [noir "1.3.0-beta10"]
                            [ring/ring-json "0.2.0"]
                            [org.clojars.smee/common "1.2.7-SNAPSHOT"]
-                           [mbs-db "1.2.0-SNAPSHOT"]
+                           [mbs-db "1.4.0-SNAPSHOT"]
                            [solar-datamining "1.0.0-SNAPSHOT"]
                            [org.clojure/math.combinatorics "0.0.3"]
                            [chart-utils "1.0.2-SNAPSHOT"]
