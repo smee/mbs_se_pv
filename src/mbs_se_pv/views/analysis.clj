@@ -1,5 +1,6 @@
 (ns mbs-se-pv.views.analysis
   (:require 
+      [clojure.core.memoize :as memo] 
       [mbs-se-pv.algorithms :as alg] 
       [mbs-se-pv.views 
        [analysis :as analysis] 
@@ -21,6 +22,8 @@
         {:keys [probability id name]} alerts]
     [sc-name timestamp name id probability]))
 
+(def most-recent-anomalies-cache (memo/ttl alg/find-most-recent-anomalies :ttl/threshold (* 2 60 1000)))
+
 ;; called via ajax, see http://datatables.net/usage/server-side for details
 ;; queries, filters, slices and dices analysis results
 (defpage "/data/:id/events.json" {len :iDisplayLength
@@ -39,7 +42,7 @@
         col-id (s2i sort-col 1)
         scenario2anchor (into {} (map-indexed #(vector (:name %2) (str "#matrix-" %)) (db/get-scenarios id)))
         results  (->> today
-                   (alg/find-most-recent-anomalies id one-year-ago) 
+                   (most-recent-anomalies-cache id one-year-ago) 
                    flatten-analysis-results 
                    (sort-by #(nth % col-id)))
         df (java.text.SimpleDateFormat. "dd.MM.yyyy")
@@ -65,7 +68,6 @@
         b-u (util/base-url)]
     (common/layout-with-links 
       (ts/toolbar-links id 3)
-;      (unordered-list (map-indexed #(vector :a {:href (str "#analysis-" %)} (:name %2)) scenarios))
       [:div.span12
        [:h1 (format (t ::anomaly-header) id)]
        [:table#anomalies.table.table-striped.table-condensed
