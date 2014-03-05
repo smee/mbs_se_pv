@@ -236,7 +236,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 ;; show day that represents the biggest discord of a given series.
 (def-chart-page "discord.png" [num min-length]
   (let [num (s2i num 1)
-        min-length (s2i num 50) 
+        min-length (s2i num 80) 
         name (first names) 
         data (db/all-values-in-time-range id [name] s e (* 100 (/ (- e s) util/ONE-DAY))
                   (fn [slices]
@@ -250,10 +250,10 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
         discord-days (->> discords
                        (map #(nth data (first %)))
                        (map vec)
-                       (map (fn [day] (map #(update-in % [:timestamp] mod util/ONE-DAY) day))))]
+                       (map (fn [day] (map #(update-in % [:timestamp] mod util/ONE-DAY) day))))] 
     (-> (create-time-series-chart 
           (for [[idx v] discords] 
-            (format (t ::discord-title) (.format (util/dateformat) (-> data (nth idx) first :timestamp))  v)) 
+            (format (t ::discord-title) (.format (util/dateformat) (-> data (nth idx) first :timestamp)) (double v))) 
           discord-days 
           str)
       (ch/set-x-label (t ::time))
