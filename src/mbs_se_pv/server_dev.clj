@@ -3,7 +3,8 @@
     [noir.server :as server]
     ring.middleware.json
     [mbs-db.core :as db]
-    [taoensso.tower.ring :refer [wrap-tower-middleware]] 
+    [taoensso.tower.ring :refer [wrap-tower-middleware]]
+    [ring.middleware.gzip :refer [wrap-gzip]]
     ;; view namespaces need to be required explicitely for tomcat
     [mbs-se-pv.views common calendar charts data analysis timeseries welcome])
   ;(:gen-class)
@@ -23,6 +24,7 @@
                                                             :fallback-locale :en
                                                             :dictionary ; Map or named resource containing map
                                                             "translations.clj"}})
+    (server/add-middleware wrap-gzip)
     (let [url  (get (System/getenv) "DB-URL" "localhost:5029/psm")
           user (get (System/getenv) "DB-USER" "root")
           pw (get (System/getenv) "DB-PW" "")

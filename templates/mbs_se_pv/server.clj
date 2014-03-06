@@ -4,6 +4,7 @@
     ring.middleware.json
     [mbs-db.core :as db]
     [taoensso.tower.ring :refer [wrap-tower-middleware]] 
+    [ring.middleware.gzip :refer [wrap-gzip]]
     ;; view namespaces need to be required explicitely for tomcat
     [mbs-se-pv.views common calendar charts data analysis timeseries welcome])
   ;(:gen-class)
@@ -18,6 +19,7 @@
                                                               :fallback-locale :en
                                                               :dictionary ; Map or named resource containing map
                                                               "translations.clj"}})
+      (server/add-middleware wrap-gzip)
       (db/use-db-settings (merge db/mysql-config-psm
                                  {:classname   "com.mysql.jdbc.Driver"
                                   :user         "{{db-user}}"
