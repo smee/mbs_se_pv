@@ -124,13 +124,13 @@
 (defn get-series-values 
   "Call appropriate database queries according to (get-series-type series-name). Returns
 sequence of value sequences (seq. of maps with keys :timestamp and :value)."
-  ([plant-name series-id start-time end-time] (get-series-values plant-name series-id start-time end-time nil))
-  ([plant-name series-id start-time end-time width]
+  ([plant-name series-ids start-time end-time] (get-series-values plant-name series-ids start-time end-time nil))
+  ([plant-name series-ids start-time end-time width] 
     (let [s (as-sql-timestamp start-time) 
           e (as-sql-timestamp end-time)]
       (if width
-        (db/rolled-up-values-in-time-range plant-name series-id s e width)
-        (db/rolled-up-values-in-time-range plant-name series-id s e)))))
+        (db/rolled-up-values-in-time-range plant-name series-ids s e width)
+        (db/rolled-up-values-in-time-range plant-name series-ids s e)))))
 
 ;;;;;;;;;;;;;;;; Functions for rendering nice physical time series data ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- set-axis 
@@ -222,7 +222,8 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
         :body (t ::date-error)})))
 
 (def-chart-page "chart.png" [] 
-  (let [values (pmap #(get-series-values id % s e width) names)]      
+  (let [chunks (get-series-values id names s e width)        
+        values (apply map vector chunks)]      
     (-> (create-time-series-chart names values)
       (ch/set-x-label (t ::time))
       (ch/set-y-label (-> names first get-series-type unit-properties :label))
@@ -297,7 +298,7 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 (def-chart-page "heat-map.png" [hours minutes]
   (let [name (first names)
         block-time-len (hm (s2i hours 0) (s2i minutes 5))
-        values (get-series-values id name s e (/ (- e s) block-time-len))
+        values (map first (get-series-values id [name] s e (/ (- e s) block-time-len)))
         ;values (alg/simulate-insolation-values s e false {:latitude 37.606875 :longitude -8.087344}) 
         days (->> values (partition-by day-number) (insert-missing-days s e)) 
         daily-start (hm 0 0)
@@ -333,8 +334,9 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 
 (def-chart-page "relative-heat-map.png" [] ; TODO configurable ranges, configurable color scales
   (let [[name2 name1] names
-        [power wind-speed] [(map :value (get-series-values id name1 s e)) 
-                            (map :value (get-series-values id name2 s e))] 
+        values (get-series-values id [name1 name2] s e)
+        power (map (comp :value first) values)
+        wind-speed (map (comp :value second) values)
         [min-p max-p] (apply (juxt min max) power)
         [min-w max-w] (apply (juxt min max) wind-speed)
         x-steps 100
@@ -370,7 +372,9 @@ Distributes all axis so there is a roughly equal number of axes on each side of 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; render a correlation matrix plot ;;;;;;;;;;;;;;;;
 (def-chart-page "correlation.png" [] 
-  (let [values (for [name names] (map :value (get-series-values id name s (+ s util/ONE-DAY)))) 
+  (let [values (->> (get-series-values id names s (+ s util/ONE-DAY))
+                 (apply map vector)
+                 (map (partial map :value))) 
         img (-> values 
               tc/calculate-correlation-matrix 
               (tc/render-frame names (.format (util/dateformat) s)))]

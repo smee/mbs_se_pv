@@ -45,9 +45,9 @@ Use this function for all dygraph data."
       (take-last 1 data))))
 
 (chart/def-chart-page "dygraph.json" [] 
-  (let [values (->> names
-                 (pmap #(chart/get-series-values id % s e width))
-                 (pmap (mapp #(vector (:timestamp %) [(:min %) (:value %) (:max %)]))))
+  (let [values (->> (chart/get-series-values id names s e width) 
+                 (apply map vector) 
+                 (map (mapp #(vector (:timestamp %) [(:min %) (:value %) (:max %)]))))
         ;; if one series has no value for a timestamp, the number of entries in 
         ;; the returned row is too low, need to insert [nil nil nil] instead!
         ; problem: not all lines have the same number of values
@@ -82,8 +82,9 @@ Use this function for all dygraph data."
 
 (chart/def-chart-page "relative-heatmap.json" []
   (let [[name1 name2] names
-        [power wind-speed] [(map :value (chart/get-series-values id name1 s e)) 
-                            (map :value (chart/get-series-values id name2 s e))] 
+        values (chart/get-series-values id [name1 name2] s e)
+        power (map (comp :value first) values)
+        wind-speed (map (comp :value second) values)
         [min-p max-p] (apply (juxt min max) power)
         [min-w max-w] (apply (juxt min max) wind-speed)
         ;      [min-p max-p] [0 1000000]
