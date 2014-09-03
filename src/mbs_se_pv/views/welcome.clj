@@ -48,9 +48,9 @@
 
 (defn- search-for 
   "Filter for id substrings matching the search term"
-  [search-term metadata]
-  (filter #(or (.contains (-> % :address :name) search-term)
-               (.contains (-> % :address :zipcode) search-term)
+  [search-term metadata] 
+  (filter #(or (.contains ^String (-> % :address :name) search-term)
+               (.contains ^String (-> % :address :zipcode) search-term)
                (= :anzahlwr (s2i search-term -1))) metadata))
 
 ;; called via ajax, see http://datatables.net/usage/server-side for details
@@ -68,7 +68,11 @@
         get-id (comp :name :address)
         metadata (->> (db/get-metadata) vals (sort-by get-id))
         filtered (search-for search-term metadata)
-        sort-key (case col-id 0 get-id, 1 :anlagenkwp, 2 :anzahlwr, 3 (comp :name :zipcode), get-id)
+        sort-key (case col-id 
+                   1 :anlagenkwp, 
+                   2 :anzahlwr, 
+                   3 (comp :name :zipcode), 
+                   get-id)
         sorted (sort-by sort-key filtered)
         sorted (if (= "desc" sort-dir) (reverse sorted) sorted)
         c (count sorted)

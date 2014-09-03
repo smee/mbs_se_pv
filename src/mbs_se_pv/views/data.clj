@@ -8,7 +8,7 @@
             [chart-utils.jfreechart :refer [bin-fn]]
             [org.clojars.smee 
              [map :refer (mapp map-values)] 
-             [util :refer (s2i s2d s2b)]
+             [util :refer (s2i)]
              [time :refer [as-sql-timestamp]]]
             [noir.response :refer (content-type json)]
             [noir.core :refer [defpage]]
@@ -63,7 +63,7 @@ Use this function for all dygraph data."
 
 (chart/def-chart-page "dygraph-ratios.json" []
   (let [[num dem] names
-        vs (db/all-values-in-time-range id [num dem] s e width
+        vs (db/rolled-up-values-in-time-range id [num dem] s e width
                #(doall (map (fn [[{ts :timestamp v1 :value} {v2 :value}]] {:timestamp ts :value (if (zero? v2) Double/NaN (/ v1 v2))}) %))) 
         [name1 name2] (map #(str (get-in all-names [%1 :component]) "/" (get-in all-names [%1 :name])) [num dem])]
     (json {:labels (list (t ::date) (format (t ::ratio-chart-title) name1 name2)) 
@@ -109,11 +109,14 @@ Use this function for all dygraph data."
 (chart/def-chart-page "entropy-bulk.json" [adhoc]
   (if (not-empty adhoc)
     (let [settings (cheshire.core/parse-string adhoc)
-          settings (map-values keyword identity settings) _ (println settings)
+          settings (map-values keyword identity settings) 
           {:keys [ids] :as settings} settings
+          _ (println settings)
+          _ (println name (all-names name))
+          names (for [name ids :let [{label :name device :component} (all-names name)]] 
+                  (str device "/" label) )
           days (alg/calculate-entropy-matrices-new id s e settings)
-          days (alg/add-anomaly-durations days)
-          names (for [name ids :let [{label :name device :component} (all-names name)]] (str device "/" label) )]
+          days (alg/add-anomaly-durations days)]
       (json {:names names
              :ids ids
              :days days}))

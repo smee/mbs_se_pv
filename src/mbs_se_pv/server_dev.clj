@@ -25,7 +25,7 @@
                                                             :dictionary ; Map or named resource containing map
                                                             "translations.clj"}})
     (server/add-middleware wrap-gzip)
-    (let [url  (get (System/getenv) "DB-URL" "localhost:5029/psm")
+    (let [url  (get (System/getenv) "DB-URL" "localhost:5029/psm2")
           user (get (System/getenv) "DB-USER" "root")
           pw (get (System/getenv) "DB-PW" "")
           name (get (System/getenv) "DB-NAME" "default")] 

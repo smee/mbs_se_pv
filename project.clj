@@ -3,11 +3,11 @@
             :plugins [[lein-ring "0.7.5"]
                       [lein-resource "0.3.1"]]
             :hooks [leiningen.resource]
-            :dependencies [[org.clojure/clojure "1.5.1"]
+            :dependencies [[org.clojure/clojure "1.6.0"]
                            [noir "1.3.0-beta10"]
                            [ring/ring-json "0.2.0"]
                            [amalloy/ring-gzip-middleware "0.1.3"]
-                           [org.clojars.smee/common "1.2.7-SNAPSHOT"]
+                           [org.clojars.smee/common "1.2.8-SNAPSHOT"]
                            [mbs-db "1.4.0-SNAPSHOT"]
                            [solar-datamining "1.0.0-SNAPSHOT"]
                            [org.clojure/math.combinatorics "0.0.3"]
@@ -19,7 +19,7 @@
                            [org.clojure/tools.logging "0.2.6"]
                            [com.taoensso/tower "2.0.0-beta5"] ; i18n
                            ]
-            :main mbs-se-pv.server
+            :main mbs-se-pv.server-dev
             :ring {:handler mbs-se-pv.server/handler}
             :resource {
                        :resource-paths ["templates"]

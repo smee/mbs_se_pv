@@ -6,7 +6,6 @@
        [common :as common]
        [charts :as ch]
        [util :as util :refer [t]]
-       [psm-names :as names]
        [calendar :as cal]]
       [mbs-db.core :as db])
     (:use [noir 
@@ -252,7 +251,6 @@
                                    [(t ::heatmap-pair) "relative-heat-map.png"]
                                    [(t ::ratio) "dygraph-ratios.json"] 
                                    [(t ::difference) "dygraph-differences.json"] 
-                                   [(t ::entropy-change-simple) "entropy.json"]
                                    [(t ::entropy-change-matrix) "entropy-bulk.json"]
                                    [(t ::change-point) "changepoints.png"]
                                    [(t ::unusual-day) "discord.png"]
@@ -305,10 +303,7 @@
           [:span.add-on (t ::rescale-every)]
           (text-field {:class "input-small"} "rescaleEvery" (params :rescale-every))]
          [:div.controls
-          [:label.checkbox (check-box :useRawEntropy (params :useRawEntropy)) (t ::relative-entropy)]]
-         [:div.input-prepend
-          [:span.add-on (t ::sensor-name)]
-          (text-field {:class "input-large" :placeholder (t ::sensor-name-hint)} "sensor" (params :sensor))]]
+          [:label.checkbox (check-box :useRawEntropy (params :useRawEntropy)) (t ::use-raw-entropy)]]]
         (hidden-field "highlightSeries" (:highlightSeries params)) 
         [:div
          [:h4 (t ::size)]
